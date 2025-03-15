@@ -3,8 +3,9 @@ import { generateFeedback } from "./gameManager.js";
 const games = {}; // Active games stored in memory
 
 export const handleSocketEvents = (socket, io) => {
-  socket.on("createGame", ({ playerId }) => {
-    const gameId = `PNG${Math.floor(Math.random() * 1000)}`;
+  socket.on("createGame", ({ playerId, gameId }) => {
+
+
     games[gameId] = {
       player1: playerId,
       player2: null,
@@ -16,6 +17,8 @@ export const handleSocketEvents = (socket, io) => {
     };
     socket.join(gameId);
     io.to(gameId).emit("gameCreated", { gameId });
+    console.log(playerId, `created a new game: ${gameId}`);
+    console.log(games)
   });
 
   socket.on("joinGame", ({ gameId, playerId }) => {
@@ -23,10 +26,13 @@ export const handleSocketEvents = (socket, io) => {
       games[gameId].player2 = playerId;
       games[gameId].turn = games[gameId].player2;
       io.to(gameId).emit("gameReady", { gameId });
+      console.log(playerId, 'joined the game');
+      console.log(games)
     }
   });
 
   socket.on("submitSecret", ({ gameId, playerId, secretNumber }) => {
+    console.log(gameId, playerId, secretNumber)
     if (games[gameId].player1 === playerId) {
       games[gameId].player1Secret = secretNumber;
     } else {
@@ -36,6 +42,8 @@ export const handleSocketEvents = (socket, io) => {
     if (games[gameId].player1Secret && games[gameId].player2Secret) {
       io.to(gameId).emit("startGame", { gameId });
     }
+
+    console.log(games)
   });
 
   socket.on("makeGuess", ({ gameId, playerId, guess }) => {
@@ -66,6 +74,7 @@ export const handleSocketEvents = (socket, io) => {
       game.turn = game.turn === game.player1 ? game.player2 : game.player1;
       io.to(gameId).emit("turnChange", { nextPlayer: game.turn });
     }
+    console.log(games)
   });
 
   socket.on("disconnect", () => {

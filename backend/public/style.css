@@ -9,13 +9,40 @@ button {
     cursor: pointer;
 }
 
-#feedback-section {
-    margin-top: 20px;
+
+
+.secret-div{
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-#guess-list div {
-    background: #f4f4f4;
-    padding: 5px;
-    margin: 5px;
-    border-radius: 5px;
+
+
+.guess {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+
+
+.game-div{
+    /* margin-left: 40px; */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    /* width: 40px; */
+    /* border-bottom: 2px gray solid; */
+}
+
+.guess-el-div{
+    width: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+        border-bottom: 2px gray solid; 
 }

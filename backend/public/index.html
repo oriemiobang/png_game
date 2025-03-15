@@ -8,36 +8,43 @@
 </head>
 <body>
     <h1>PNG Game</h1>
+    <p>Player ID: <span id="playerId"></span> </p>
+    <p>Secret number: <span id="secretNumber"></span> </p>
+    <p>Game Id: <span id="gameId"></span> </p>
 
     <div id="game-setup">
         <button id="create-game">Create Game</button>
         <input type="text" id="game-id" placeholder="Enter Game ID">
         <button id="join-game">Join Game</button>
     </div>
-
-    <div id="game-info" style="display: none;">
-        <p><strong>Game Created!</strong></p>
-        <p>Game ID (Room ID): <span id="current-game-id"></span></p>
-        <p>Share this ID with your opponent!</p>
-        <p>Turn: <span id="turn-indicator">Waiting...</span></p>
+    <div class="secret-div">
+        <input type="text" id="secret-input" placeholder="Enter your secret number"/>
+        <button id="secret-btn">Submit</button>
     </div>
 
-    <div id="secret-input" style="display: none;">
-        <input type="text" id="secret-number" placeholder="Enter your 4-digit secret">
-        <button id="submit-secret">Submit Secret</button>
+    <div  class="guess">
+        <input type="text" id="guess-input" placeholder="Enter your guess"/>
+        <button id="guess-btn">Submit</button>
     </div>
 
-    <div id="guess-section" style="display: none;">
-        <input type="text" id="guess-input" placeholder="Enter your guess">
-        <button id="send-guess">Submit Guess</button>
+
+
+    <div class="game-div">
+        <div class="guess-el-div">
+            <p>Guess</p>
+            <p id="guess-p" class="guesses"></p>
+        </div>
+        <div class="guess-el-div">
+            <p>P</p>
+            <p id="position-p" class="feedback"></p>
+        </div>
+        <div class="guess-el-div">
+            <p>N</p>
+            <p id="number-p" class="feedback"></p>
+        </div>
     </div>
 
-    <div id="feedback-section">
-        <h2>Guesses:</h2>
-        <div id="guess-list"></div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
+ <script src="/socket.io/socket.io.js"></script>
     <script src="script.js"></script>
     <script src="http://localhost:5000/socket.io/socket.io.js"></script>
 </body>
