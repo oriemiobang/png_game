@@ -35,6 +35,9 @@ document.getElementById('secret-btn').addEventListener('click', function() {
 socket.on('gameInfo', info => {
     console.log('gameInfo', info)
     const player = info.player1 === player_id? 'player1': 'player2';
+    turn = info.turn === player_id? 'Your turn': 'Opponent turn';
+  
+
 
     info.guesses[player].forEach((playerInfo)=> {
 
