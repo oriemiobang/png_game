@@ -75,6 +75,9 @@ export const handleSocketEvents = (socket, io) => {
       io.to(gameId).emit("turnChange", { nextPlayer: game.turn });
     }
     console.log(games)
+    socket.emit('gameInfo', game);
+    
+    
   });
 
   socket.on("disconnect", () => {

@@ -2,7 +2,12 @@ const socket = io('http://localhost:5000');
 let game_id;
 let player_id;
 let secret_number;
+const guess_ul = document.getElementById('guess-ul');
+const postion_ul =document.getElementById('position-ul');
+const number_ul = document.getElementById('number-ul');
 
+
+let guesses = [];
 
 
 
@@ -27,10 +32,32 @@ document.getElementById('secret-btn').addEventListener('click', function() {
     socket.emit('submitSecret', {gameId: game_id, playerId: player_id, secretNumber: secretNumber})
 });
 
-// socket.on('gameInfo', info => {
-//     console.log('gameInfo', info)
+socket.on('gameInfo', info => {
+    console.log('gameInfo', info)
+    const player = info.player1 === player_id? 'player1': 'player2';
 
-// });
+    info.guesses[player].forEach((playerInfo)=> {
+
+        const li1 = document.createElement('li');
+        const li2 = document.createElement('li');
+        const li3 = document.createElement('li');
+
+
+        li1.textContent = playerInfo.guess;
+        li2.textContent = playerInfo.feedback.position;
+        li3.textContent = playerInfo.feedback.number;
+
+        guess_ul.appendChild(li1);
+        postion_ul.appendChild(li2);
+        number_ul.appendChild(li3);
+    
+
+    });
+
+    
+    console.log(player);
+
+});
 
 
 

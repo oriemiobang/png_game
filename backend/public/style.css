@@ -37,7 +37,7 @@ button {
     /* width: 40px; */
     /* border-bottom: 2px gray solid; */
 }
-
+/* 
 .guess-el-div{
     width: 70px;
     display: flex;
@@ -45,4 +45,18 @@ button {
     align-items: center;
     text-align: center;
         border-bottom: 2px gray solid; 
+} */
+
+.guess-el-div{
+    list-style-type: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+
+}
+
+li, ul{
+    list-style-type: none;
+
 }
