@@ -3,22 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat with me</title>
+    <title>PNG Game</title>
     <link rel="stylesheet" href="style.css">
-  
-
 </head>
 <body>
-    <h1>Chat with me!</h1>
-    <div id="container class="container">
-        <p class="mess" id="mess"></p>
+    <h1>PNG Game</h1>
 
+    <div id="game-setup">
+        <button id="create-game">Create Game</button>
+        <input type="text" id="game-id" placeholder="Enter Game ID">
+        <button id="join-game">Join Game</button>
     </div>
-    <div class="btn-container">
-        <input type="text" id="message-input" placeholder="Type your message here...">
-        <button id="send-btn">Send</button>
+
+    <div id="game-info" style="display: none;">
+        <p><strong>Game Created!</strong></p>
+        <p>Game ID (Room ID): <span id="current-game-id"></span></p>
+        <p>Share this ID with your opponent!</p>
+        <p>Turn: <span id="turn-indicator">Waiting...</span></p>
     </div>
+
+    <div id="secret-input" style="display: none;">
+        <input type="text" id="secret-number" placeholder="Enter your 4-digit secret">
+        <button id="submit-secret">Submit Secret</button>
+    </div>
+
+    <div id="guess-section" style="display: none;">
+        <input type="text" id="guess-input" placeholder="Enter your guess">
+        <button id="send-guess">Submit Guess</button>
+    </div>
+
+    <div id="feedback-section">
+        <h2>Guesses:</h2>
+        <div id="guess-list"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+    <script src="http://localhost:5000/socket.io/socket.io.js"></script>
 </body>
-<script src="/socket.io/socket.io.js"></script>
-<script src="script.js"></script>
 </html>

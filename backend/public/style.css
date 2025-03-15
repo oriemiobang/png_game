@@ -1,6 +1,21 @@
-.container {
-    border: 0.5px solid gray;
-    /* height: 20px; */
-    width: 35%;
-    margin: 10px;
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+button {
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
+}
+
+#feedback-section {
+    margin-top: 20px;
+}
+
+#guess-list div {
+    background: #f4f4f4;
+    padding: 5px;
+    margin: 5px;
+    border-radius: 5px;
 }

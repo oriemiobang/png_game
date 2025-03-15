@@ -1,21 +1,31 @@
-const express = require('express');
-const {createServer} = require('node:http');
-const {Server} = require('socket.io');
+import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import dotenv from "dotenv";
+import cors from "cors";
+import { handleSocketEvents } from "./events.js";
 
-
+dotenv.config();
 const app = express();
 const server = createServer(app);
-const io  = new Server(server);
 app.use(express.static("public"));
 
-io.on('connection', (socket)=> {
-    console.log(socket.id, 'has joined our server!');
-    socket.on('message', message=> {
-        console.log(message);
-        socket.emit('messageToAll', message);
-    })
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
-server.listen(5000, ()=> {
-    console.log('Server is running on port 5000')
-})
+app.use(cors());
+
+app.get("/", (req, res) => res.send("PNG Game Server Running"));
+
+io.on("connection", (socket) => {
+  console.log(`User connected: ${socket.id}`);
+  handleSocketEvents(socket, io);
+});
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
