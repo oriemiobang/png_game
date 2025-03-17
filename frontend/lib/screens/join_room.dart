@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:png_game/services/socket_service.dart';
 
 class JoinRoom extends StatefulWidget {
   const JoinRoom({super.key});
@@ -8,6 +9,8 @@ class JoinRoom extends StatefulWidget {
 }
 
 class _JoinRoomState extends State<JoinRoom> {
+  SocketService socketService = SocketService();
+  String gameCode = '';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -30,6 +33,11 @@ class _JoinRoomState extends State<JoinRoom> {
                   height: 40,
                   width: 270,
                   child: TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        gameCode = value;
+                      });
+                    },
                     decoration: InputDecoration(
                       hintText: 'Enter room code',
                     ),
@@ -39,7 +47,10 @@ class _JoinRoomState extends State<JoinRoom> {
                     height: 35,
                     color: Colors.green,
                     child: TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          socketService.joinGame(gameCode);
+                          Navigator.pushNamed(context, 'play_board');
+                        },
                         child: const Text(
                           'Join room',
                           style: TextStyle(color: Colors.black),

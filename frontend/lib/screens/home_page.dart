@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:png_game/screens/create_room.dart';
+import 'package:png_game/services/socket_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -10,7 +12,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isSigned = false;
   bool isPlayWithFriend = false;
-
+  SocketService socketService = SocketService();
   List<Map<String, String>> playerList = [
     {
       'name': 'Player 1',
@@ -158,7 +160,15 @@ class _HomePageState extends State<HomePage> {
                           ),
                           child: TextButton(
                             onPressed: () {
-                              Navigator.pushNamed(context, '/create_game');
+                              String gameId = socketService.createGame();
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => CreateRoom(
+                                            gameId: gameId,
+                                          )));
+
+                              print(gameId);
                             },
                             child: Text(
                               'CREATE GAME',

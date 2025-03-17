@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class CreateRoom extends StatefulWidget {
-  const CreateRoom({super.key});
+  String? gameId;
+   CreateRoom({super.key,  this.gameId});
 
   @override
   State<CreateRoom> createState() => _CreateRoomState();
@@ -11,6 +12,14 @@ class CreateRoom extends StatefulWidget {
 class _CreateRoomState extends State<CreateRoom> {
   String? selectedValue; // Stores the selected item
   List<String> items = ['Option 1', 'Option 2', 'Option 3', 'Option 4'];
+  String gameId = '';
+
+  @override
+  void initState() {
+    gameId = widget.gameId!;
+    // TODO: implement initState
+    super.initState();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,7 +70,7 @@ class _CreateRoomState extends State<CreateRoom> {
           ),
           Center(
             child: QrImageView(
-              data: '1234567890',
+              data: gameId,
               version: QrVersions.auto,
               size: 200.0,
             ),
