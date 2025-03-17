@@ -10,6 +10,17 @@ const number_ul = document.getElementById('number-ul');
 let guesses = [];
 
 
+socket.on('lastChance', (data)=> {
+    document.getElementById('lastChance').innerHTML = data.message
+    console.log(data.message);
+})
+
+socket.on('gameEnd', (data)=> {
+    document.getElementById('gameOver').innerHTML = data.message
+    console.log(data.message);
+})
+
+
 
 document.getElementById('create-game').addEventListener('click', function() {
     const playerId = `PNG${[...Array(9)].map(() => Math.floor(Math.random() * 10).toString(10)).join('')}`;
@@ -37,7 +48,9 @@ socket.on('gameInfo', info => {
     const player = info.player1 === player_id? 'player1': 'player2';
     turn = info.turn === player_id? 'Your turn': 'Opponent turn';
   
-
+    guess_ul.innerHTML = ''
+    postion_ul.innerHTML = ''
+    number_ul.innerHTML = ''
 
     info.guesses[player].forEach((playerInfo)=> {
 
@@ -49,6 +62,8 @@ socket.on('gameInfo', info => {
         li1.textContent = playerInfo.guess;
         li2.textContent = playerInfo.feedback.position;
         li3.textContent = playerInfo.feedback.number;
+
+  
 
         guess_ul.appendChild(li1);
         postion_ul.appendChild(li2);
