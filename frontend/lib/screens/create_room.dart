@@ -77,7 +77,9 @@ class _CreateRoomState extends State<CreateRoom> {
                 height: 35,
                 decoration: BoxDecoration(color: Colors.green),
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/play_board');
+                  },
                   child: Text(
                     'Share code',
                     style: TextStyle(color: Colors.black),
