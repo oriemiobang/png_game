@@ -5,9 +5,10 @@ import 'dart:math';
 class SocketService with ChangeNotifier {
   late io.Socket socket;
   bool isConnected = false;
+  bool gameJoined = false;
 
-  String? game_id;
-  String? player_id;
+  String game_id = '';
+  String player_id = '';
 
   SocketService() {
     connect();
@@ -35,6 +36,19 @@ class SocketService with ChangeNotifier {
       notifyListeners();
     });
 
+    // listen to game joiner
+    socket.on('gameJoined', (data) {
+      gameJoined = true;
+
+      game_id = data['gameId'];
+      player_id = data['playerId'];
+
+      print('${game_id}, ${player_id}');
+
+      print(data);
+      notifyListeners();
+    });
+
     // listen to game events
     socket.on('lastChance', (data) {
       print(data.message);
@@ -53,8 +67,9 @@ class SocketService with ChangeNotifier {
   }
 
   void sendGuess(String guess) {
-    socket.emit(
-        'makeGuess', {'gameId': game_id, 'playerId': player_id, guess: guess});
+    print('${game_id}, ${player_id}, $guess');
+    socket.emit('makeGuess',
+        {'gameId': game_id, 'playerId': player_id, 'guess': guess});
   }
 
   void submitSecret(String secret) {
@@ -72,7 +87,9 @@ class SocketService with ChangeNotifier {
         'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
     player_id = playerId;
     game_id = gameId;
+
     socket.emit('createGame', {'playerId': playerId, 'gameId': gameId});
+    notifyListeners();
 
     return gameId;
   }
@@ -83,6 +100,8 @@ class SocketService with ChangeNotifier {
     String playerId =
         'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
     player_id = playerId;
+    game_id = gameCode;
     socket.emit('joinGame', {'gameId': gameCode, 'playerId': playerId});
+    notifyListeners();
   }
 }

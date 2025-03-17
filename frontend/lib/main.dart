@@ -3,6 +3,7 @@ import 'package:png_game/screens/create_room.dart';
 import 'package:png_game/screens/home_page.dart';
 import 'package:png_game/screens/join_room.dart';
 import 'package:png_game/screens/play_board.dart';
+import 'package:png_game/screens/scan_qr.dart';
 import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,8 @@ import 'package:provider/provider.dart';
 void main() {
   runApp(MultiProvider(
     providers: [
-      ChangeNotifierProvider(create: (context) => SocketService()),  ChangeNotifierProvider(create: (_) => PlayBoardProvider())
+      ChangeNotifierProvider(create: (context) => SocketService()),
+      ChangeNotifierProvider(create: (_) => PlayBoardProvider())
     ],
     child: const MyApp(),
   ));
@@ -28,8 +30,9 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => const HomePage(),
         '/join_game': (context) => const JoinRoom(),
-        '/create_game': (context) =>  CreateRoom(),
-        '/play_board': (context) => const PlayBoard()
+        '/create_game': (context) => CreateRoom(),
+        '/play_board': (context) => const PlayBoard(),
+        '/scan_qr_code': (context) => const ScanQrCode(),
       },
     );
   }

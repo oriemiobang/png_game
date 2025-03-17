@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/services/playboard_provider.dart';
+import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
 
 class PlayBoard extends StatefulWidget {
@@ -10,6 +11,61 @@ class PlayBoard extends StatefulWidget {
 }
 
 class _PlayBoardState extends State<PlayBoard> {
+  SocketService socketService = SocketService();
+  String mySecret = '';
+  String myGuess = '';
+  void submitGuess() {
+    bool isNumb = RegExp(r'^[0-9]+$').hasMatch(myGuess);
+    if (myGuess.length == 4 && isNumb) {
+      socketService.sendGuess(myGuess);
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Invalid Input"),
+            content: const Text("Please enter a 4-digit number."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
+  void submitScret(PlayBoardProvider playBoardProvider) {
+    bool isNumb = RegExp(r'^[0-9]+$').hasMatch(mySecret);
+
+    if (mySecret.length == 4 && isNumb) {
+      socketService.submitSecret(mySecret);
+      playBoardProvider.submitSecret();
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Invalid Input"),
+            content: const Text("Please enter a 4-digit number."),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final playBoardProvider = Provider.of<PlayBoardProvider>(context);
@@ -35,7 +91,7 @@ class _PlayBoardState extends State<PlayBoard> {
                         child: Center(
                           child: playBoardProvider.hideText
                               ? const Text('****')
-                              : const Text('1473'),
+                              : Text(mySecret),
                         ), // Center text inside
                       ),
                     ),
@@ -47,6 +103,11 @@ class _PlayBoardState extends State<PlayBoard> {
                         height: 35,
                         width: 150,
                         child: TextField(
+                          onChanged: (value) {
+                            setState(() {
+                              mySecret = value;
+                            });
+                          },
                           decoration: InputDecoration(
                             labelText: 'Enter secret code',
                           ),
@@ -59,7 +120,9 @@ class _PlayBoardState extends State<PlayBoard> {
                         color: Colors.green,
                         height: 35,
                         child: TextButton(
-                            onPressed: playBoardProvider.submitSecret,
+                            onPressed: () {
+                              submitScret(playBoardProvider);
+                            },
                             child: const Text(
                               'Submit',
                               style: TextStyle(color: Colors.black),
@@ -228,7 +291,11 @@ class _PlayBoardState extends State<PlayBoard> {
                 width: 250,
                 // height: 45,
                 child: TextField(
-                  onChanged: (value) {},
+                  onChanged: (value) {
+                    setState(() {
+                      myGuess = value;
+                    });
+                  },
 
                   keyboardType:
                       TextInputType.multiline, // Enables multi-line input
@@ -246,11 +313,16 @@ class _PlayBoardState extends State<PlayBoard> {
                   ),
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(color: Colors.green),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: const Text('Submit'),
+              GestureDetector(
+                onTap: () {
+                  submitGuess();
+                },
+                child: Container(
+                  decoration: const BoxDecoration(color: Colors.green),
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text('Submit'),
+                  ),
                 ),
               )
             ],

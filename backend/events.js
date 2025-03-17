@@ -25,7 +25,8 @@ export const handleSocketEvents = (socket, io) => {
       games[gameId].turn = games[gameId].player2;
       io.to(gameId).emit("gameReady", { gameId });
       console.log(playerId, "joined the game");
-      socket.emit('gameJoined', {gameJoined: true});
+      console.log(games);
+      io.emit('gameJoined', {gameJoined: true, gameId: gameId, playerId: playerId});
     } else if (games[gameId]) {
       return socket.emit("room_error", "Room does not exist!");
     } else if (games[gameId].player2) {
@@ -46,6 +47,7 @@ export const handleSocketEvents = (socket, io) => {
     if (game.player1Secret && game.player2Secret) {
       io.to(gameId).emit("startGame", { gameId });
     }
+    console.log(games);
   });
 
   socket.on("makeGuess", ({ gameId, playerId, guess }) => {
@@ -92,7 +94,7 @@ export const handleSocketEvents = (socket, io) => {
     }
 
     console.log(games);
-    socket.emit("gameInfo", game);
+    io.emit("gameInfo", game);
   });
 
   socket.on("disconnect", () => {

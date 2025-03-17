@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:png_game/services/socket_service.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class CreateRoom extends StatefulWidget {
   String? gameId;
-   CreateRoom({super.key,  this.gameId});
+  CreateRoom({super.key, this.gameId});
 
   @override
   State<CreateRoom> createState() => _CreateRoomState();
@@ -13,15 +15,31 @@ class _CreateRoomState extends State<CreateRoom> {
   String? selectedValue; // Stores the selected item
   List<String> items = ['Option 1', 'Option 2', 'Option 3', 'Option 4'];
   String gameId = '';
+  // SocketService socketService = SocketService();
 
   @override
   void initState() {
     gameId = widget.gameId!;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _listenForGameJoin();
+    });
     // TODO: implement initState
     super.initState();
   }
+
+  void _listenForGameJoin() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+
+    socketService.addListener(() {
+      if (socketService.gameJoined) {
+        Navigator.pushReplacementNamed(context, '/play_board');
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final socketService = Provider.of<SocketService>(context);
     return Scaffold(
       appBar: AppBar(),
       body: Padding(
