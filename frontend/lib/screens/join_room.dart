@@ -49,7 +49,7 @@ class _JoinRoomState extends State<JoinRoom> {
                     child: TextButton(
                         onPressed: () {
                           socketService.joinGame(gameCode);
-                          Navigator.pushNamed(context, 'play_board');
+                          Navigator.pushNamed(context, '/play_board');
                         },
                         child: const Text(
                           'Join room',

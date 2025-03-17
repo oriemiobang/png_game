@@ -25,6 +25,7 @@ export const handleSocketEvents = (socket, io) => {
       games[gameId].turn = games[gameId].player2;
       io.to(gameId).emit("gameReady", { gameId });
       console.log(playerId, "joined the game");
+      socket.emit('gameJoined', {gameJoined: true});
     } else if (games[gameId]) {
       return socket.emit("room_error", "Room does not exist!");
     } else if (games[gameId].player2) {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:png_game/services/playboard_provider.dart';
+import 'package:provider/provider.dart';
 
 class PlayBoard extends StatefulWidget {
   const PlayBoard({super.key});
@@ -8,32 +10,18 @@ class PlayBoard extends StatefulWidget {
 }
 
 class _PlayBoardState extends State<PlayBoard> {
-  bool secretSubmitted = false;
-  bool hideText = false;
-  bool showMine = true;
-  bool loggedIn = false;
-
-  List<Map<String, String>> guesses = [
-    {'guess': '1324', 'position': '2', 'number': '3'},
-    {'guess': '1358', 'position': '2', 'number': '3'},
-    {'guess': '1324', 'position': '2', 'number': '3'},
-    {'guess': '1324', 'position': '2', 'number': '3'},
-  ];
   @override
   Widget build(BuildContext context) {
+    final playBoardProvider = Provider.of<PlayBoardProvider>(context);
     return Scaffold(
       appBar: AppBar(),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: ListView(
           children: [
-            secretSubmitted
+            playBoardProvider.secretSubmitted
                 ? GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        hideText = !hideText;
-                      });
-                    },
+                    onTap: playBoardProvider.toggleHideText,
                     child: Align(
                       alignment:
                           Alignment.centerLeft, // Adjust alignment if needed
@@ -45,7 +33,9 @@ class _PlayBoardState extends State<PlayBoard> {
                           color: Colors.grey.shade100,
                         ),
                         child: Center(
-                          child: hideText ? const Text('****') : Text('1473'),
+                          child: playBoardProvider.hideText
+                              ? const Text('****')
+                              : const Text('1473'),
                         ), // Center text inside
                       ),
                     ),
@@ -69,11 +59,7 @@ class _PlayBoardState extends State<PlayBoard> {
                         color: Colors.green,
                         height: 35,
                         child: TextButton(
-                            onPressed: () {
-                              setState(() {
-                                secretSubmitted = true;
-                              });
-                            },
+                            onPressed: playBoardProvider.submitSecret,
                             child: const Text(
                               'Submit',
                               style: TextStyle(color: Colors.black),
@@ -88,14 +74,12 @@ class _PlayBoardState extends State<PlayBoard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      showMine = true;
-                    });
-                  },
+                  onTap: () => playBoardProvider.toggleBoard(true),
                   child: Container(
                     width: 170,
-                    color: showMine ? Colors.grey.shade200 : null,
+                    color: playBoardProvider.showMine
+                        ? Colors.grey.shade200
+                        : null,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
@@ -106,14 +90,12 @@ class _PlayBoardState extends State<PlayBoard> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      showMine = false;
-                    });
-                  },
+                  onTap: () => playBoardProvider.toggleBoard(false),
                   child: Container(
                     width: 170,
-                    color: !showMine ? Colors.grey.shade200 : null,
+                    color: !playBoardProvider.showMine
+                        ? Colors.grey.shade200
+                        : null,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
@@ -128,7 +110,7 @@ class _PlayBoardState extends State<PlayBoard> {
             const SizedBox(
               height: 10,
             ),
-            showMine
+            playBoardProvider.showMine
                 ? DataTable(
                     columnSpacing: 20,
                     headingRowColor:
@@ -147,7 +129,8 @@ class _PlayBoardState extends State<PlayBoard> {
                           label: Text('N',
                               style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
-                    rows: guesses.asMap().entries.map((entry) {
+                    rows:
+                        playBoardProvider.guesses.asMap().entries.map((entry) {
                       final index = entry.key;
                       final guess = entry.value;
                       return DataRow(cells: [
@@ -176,7 +159,8 @@ class _PlayBoardState extends State<PlayBoard> {
                           label: Text('N',
                               style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
-                    rows: guesses.asMap().entries.map((entry) {
+                    rows:
+                        playBoardProvider.guesses.asMap().entries.map((entry) {
                       final index = entry.key;
                       final guess = entry.value;
                       return DataRow(cells: [

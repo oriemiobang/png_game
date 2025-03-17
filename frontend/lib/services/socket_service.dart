@@ -14,7 +14,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('http://localhost:5000', <String, dynamic>{
+    socket = io.io('http://192.168.118.222:5000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
@@ -72,7 +72,7 @@ class SocketService with ChangeNotifier {
         'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
     player_id = playerId;
     game_id = gameId;
-    socket.emit('createGame', {playerId: playerId, gameId: gameId});
+    socket.emit('createGame', {'playerId': playerId, 'gameId': gameId});
 
     return gameId;
   }

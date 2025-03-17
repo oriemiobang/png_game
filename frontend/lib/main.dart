@@ -3,13 +3,14 @@ import 'package:png_game/screens/create_room.dart';
 import 'package:png_game/screens/home_page.dart';
 import 'package:png_game/screens/join_room.dart';
 import 'package:png_game/screens/play_board.dart';
+import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
 
 void main() {
   runApp(MultiProvider(
     providers: [
-      ChangeNotifierProvider(create: (context) => SocketService()),
+      ChangeNotifierProvider(create: (context) => SocketService()),  ChangeNotifierProvider(create: (_) => PlayBoardProvider())
     ],
     child: const MyApp(),
   ));
