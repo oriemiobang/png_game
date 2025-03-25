@@ -1,4 +1,4 @@
-package com.example.png_game
+package com.bellatech.png_game
 
 import io.flutter.embedding.android.FlutterActivity
 

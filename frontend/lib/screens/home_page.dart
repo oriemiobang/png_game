@@ -12,7 +12,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isSigned = false;
   bool isPlayWithFriend = false;
-  SocketService socketService = SocketService();
+  final socketService = SocketService();
   List<Map<String, String>> playerList = [
     {
       'name': 'Player 1',

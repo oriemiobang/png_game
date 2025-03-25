@@ -11,8 +11,12 @@ import 'package:provider/provider.dart';
 void main() {
   runApp(MultiProvider(
     providers: [
-      ChangeNotifierProvider(create: (context) => SocketService()),
-      ChangeNotifierProvider(create: (_) => PlayBoardProvider())
+      ChangeNotifierProvider(
+        create: (context) => SocketService(),
+      ),
+      ChangeNotifierProvider(
+        create: (_) => PlayBoardProvider(),
+      )
     ],
     child: const MyApp(),
   ));
