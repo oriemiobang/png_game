@@ -12,12 +12,14 @@ class PlayBoard extends StatefulWidget {
 
 class _PlayBoardState extends State<PlayBoard> {
   SocketService socketService = SocketService();
+
   String mySecret = '';
   String myGuess = '';
-  void submitGuess() {
+  void submitGuess(PlayBoardProvider playBoardProvider) {
     bool isNumb = RegExp(r'^[0-9]+$').hasMatch(myGuess);
     if (myGuess.length == 4 && isNumb) {
       socketService.sendGuess(myGuess);
+      playBoardProvider.addGuess(mySecret, '5', '3');
     } else {
       showDialog(
         context: context,
@@ -76,62 +78,63 @@ class _PlayBoardState extends State<PlayBoard> {
         padding: const EdgeInsets.all(8.0),
         child: ListView(
           children: [
-            playBoardProvider.secretSubmitted
-                ? GestureDetector(
-                    onTap: playBoardProvider.toggleHideText,
-                    child: Align(
-                      alignment:
-                          Alignment.centerLeft, // Adjust alignment if needed
-                      child: Container(
-                        width: 60,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(5),
-                          color: Colors.grey.shade100,
-                        ),
-                        child: Center(
-                          child: playBoardProvider.hideText
-                              ? const Text('****')
-                              : Text(mySecret),
-                        ), // Center text inside
-                      ),
+            // playBoardProvider.secretSubmitted
+            //     ? GestureDetector(
+            //         onTap: playBoardProvider.toggleHideText,
+            //         child: Align(
+            //           alignment:
+            //               Alignment.centerLeft, // Adjust alignment if needed
+            //           child: Container(
+            //             width: 60,
+            //             height: 50,
+            //             decoration: BoxDecoration(
+            //               borderRadius: BorderRadius.circular(5),
+            //               color: Colors.grey.shade100,
+            //             ),
+            //             child: Center(
+            //               child: playBoardProvider.hideText
+            //                   ? const Text('****')
+            //                   : Text(mySecret),
+            //             ), // Center text inside
+            //           ),
+            //         ),
+            //       )
+            // :
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                SizedBox(
+                  height: 35,
+                  width: 150,
+                  child: TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        mySecret = value;
+                      });
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Enter secret code',
                     ),
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        height: 35,
-                        width: 150,
-                        child: TextField(
-                          onChanged: (value) {
-                            setState(() {
-                              mySecret = value;
-                            });
-                          },
-                          decoration: const InputDecoration(
-                            labelText: 'Enter secret code',
-                          ),
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Container(
-                        color: Colors.green,
-                        height: 35,
-                        child: TextButton(
-                            onPressed: () {
-                              print('before entering secret');
-                              submitScret(playBoardProvider);
-                            },
-                            child: const Text(
-                              'Submit',
-                              style: TextStyle(color: Colors.black),
-                            )),
-                      )
-                    ],
                   ),
+                ),
+                const SizedBox(
+                  width: 10,
+                ),
+                Container(
+                  color: Colors.green,
+                  height: 35,
+                  child: TextButton(
+                      onPressed: () {
+                        print('before entering secret');
+                        submitScret(playBoardProvider);
+                      },
+                      child: const Text(
+                        'Submit',
+                        style: TextStyle(color: Colors.black),
+                      )),
+                )
+              ],
+            ),
             const SizedBox(
               height: 10,
             ),
@@ -318,7 +321,7 @@ class _PlayBoardState extends State<PlayBoard> {
               GestureDetector(
                 onTap: () {
                   print('before entering guesses');
-                  submitGuess();
+                  submitGuess(playBoardProvider);
                 },
                 child: Container(
                   decoration: const BoxDecoration(color: Colors.green),

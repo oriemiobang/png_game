@@ -7,6 +7,7 @@ class SocketService with ChangeNotifier {
   late io.Socket socket;
   bool isConnected = false;
   bool gameJoined = false;
+  dynamic gameInfo = {};
   SavedData savedData = SavedData();
 
   String game_id = '';
@@ -74,7 +75,9 @@ class SocketService with ChangeNotifier {
 
     // game data
     socket.on('gameInfo', (data) {
-      print(data);
+      gameInfo = data;
+      savedData.setData(data);
+      print('this is the game info: $data');
       notifyListeners();
     });
   }
@@ -83,7 +86,7 @@ class SocketService with ChangeNotifier {
     final gameId = await savedData.getSaveGameId();
     final userId = await savedData.getUserId();
     print('$gameId, $userId, $guess');
-    print('guess: ${guess}, gameId: $gameId, userId: $userId');
+    print('guess: $guess, gameId: $gameId, userId: $userId');
     socket.emit(
         'makeGuess', {'gameId': gameId, 'playerId': userId, 'guess': guess});
   }
@@ -91,7 +94,7 @@ class SocketService with ChangeNotifier {
   void submitSecret(String secret) async {
     final gameId = await savedData.getSaveGameId();
     final userId = await savedData.getUserId();
-    print('secret: ${secret}, gameId: $gameId, userId: $userId');
+    print('secret: $secret, gameId: $gameId, userId: $userId');
     socket.emit('submitSecret',
         {'gameId': gameId, 'playerId': userId, 'secretNumber': secret});
   }

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SavedData {
@@ -19,5 +21,18 @@ class SavedData {
   Future<String> getSaveGameId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('gameId') ?? "";
+  }
+
+  Future<void> setData(data) async {
+    String jsonString = jsonEncode(data);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('data', jsonString);
+  }
+
+  Future<Map> getData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String jsonString = prefs.getString('data') ?? '{}';
+    return jsonDecode(jsonString);
   }
 }
