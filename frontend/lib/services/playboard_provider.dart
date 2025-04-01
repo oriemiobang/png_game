@@ -8,7 +8,7 @@ class PlayBoardProvider with ChangeNotifier {
   String _gameId = '';
   String _playerId = '';
 
-  List<Map<String, String>> _guesses = [];
+  final List<Map<String, String>> _guesses = [];
 
   bool get secretSubmitted => _secretSubmitted;
   bool get hideText => _hideText;

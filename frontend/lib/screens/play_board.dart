@@ -30,7 +30,7 @@ class _PlayBoardState extends State<PlayBoard> {
                 onPressed: () {
                   Navigator.of(context).pop(); // Close the dialog
                 },
-                child: Text("OK"),
+                child: const Text("OK"),
               ),
             ],
           );
@@ -40,6 +40,7 @@ class _PlayBoardState extends State<PlayBoard> {
   }
 
   void submitScret(PlayBoardProvider playBoardProvider) {
+    print('enering ');
     bool isNumb = RegExp(r'^[0-9]+$').hasMatch(mySecret);
 
     if (mySecret.length == 4 && isNumb) {
@@ -57,7 +58,7 @@ class _PlayBoardState extends State<PlayBoard> {
                 onPressed: () {
                   Navigator.of(context).pop(); // Close the dialog
                 },
-                child: Text("OK"),
+                child: const Text("OK"),
               ),
             ],
           );
@@ -108,12 +109,12 @@ class _PlayBoardState extends State<PlayBoard> {
                               mySecret = value;
                             });
                           },
-                          decoration: InputDecoration(
+                          decoration: const InputDecoration(
                             labelText: 'Enter secret code',
                           ),
                         ),
                       ),
-                      SizedBox(
+                      const SizedBox(
                         width: 10,
                       ),
                       Container(
@@ -121,6 +122,7 @@ class _PlayBoardState extends State<PlayBoard> {
                         height: 35,
                         child: TextButton(
                             onPressed: () {
+                              print('before entering secret');
                               submitScret(playBoardProvider);
                             },
                             child: const Text(
@@ -315,6 +317,7 @@ class _PlayBoardState extends State<PlayBoard> {
               ),
               GestureDetector(
                 onTap: () {
+                  print('before entering guesses');
                   submitGuess();
                 },
                 child: Container(

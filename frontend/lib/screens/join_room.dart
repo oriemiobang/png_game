@@ -42,11 +42,11 @@ class _JoinRoomState extends State<JoinRoom> {
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
-            Center(
-              child: const Text('Challenge your friend',
+            const Center(
+              child: Text('Challenge your friend',
                   style: TextStyle(fontSize: 18)),
             ),
-            SizedBox(
+            const SizedBox(
               height: 20,
             ),
             Row(
@@ -62,13 +62,13 @@ class _JoinRoomState extends State<JoinRoom> {
                         gameCode = value;
                       });
                     },
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: 'Enter room code',
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.camera_alt, size: 45),
+                  icon: const Icon(Icons.camera_alt, size: 45),
                   onPressed: () async {
                     final scannedData = await Navigator.push(
                       context,

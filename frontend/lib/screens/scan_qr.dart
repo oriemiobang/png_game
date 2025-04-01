@@ -27,7 +27,7 @@ class _ScanQrCodeState extends State<ScanQrCode> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Scan QR Code")),
+      appBar: AppBar(title: const Text("Scan QR Code")),
       body: Stack(
         children: [
           QRView(

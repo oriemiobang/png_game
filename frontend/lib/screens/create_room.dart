@@ -45,7 +45,7 @@ class _CreateRoomState extends State<CreateRoom> {
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(children: [
-          Text(
+          const Text(
             'Challenge your friend',
             style: TextStyle(fontSize: 18),
           ),
@@ -94,7 +94,7 @@ class _CreateRoomState extends State<CreateRoom> {
             ),
           ),
 
-          SizedBox(
+          const SizedBox(
             height: 10,
           ),
           Row(
@@ -102,23 +102,23 @@ class _CreateRoomState extends State<CreateRoom> {
             children: [
               Container(
                 height: 35,
-                decoration: BoxDecoration(color: Colors.green),
+                decoration: const BoxDecoration(color: Colors.green),
                 child: TextButton(
                   onPressed: () {
                     Navigator.pushNamed(context, '/play_board');
                   },
-                  child: Text(
+                  child: const Text(
                     'Share code',
                     style: TextStyle(color: Colors.black),
                   ),
                 ),
               ),
-              SizedBox(
+              const SizedBox(
                 width: 20,
               ),
               IconButton(
                 onPressed: () {},
-                icon: Icon(Icons.copy),
+                icon: const Icon(Icons.copy),
               )
             ],
           )

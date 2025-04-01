@@ -17,6 +17,7 @@ export const handleSocketEvents = (socket, io) => {
     socket.join(gameId);
     io.to(gameId).emit("gameCreated", { gameId });
     console.log(playerId, `created a new game: ${gameId}`);
+    console.log(games);
   });
 
   socket.on("joinGame", ({ gameId, playerId }) => {
