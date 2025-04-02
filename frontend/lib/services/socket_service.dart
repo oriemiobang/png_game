@@ -20,7 +20,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('http:// 192.168.70.222:5000', <String, dynamic>{
+    socket = io.io('http://192.168.70.222:5000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
