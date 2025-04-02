@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:png_game/classes/data.dart';
 import 'package:provider/provider.dart';
 
 import 'package:png_game/screens/create_room.dart';
@@ -17,7 +18,8 @@ void main() {
       ),
       ChangeNotifierProvider(
         create: (_) => PlayBoardProvider(),
-      )
+      ),
+      ChangeNotifierProvider(create: (_) => Data())
     ],
     child: const MyApp(),
   ));

@@ -4,6 +4,7 @@ const games = {}; // Active games stored in memory
 
 export const handleSocketEvents = (socket, io) => {
   socket.on("createGame", ({ playerId, gameId }) => {
+    const game = games[gameId];
     games[gameId] = {
       player1: playerId,
       player2: null,
@@ -18,9 +19,11 @@ export const handleSocketEvents = (socket, io) => {
     io.to(gameId).emit("gameCreated", { gameId });
     console.log(playerId, `created a new game: ${gameId}`);
     console.log(games);
+    io.emit("gameInfo", game);
   });
 
   socket.on("joinGame", ({ gameId, playerId }) => {
+    const game = games[gameId];
     if (games[gameId] && !games[gameId].player2) {
       games[gameId].player2 = playerId;
       games[gameId].turn = games[gameId].player2;
@@ -32,7 +35,7 @@ export const handleSocketEvents = (socket, io) => {
       return socket.emit("room_error", "Room does not exist!");
     } else if (games[gameId].player2) {
       return socket.emit("room_error", "Room is already full!");
-    }
+    }  io.emit("gameInfo", game);
   });
 
   socket.on("submitSecret", ({ gameId, playerId, secretNumber }) => {
@@ -49,6 +52,7 @@ export const handleSocketEvents = (socket, io) => {
       io.to(gameId).emit("startGame", { gameId });
     }
     console.log(games);
+    io.emit("gameInfo", game);
   });
 
   socket.on("makeGuess", ({ gameId, playerId, guess }) => {

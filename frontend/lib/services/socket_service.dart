@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:png_game/classes/data.dart';
 import 'package:png_game/storage/saved_data.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:math';
@@ -19,7 +20,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('http://192.168.35.222:5000', <String, dynamic>{
+    socket = io.io('http:// 192.168.70.222:5000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
@@ -46,8 +47,10 @@ class SocketService with ChangeNotifier {
 
       game_id = data['gameId'];
       player_id = data['playerId'];
-      final gameId = await savedData.getSaveGameId();
-      final userId = await savedData.getUserId();
+      final gameId = Data().gameId;
+      // await savedData.getSaveGameId();
+      final userId = Data().userId;
+      // await savedData.getUserId();
 
       print('$game_id, $player_id');
       print('$gameId, $userId');
@@ -76,15 +79,18 @@ class SocketService with ChangeNotifier {
     // game data
     socket.on('gameInfo', (data) {
       gameInfo = data;
-      savedData.setData(data);
+      // savedData.setData(data);
+      Data().updateData(data);
       print('this is the game info: $data');
       notifyListeners();
     });
   }
 
   void sendGuess(String guess) async {
-    final gameId = await savedData.getSaveGameId();
-    final userId = await savedData.getUserId();
+    final gameId = Data().gameId;
+    // await savedData.getSaveGameId();
+    final userId = Data().userId;
+    // await savedData.getUserId();
     print('$gameId, $userId, $guess');
     print('guess: $guess, gameId: $gameId, userId: $userId');
     socket.emit(
@@ -92,8 +98,10 @@ class SocketService with ChangeNotifier {
   }
 
   void submitSecret(String secret) async {
-    final gameId = await savedData.getSaveGameId();
-    final userId = await savedData.getUserId();
+    final gameId = Data().gameId;
+    // await savedData.getSaveGameId();
+    final userId = Data().userId;
+    // await savedData.getUserId();
     print('secret: $secret, gameId: $gameId, userId: $userId');
     socket.emit('submitSecret',
         {'gameId': gameId, 'playerId': userId, 'secretNumber': secret});
@@ -110,8 +118,10 @@ class SocketService with ChangeNotifier {
     player_id = playerId;
     game_id = gameId;
 
-    savedData.setGameId(gameId);
-    savedData.setUserId(playerId);
+    // savedData.setGameId(gameId);
+    Data().updateGameId(gameId);
+    // savedData.setUserId(playerId);
+    Data().updateUserId(playerId);
 
     socket.emit('createGame', {'playerId': playerId, 'gameId': gameId});
     notifyListeners();
@@ -126,8 +136,12 @@ class SocketService with ChangeNotifier {
         'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
     player_id = playerId;
     game_id = gameCode;
-    await savedData.setUserId(playerId);
-    await savedData.setGameId(gameCode);
+    // await savedData.setUserId(playerId);
+    // await savedData.setGameId(gameCode);
+
+    Data().updateGameId(gameCode);
+
+    Data().updateUserId(playerId);
 
     socket.emit('joinGame', {'gameId': gameCode, 'playerId': playerId});
     notifyListeners();

@@ -16,14 +16,14 @@ class PlayBoardProvider with ChangeNotifier {
   String _gameId = '';
   String _playerId = '';
 
-  List _guesses = [];
+  // List _guesses = [];
 
   bool get secretSubmitted => _secretSubmitted;
   bool get hideText => _hideText;
   bool get showMine => _showMine;
   String get gameId => _gameId;
   String get playerId => _playerId;
-  List get guesses => _guesses;
+  // List get guesses => _guesses;
 
   void setGameId(String id) {
     _gameId = id;
@@ -50,15 +50,16 @@ class PlayBoardProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void addGuess(String guess, String position, String number) async {
-    final data = await savedData.getData();
-    final userId = await savedData.getUserId();
-    String player = data['player1'] == userId ? 'player1' : 'player2';
-    print('my data $data');
-    print('current palyer $player');
-    print('current list ${data['guesses'][player]}');
-    // _guesses = data['guesses'][player];
-    // _guesses.add({'guess': guess, 'position': position, 'number': number});
-    notifyListeners();
-  }
+  // void addGuess(String guess, String position, String number) async {
+  //   final data = await savedData.getData();
+  //   final userId = await savedData.getUserId();
+  //   String player = data['player1'] == userId ? 'player1' : 'player2';
+  //   print('my data $data');
+  //   print('current palyer $player');
+  //   print('current list ${data['guesses'][player]}');
+  //   // _guesses = data['guesses'][player];
+  //   print('after assigning guesses $_guesses');
+  //   // _guesses.add({'guess': guess, 'position': position, 'number': number});
+  //   notifyListeners();
+  // }
 }

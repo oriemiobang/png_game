@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:png_game/classes/data.dart';
 import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
+import 'package:png_game/storage/saved_data.dart';
 import 'package:provider/provider.dart';
 
 class PlayBoard extends StatefulWidget {
@@ -12,14 +14,35 @@ class PlayBoard extends StatefulWidget {
 
 class _PlayBoardState extends State<PlayBoard> {
   SocketService socketService = SocketService();
-
+  SavedData savedData = SavedData();
+  List guesses = [];
   String mySecret = '';
+  Data myData = Data();
+  bool isSubmitted = false;
+  String turn = '';
+  final TextEditingController _controller = TextEditingController();
+
+  void refreshGuess() async {
+    final data = Data().data;
+    final userId = await savedData.getUserId();
+
+    print('this is the data from the data class: ${Data().data}');
+
+    String player = data!['player1'] == userId ? 'player1' : 'player2';
+    setState(() {
+      guesses = data['guesses'][player];
+    });
+    print('these are the printed guesses: $guesses');
+  }
+
   String myGuess = '';
   void submitGuess(PlayBoardProvider playBoardProvider) {
     bool isNumb = RegExp(r'^[0-9]+$').hasMatch(myGuess);
     if (myGuess.length == 4 && isNumb) {
       socketService.sendGuess(myGuess);
-      playBoardProvider.addGuess(mySecret, '5', '3');
+      refreshGuess();
+      print('after call $guesses');
+      // playBoardProvider.addGuess(mySecret, '5', '3');
     } else {
       showDialog(
         context: context,
@@ -72,8 +95,18 @@ class _PlayBoardState extends State<PlayBoard> {
   @override
   Widget build(BuildContext context) {
     final playBoardProvider = Provider.of<PlayBoardProvider>(context);
+    final dataProvider = Provider.of<Data>(context);
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(left: 10, right: 10),
+            child: Text(dataProvider.userId == dataProvider.data?['turn']
+                ? 'Your turn'
+                : 'Opponent\'s turn'),
+          )
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: ListView(
@@ -100,41 +133,46 @@ class _PlayBoardState extends State<PlayBoard> {
             //         ),
             //       )
             // :
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                SizedBox(
-                  height: 35,
-                  width: 150,
-                  child: TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        mySecret = value;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Enter secret code',
-                    ),
+            isSubmitted
+                ? Text(mySecret)
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      SizedBox(
+                        height: 35,
+                        width: 150,
+                        child: TextField(
+                          onChanged: (value) {
+                            setState(() {
+                              mySecret = value;
+                            });
+                          },
+                          decoration: const InputDecoration(
+                            labelText: 'Enter secret code',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Container(
+                        color: Colors.green,
+                        height: 35,
+                        child: TextButton(
+                            onPressed: () {
+                              print('before entering secret');
+                              submitScret(playBoardProvider);
+                              setState(() {
+                                isSubmitted = true;
+                              });
+                            },
+                            child: const Text(
+                              'Submit',
+                              style: TextStyle(color: Colors.black),
+                            )),
+                      )
+                    ],
                   ),
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                Container(
-                  color: Colors.green,
-                  height: 35,
-                  child: TextButton(
-                      onPressed: () {
-                        print('before entering secret');
-                        submitScret(playBoardProvider);
-                      },
-                      child: const Text(
-                        'Submit',
-                        style: TextStyle(color: Colors.black),
-                      )),
-                )
-              ],
-            ),
             const SizedBox(
               height: 10,
             ),
@@ -197,15 +235,15 @@ class _PlayBoardState extends State<PlayBoard> {
                           label: Text('N',
                               style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
-                    rows:
-                        playBoardProvider.guesses.asMap().entries.map((entry) {
+                    rows: guesses.asMap().entries.map((entry) {
                       final index = entry.key;
                       final guess = entry.value;
+                      print('just before table: $guess');
                       return DataRow(cells: [
                         DataCell(Text('${index + 1}')),
-                        DataCell(Text(guess['guess']!)),
-                        DataCell(Text(guess['position']!)),
-                        DataCell(Text(guess['number']!)),
+                        DataCell(Text('${guess['guess']}')),
+                        DataCell(Text('${guess['feedback']['position']}')),
+                        DataCell(Text('${guess['feedback']['number']}')),
                       ]);
                     }).toList(),
                   )
@@ -227,15 +265,23 @@ class _PlayBoardState extends State<PlayBoard> {
                           label: Text('N',
                               style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
-                    rows:
-                        playBoardProvider.guesses.asMap().entries.map((entry) {
+                    rows: guesses.asMap().entries.map((entry) {
                       final index = entry.key;
                       final guess = entry.value;
+                      print('inside the table $guess');
                       return DataRow(cells: [
-                        DataCell(Text('${index + 1}')),
-                        DataCell(Text(guess['guess']!)),
-                        DataCell(Text(guess['position']!)),
-                        DataCell(Text(guess['number']!)),
+                        DataCell(
+                          Text('${index + 1}'),
+                        ),
+                        DataCell(
+                          Text('${guess['guess']}' ?? ''),
+                        ),
+                        DataCell(
+                          Text('${guess['feedback']['position']}' ?? ''),
+                        ),
+                        DataCell(
+                          Text('${guess['feedback']['number']}' ?? ''),
+                        ),
                       ]);
                     }).toList(),
                   ),
@@ -307,6 +353,7 @@ class _PlayBoardState extends State<PlayBoard> {
 
                   maxLines: null, // Expand as needed
                   textInputAction: TextInputAction.newline,
+                  controller: _controller,
                   decoration: const InputDecoration(
                     contentPadding:
                         EdgeInsets.symmetric(vertical: 10, horizontal: 15),
@@ -322,6 +369,7 @@ class _PlayBoardState extends State<PlayBoard> {
                 onTap: () {
                   print('before entering guesses');
                   submitGuess(playBoardProvider);
+                  _controller.text = '';
                 },
                 child: Container(
                   decoration: const BoxDecoration(color: Colors.green),
