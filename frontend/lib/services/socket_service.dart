@@ -20,7 +20,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('http://192.168.70.222:5000', <String, dynamic>{
+    socket = io.io('http://192.168.73.222:5000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
@@ -52,8 +52,8 @@ class SocketService with ChangeNotifier {
       final userId = Data().userId;
       // await savedData.getUserId();
 
-      print('$game_id, $player_id');
-      print('$gameId, $userId');
+      // print('$game_id, $player_id');
+      // print('$gameId, $userId');
 
       print(data);
       notifyListeners();
@@ -81,7 +81,7 @@ class SocketService with ChangeNotifier {
       gameInfo = data;
       // savedData.setData(data);
       Data().updateData(data);
-      print('this is the game info: $data');
+      // print('this is the game info: $data');
       notifyListeners();
     });
   }
@@ -91,8 +91,8 @@ class SocketService with ChangeNotifier {
     // await savedData.getSaveGameId();
     final userId = Data().userId;
     // await savedData.getUserId();
-    print('$gameId, $userId, $guess');
-    print('guess: $guess, gameId: $gameId, userId: $userId');
+    // print('$gameId, $userId, $guess');
+    // print('guess: $guess, gameId: $gameId, userId: $userId');
     socket.emit(
         'makeGuess', {'gameId': gameId, 'playerId': userId, 'guess': guess});
   }
@@ -102,7 +102,7 @@ class SocketService with ChangeNotifier {
     // await savedData.getSaveGameId();
     final userId = Data().userId;
     // await savedData.getUserId();
-    print('secret: $secret, gameId: $gameId, userId: $userId');
+    // print('secret: $secret, gameId: $gameId, userId: $userId');
     socket.emit('submitSecret',
         {'gameId': gameId, 'playerId': userId, 'secretNumber': secret});
   }
