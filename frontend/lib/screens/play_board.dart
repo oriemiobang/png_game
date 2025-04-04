@@ -19,29 +19,130 @@ class _PlayBoardState extends State<PlayBoard> {
   String mySecret = '';
   Data myData = Data();
   bool isSubmitted = false;
-  String turn = '';
+
   final TextEditingController _controller = TextEditingController();
 
   void refreshGuess() async {
     final data = Data().data;
-    final userId = await savedData.getUserId();
+    final userId = Data().userId;
 
-    print('this is the data from the data class: ${Data().data}');
+    String player = data?['player1'] == userId ? 'player1' : 'player2';
+    String opponent = data?['player1'] == userId ? 'player2' : 'player1';
 
-    String player = data!['player1'] == userId ? 'player1' : 'player2';
+    // Add this check
     setState(() {
-      guesses = data['guesses'][player];
+      // guesses = data?['guesses'][player];
+      currentOpponent = opponent;
+      currentPlayer = player;
     });
-    print('these are the printed guesses: $guesses');
+  }
+
+  @override
+  void initState() {
+    refreshGuess();
+    // TODO: implement initState
+    super.initState();
   }
 
   String myGuess = '';
+  String currentPlayer = '';
+  String currentOpponent = '';
+
+  void _showCustomDialog(BuildContext context, String title, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 16),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text(
+                    'Ok',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void checkLastChance(Data dataProvider, String currentPlayer, String opponent,
+      BuildContext context) {
+    final data = dataProvider.data;
+
+    // Early null safety checks
+    if (data == null || data['lastChance'] != true || data['guesses'] == null)
+      return;
+
+    final guesses = data['guesses'];
+    final currentPlayerGuesses = guesses[currentPlayer] ?? [];
+    final opponentGuesses = guesses[opponent] ?? [];
+
+    // Determine message and show dialog safely after build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (currentPlayerGuesses.length < opponentGuesses.length) {
+        _showCustomDialog(
+          context,
+          'Last chance',
+          'Your opponent has guessed correctly.\nYou have one last chance to draw the game.',
+        );
+      } else {
+        _showCustomDialog(
+          context,
+          'Last chance',
+          'You have guessed the number correctly.\nYour opponent has one last chance to draw the game.',
+        );
+      }
+    });
+  }
+
   void submitGuess(PlayBoardProvider playBoardProvider) {
     bool isNumb = RegExp(r'^[0-9]+$').hasMatch(myGuess);
     if (myGuess.length == 4 && isNumb) {
       socketService.sendGuess(myGuess);
-      refreshGuess();
-      print('after call $guesses');
+
       // playBoardProvider.addGuess(mySecret, '5', '3');
     } else {
       showDialog(
@@ -65,7 +166,6 @@ class _PlayBoardState extends State<PlayBoard> {
   }
 
   void submitScret(PlayBoardProvider playBoardProvider) {
-    print('enering ');
     bool isNumb = RegExp(r'^[0-9]+$').hasMatch(mySecret);
 
     if (mySecret.length == 4 && isNumb) {
@@ -100,11 +200,15 @@ class _PlayBoardState extends State<PlayBoard> {
       appBar: AppBar(
         actions: [
           Padding(
-            padding: EdgeInsets.only(left: 10, right: 10),
+            padding: EdgeInsets.only(left: 10, right: 0),
             child: Text(dataProvider.userId == dataProvider.data?['turn']
                 ? 'Your turn'
                 : 'Opponent\'s turn'),
-          )
+          ),
+          Padding(
+            padding: EdgeInsets.only(left: 0, right: 50),
+            child: Text(currentPlayer),
+          ),
         ],
       ),
       body: Padding(
@@ -160,7 +264,6 @@ class _PlayBoardState extends State<PlayBoard> {
                         height: 35,
                         child: TextButton(
                             onPressed: () {
-                              print('before entering secret');
                               submitScret(playBoardProvider);
                               setState(() {
                                 isSubmitted = true;
@@ -235,16 +338,29 @@ class _PlayBoardState extends State<PlayBoard> {
                           label: Text('N',
                               style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
-                    rows: guesses.asMap().entries.map((entry) {
+                    rows: (dataProvider.data?['guesses'][currentPlayer]
+                                as List? ??
+                            [])
+                        .asMap() // This gives us the index
+                        .entries
+                        .map<DataRow>((entry) {
                       final index = entry.key;
-                      final guess = entry.value;
-                      print('just before table: $guess');
-                      return DataRow(cells: [
-                        DataCell(Text('${index + 1}')),
-                        DataCell(Text('${guess['guess']}')),
-                        DataCell(Text('${guess['feedback']['position']}')),
-                        DataCell(Text('${guess['feedback']['number']}')),
-                      ]);
+                      final guess = entry.value as Map<String, dynamic>;
+                      checkLastChance(dataProvider, currentPlayer,
+                          currentOpponent, context);
+
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(
+                              '${index + 1}')), // Here's your attempt number
+                          DataCell(Text(guess['guess']?.toString() ?? '')),
+                          DataCell(Text(
+                              guess['feedback']?['position']?.toString() ??
+                                  '')),
+                          DataCell(Text(
+                              guess['feedback']?['number']?.toString() ?? '')),
+                        ],
+                      );
                     }).toList(),
                   )
                 : DataTable(
@@ -265,24 +381,30 @@ class _PlayBoardState extends State<PlayBoard> {
                           label: Text('N',
                               style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
-                    rows: guesses.asMap().entries.map((entry) {
+                    rows: (dataProvider.data?['guesses'][currentOpponent]
+                                as List? ??
+                            [])
+                        .asMap() // This gives us the index
+                        .entries
+                        .map<DataRow>((entry) {
                       final index = entry.key;
-                      final guess = entry.value;
-                      print('inside the table $guess');
-                      return DataRow(cells: [
-                        DataCell(
-                          Text('${index + 1}'),
-                        ),
-                        DataCell(
-                          Text('${guess['guess']}' ?? ''),
-                        ),
-                        DataCell(
-                          Text('${guess['feedback']['position']}' ?? ''),
-                        ),
-                        DataCell(
-                          Text('${guess['feedback']['number']}' ?? ''),
-                        ),
-                      ]);
+                      final guess = entry.value as Map<String, dynamic>;
+                      checkLastChance(dataProvider, currentPlayer,
+                          currentOpponent, context);
+
+                      return DataRow(
+                        cells: [
+                          DataCell(
+                            Text('${index + 1}'),
+                          ), // Here's your attempt number
+                          DataCell(Text(guess['guess']?.toString() ?? '')),
+                          DataCell(Text(
+                              guess['feedback']?['position']?.toString() ??
+                                  '')),
+                          DataCell(Text(
+                              guess['feedback']?['number']?.toString() ?? '')),
+                        ],
+                      );
                     }).toList(),
                   ),
             const SizedBox(
@@ -342,12 +464,6 @@ class _PlayBoardState extends State<PlayBoard> {
                 width: 250,
                 // height: 45,
                 child: TextField(
-                  onChanged: (value) {
-                    setState(() {
-                      myGuess = value;
-                    });
-                  },
-
                   keyboardType:
                       TextInputType.multiline, // Enables multi-line input
 
@@ -367,7 +483,9 @@ class _PlayBoardState extends State<PlayBoard> {
               ),
               GestureDetector(
                 onTap: () {
-                  print('before entering guesses');
+                  setState(() {
+                    myGuess = _controller.text;
+                  });
                   submitGuess(playBoardProvider);
                   _controller.text = '';
                 },
