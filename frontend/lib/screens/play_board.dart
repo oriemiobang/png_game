@@ -88,7 +88,7 @@ class _PlayBoardState extends State<PlayBoard> {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop,
+                  onPressed: () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
@@ -138,8 +138,70 @@ class _PlayBoardState extends State<PlayBoard> {
     });
   }
 
+  void checkWinner(Data dataProvider) {
+    final winnerData = dataProvider.winner;
+    if (winnerData != null) {
+      if (winnerData['winnerId'] == null) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Game over!"),
+              content: const Text("It's a draw"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+      } else if (winnerData['winnerId'] == currentPlayer) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Game over!"),
+              content: const Text("Congratulations! You won the game!"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+      } else {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("Game Over!"),
+              content: const Text("Sorry! You lost. Better luck next time."),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    }
+  }
+
   void submitGuess(PlayBoardProvider playBoardProvider) {
     bool isNumb = RegExp(r'^[0-9]+$').hasMatch(myGuess);
+
     if (myGuess.length == 4 && isNumb) {
       socketService.sendGuess(myGuess);
 
@@ -487,6 +549,7 @@ class _PlayBoardState extends State<PlayBoard> {
                     myGuess = _controller.text;
                   });
                   submitGuess(playBoardProvider);
+                  checkWinner(dataProvider);
                   _controller.text = '';
                 },
                 child: Container(

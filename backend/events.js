@@ -88,7 +88,7 @@ export const handleSocketEvents = (socket, io) => {
         io.to(opponent).emit("lastChance", { message: "Your opponent guessed correctly! This is your last chance to draw." });
     } else {
         // The opponent failed to guess correctly, declare the first player as the winner
-        io.to(gameId).emit("gameEnd", { winnerId: playerId, message: "Game Over! Winner: " + playerId });
+        io.to(gameId).emit("gameEnd", { winnerId: playerId, message: "Game Over!"});
         delete games[gameId];
     }
     

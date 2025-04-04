@@ -65,8 +65,11 @@ class SocketService with ChangeNotifier {
       notifyListeners();
     });
     socket.on('gameEnd', (data) {
-      print(data);
-      notifyListeners();
+      if (data != null) {
+        Data().updateWinner(data);
+        print('game end data: $data');
+        notifyListeners();
+      }
     });
     socket.onConnectError((data) {
       print('Connection Error: $data');
