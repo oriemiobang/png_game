@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:png_game/screens/scan_qr.dart';
 import 'package:png_game/services/socket_service.dart';
@@ -43,8 +42,8 @@ class _JoinRoomState extends State<JoinRoom> {
         child: Column(
           children: [
             const Center(
-              child: Text('Challenge your friend',
-                  style: TextStyle(fontSize: 18)),
+              child:
+                  Text('Challenge your friend', style: TextStyle(fontSize: 18)),
             ),
             const SizedBox(
               height: 20,

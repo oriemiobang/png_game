@@ -113,8 +113,9 @@ class _PlayBoardState extends State<PlayBoard> {
     final data = dataProvider.data;
 
     // Early null safety checks
-    if (data == null || data['lastChance'] != true || data['guesses'] == null)
+    if (data == null || data['lastChance'] != true || data['guesses'] == null) {
       return;
+    }
 
     final guesses = data['guesses'];
     final currentPlayerGuesses = guesses[currentPlayer] ?? [];
@@ -262,13 +263,13 @@ class _PlayBoardState extends State<PlayBoard> {
       appBar: AppBar(
         actions: [
           Padding(
-            padding: EdgeInsets.only(left: 10, right: 0),
+            padding: const EdgeInsets.only(left: 10, right: 0),
             child: Text(dataProvider.userId == dataProvider.data?['turn']
                 ? 'Your turn'
                 : 'Opponent\'s turn'),
           ),
           Padding(
-            padding: EdgeInsets.only(left: 0, right: 50),
+            padding: const EdgeInsets.only(left: 0, right: 50),
             child: Text(currentPlayer),
           ),
         ],

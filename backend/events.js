@@ -58,7 +58,11 @@ export const handleSocketEvents = (socket, io) => {
   socket.on("makeGuess", ({ gameId, playerId, guess }) => {
     console.log(gameId, playerId, guess );
     const game = games[gameId];
-    if (!game || game.turn !== playerId) return;
+    if (!game) return;
+    if(game.turn !== playerId){
+      io.to(gameId).emit('notYourTurn',{message: 'Please wait for your turn'})
+      return
+    }
 
     const opponent = playerId === game.player1 ? game.player2 : game.player1;
     const secretNumber = playerId === game.player1 ? game.player2Secret : game.player1Secret;
