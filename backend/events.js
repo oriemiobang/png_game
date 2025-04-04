@@ -60,7 +60,7 @@ export const handleSocketEvents = (socket, io) => {
     const game = games[gameId];
     if (!game) return;
     if(game.turn !== playerId){
-      io.to(gameId).emit('notYourTurn',{message: 'Please wait for your turn'})
+      io.to(gameId).emit('turnWait',{message: 'Please wait for your turn'})
       return
     }
 
