@@ -11,6 +11,11 @@ class SocketService with ChangeNotifier {
   dynamic gameInfo = {};
   SavedData savedData = SavedData();
 
+  //   Map? _data;
+  // String? _userId; // New private variable
+  // String? _gameId;
+  // Map? _winner;
+
   String game_id = '';
   String player_id = '';
 
@@ -59,10 +64,14 @@ class SocketService with ChangeNotifier {
       notifyListeners();
     });
 
-    // listen to game events
+    // list to last chance
     socket.on('lastChance', (data) {
-      print(data.message);
+      Data().updateLastChance(data);
       notifyListeners();
+    });
+    socket.off('sendMessage');
+    socket.on('sendMessage', (data) {
+      Data().updateChatData(data);
     });
     socket.on('gameEnd', (data) {
       if (data != null) {
@@ -98,6 +107,14 @@ class SocketService with ChangeNotifier {
     // print('guess: $guess, gameId: $gameId, userId: $userId');
     socket.emit(
         'makeGuess', {'gameId': gameId, 'playerId': userId, 'guess': guess});
+  }
+
+  void chat(
+      {required String gameId,
+      required String playerId,
+      required String message}) {
+    socket.emit(
+        'chat', {'gameId': gameId, 'playerId': playerId, 'message': message});
   }
 
   void submitSecret(String secret) async {
@@ -145,6 +162,8 @@ class SocketService with ChangeNotifier {
     Data().updateGameId(gameCode);
 
     Data().updateUserId(playerId);
+    // Data().updateData({});
+    // Data().updateWinner({});
 
     socket.emit('joinGame', {'gameId': gameCode, 'playerId': playerId});
     notifyListeners();

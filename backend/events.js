@@ -4,6 +4,7 @@ const games = {}; // Active games stored in memory
 
 export const handleSocketEvents = (socket, io) => {
   socket.on("createGame", ({ playerId, gameId }) => {
+    console.log('here are the info: ' + playerId + ' ' + gameId);
     const game = games[gameId];
     games[gameId] = {
       player1: playerId,
@@ -19,12 +20,20 @@ export const handleSocketEvents = (socket, io) => {
     io.to(gameId).emit("gameCreated", { gameId });
     console.log(playerId, `created a new game: ${gameId}`);
     console.log(games);
-    io.emit("gameInfo", game);
+    io.to(gameId).emit("gameInfo", game);
+  });
+
+  socket.on('chat', ({gameId, playerId, message})=>{
+    console.log('the sender is ' + playerId);
+    io.to(gameId).emit('sendMessage', {gameId: gameId, currentSender: playerId, message: message});
+
   });
 
   socket.on("joinGame", ({ gameId, playerId }) => {
+    console.log('here are the info: ' + playerId + ' ' + gameId);
     const game = games[gameId];
     if (games[gameId] && !games[gameId].player2) {
+      socket.join(gameId);
       games[gameId].player2 = playerId;
       games[gameId].turn = games[gameId].player2;
       io.to(gameId).emit("gameReady", { gameId });
@@ -35,10 +44,11 @@ export const handleSocketEvents = (socket, io) => {
       return socket.emit("room_error", "Room does not exist!");
     } else if (games[gameId].player2) {
       return socket.emit("room_error", "Room is already full!");
-    }  io.emit("gameInfo", game);
+    }  io.to(gameId).emit("gameInfo", game);
   });
 
   socket.on("submitSecret", ({ gameId, playerId, secretNumber }) => {
+    console.log('here are the info: ' + playerId + ' ' + gameId + ' ' + secretNumber);
     const game = games[gameId];
     if (!game) return;
 
@@ -52,15 +62,17 @@ export const handleSocketEvents = (socket, io) => {
       io.to(gameId).emit("startGame", { gameId });
     }
     console.log(games);
-    io.emit("gameInfo", game);
+    io.to(gameId).emit("gameInfo", game);
   });
 
   socket.on("makeGuess", ({ gameId, playerId, guess }) => {
+    console.log('here are the info: ' + playerId + ' ' + gameId + ' '+ guess);
     console.log(gameId, playerId, guess );
     const game = games[gameId];
     if (!game) return;
     if(game.turn !== playerId){
       io.to(gameId).emit('turnWait',{message: 'Please wait for your turn'})
+      console.log('please wait for your turn');
       return
     }
 
@@ -84,26 +96,49 @@ export const handleSocketEvents = (socket, io) => {
       if (game.lastChance) {
         // If the last player also guessed correctly, it's a draw
         io.to(gameId).emit("gameEnd", { winnerId: null, message: "It's a draw!" });
+        console.log('the game is a draw');
+        io.to(gameId).emit("gameInfo", game);
         delete games[gameId];
+        // game.turn = null;
         return;
     } else if (game.guesses.player1.length !== game.guesses.player2.length) {
         // If this is the first correct guess, give the opponent one last chance
         game.lastChance = true;
-        io.to(opponent).emit("lastChance", { message: "Your opponent guessed correctly! This is your last chance to draw." });
+        io.to(gameId).emit("lastChance", { chanceTo: opponent, message: "There is last Chance" });
+        console.log('Your opponent guessed correctly! This is your last chance to draw.')
     } else {
         // The opponent failed to guess correctly, declare the first player as the winner
         io.to(gameId).emit("gameEnd", { winnerId: playerId, message: "Game Over!"});
+        console.log('game over');
+        io.to(gameId).emit("gameInfo", game);
         delete games[gameId];
+        // game.turn = null;
+
+        return
     }
     
     } else {
+
+       // 👇🏽 Here's the missing case you need to handle
+  if (game.lastChance) {
+    // The last chance player failed to guess
+    io.to(gameId).emit("gameEnd", { winnerId: opponent, message: "Game Over! Opponent wins." });
+    console.log('Game Over! Opponent wins.');
+    io.to(gameId).emit("gameInfo", game);
+    delete games[gameId];
+    return;
+  }
       // Switch turns if no one has won yet
+      console.log('turn change')
       game.turn = opponent;
       io.to(gameId).emit("turnChange", { nextPlayer: game.turn });
     }
 
     console.log(games);
-    io.emit("gameInfo", game);
+    game.turn = opponent;
+    io.to(gameId).emit("turnChange", { nextPlayer: game.turn });
+    io.to(gameId).emit("gameInfo", game);
+    
   });
 
   socket.on("disconnect", () => {

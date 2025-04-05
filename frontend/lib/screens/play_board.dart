@@ -21,6 +21,7 @@ class _PlayBoardState extends State<PlayBoard> {
   bool isSubmitted = false;
 
   final TextEditingController _controller = TextEditingController();
+  final TextEditingController _chatController = TextEditingController();
 
   void refreshGuess() async {
     final data = Data().data;
@@ -109,35 +110,7 @@ class _PlayBoardState extends State<PlayBoard> {
   }
 
   void checkLastChance(Data dataProvider, String currentPlayer, String opponent,
-      BuildContext context) {
-    final data = dataProvider.data;
-
-    // Early null safety checks
-    if (data == null || data['lastChance'] != true || data['guesses'] == null) {
-      return;
-    }
-
-    final guesses = data['guesses'];
-    final currentPlayerGuesses = guesses[currentPlayer] ?? [];
-    final opponentGuesses = guesses[opponent] ?? [];
-
-    // Determine message and show dialog safely after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (currentPlayerGuesses.length < opponentGuesses.length) {
-        _showCustomDialog(
-          context,
-          'Last chance',
-          'Your opponent has guessed correctly.\nYou have one last chance to draw the game.',
-        );
-      } else {
-        _showCustomDialog(
-          context,
-          'Last chance',
-          'You have guessed the number correctly.\nYour opponent has one last chance to draw the game.',
-        );
-      }
-    });
-  }
+      BuildContext context) {}
 
   void checkWinner(Data dataProvider) {
     final winnerData = dataProvider.winner;
@@ -228,6 +201,16 @@ class _PlayBoardState extends State<PlayBoard> {
     }
   }
 
+  void sendMessage() {
+    final myGameId = Data().gameId;
+    final myPlayerId = Data().userId;
+    print('my player id: $myPlayerId');
+    socketService.chat(
+        gameId: myGameId!,
+        playerId: myPlayerId!,
+        message: _chatController.text);
+  }
+
   void submitScret(PlayBoardProvider playBoardProvider) {
     bool isNumb = RegExp(r'^[0-9]+$').hasMatch(mySecret);
 
@@ -259,6 +242,125 @@ class _PlayBoardState extends State<PlayBoard> {
   Widget build(BuildContext context) {
     final playBoardProvider = Provider.of<PlayBoardProvider>(context);
     final dataProvider = Provider.of<Data>(context);
+
+    if (dataProvider.lastChance != null) {
+      final lastChanceData = Data().lastChance;
+      final myData = Data().data;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (lastChanceData?['chanceTo'] == myData?[currentPlayer]) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Last Chance"),
+                content: const Text(
+                    'Your opponent guessed correctly! This is your last chance to draw the game.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Last Chance"),
+                content: const Text(
+                    'You have guessed correctly! your opponent has a last chance to draw the game.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      });
+
+      Data().updateLastChance(null);
+    }
+
+    // Show dialog only if winner is set (not null)
+    if (dataProvider.winner != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final winnerData = Data().winner;
+        final myData = Data().data;
+        print(
+            'this is the winner data $winnerData   the current player is : $currentPlayer');
+
+        if (winnerData?['winnerId'] == null) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Game over!"),
+                content: const Text("It's a draw"),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              );
+            },
+          );
+        } else if (winnerData?['winnerId'] == myData?[currentPlayer]) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Game over!"),
+                content: const Text("Congratulations! You won the game!"),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Game Over!"),
+                content: const Text("Sorry! You lost. Better luck next time."),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+
+        // Optionally reset the winner so dialog doesn't repeat
+        dataProvider.updateWinner(
+            null); // Make sure your updateWinner handles null safely
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -409,8 +511,6 @@ class _PlayBoardState extends State<PlayBoard> {
                         .map<DataRow>((entry) {
                       final index = entry.key;
                       final guess = entry.value as Map<String, dynamic>;
-                      checkLastChance(dataProvider, currentPlayer,
-                          currentOpponent, context);
 
                       return DataRow(
                         cells: [
@@ -452,8 +552,6 @@ class _PlayBoardState extends State<PlayBoard> {
                         .map<DataRow>((entry) {
                       final index = entry.key;
                       final guess = entry.value as Map<String, dynamic>;
-                      checkLastChance(dataProvider, currentPlayer,
-                          currentOpponent, context);
 
                       return DataRow(
                         cells: [
@@ -477,24 +575,33 @@ class _PlayBoardState extends State<PlayBoard> {
               height: 150,
               // width: 350,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(5),
-                color: Colors.grey.shade300,
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Text(
-                  'Sign in to chat',
-                  style: TextStyle(fontStyle: FontStyle.italic),
-                ),
-              ),
+                  borderRadius: BorderRadius.circular(5),
+                  // color: Colors.grey.shade300,
+                  border: Border.all(color: Colors.grey)),
+              child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: ListView.builder(
+                      itemCount: dataProvider.chatData?.length,
+                      itemBuilder: (context, index) {
+                        return Text(
+                          dataProvider.chatData?[index]['message'],
+                          style: TextStyle(
+                              color: dataProvider.chatData?[index]
+                                          ['currentSender'] ==
+                                      Data().userId
+                                  ? Colors.blue
+                                  : Colors.grey),
+                        );
+                      })),
             ),
             Row(
               children: [
-                const SizedBox(
+                SizedBox(
                   height: 35,
                   width: 280,
                   child: TextField(
-                    decoration: InputDecoration(
+                    controller: _chatController,
+                    decoration: const InputDecoration(
                         label: Text(
                       'text your opponent',
                       style: TextStyle(fontStyle: FontStyle.italic),
@@ -502,7 +609,10 @@ class _PlayBoardState extends State<PlayBoard> {
                   ),
                 ),
                 IconButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      sendMessage();
+                      _chatController.text = '';
+                    },
                     icon: Icon(
                       Icons.send,
                       color: Colors.grey.shade500,
@@ -550,7 +660,10 @@ class _PlayBoardState extends State<PlayBoard> {
                     myGuess = _controller.text;
                   });
                   submitGuess(playBoardProvider);
-                  checkWinner(dataProvider);
+                  checkLastChance(
+                      dataProvider, currentPlayer, currentOpponent, context);
+                  // checkWinner(dataProvider);
+
                   _controller.text = '';
                 },
                 child: Container(

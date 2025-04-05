@@ -5,6 +5,8 @@ class Data with ChangeNotifier {
   String? _userId; // New private variable
   String? _gameId;
   Map? _winner;
+  Map? _lastChance;
+  List _chatData = [];
 
   static final Data _instance = Data._internal();
 
@@ -19,6 +21,8 @@ class Data with ChangeNotifier {
   Map? get winner => _winner;
   String? get userId => _userId;
   String? get gameId => _gameId;
+  Map? get lastChance => _lastChance;
+  List? get chatData => _chatData;
 
   // Setters
   void updateData(Map newData) {
@@ -26,7 +30,18 @@ class Data with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateWinner(Map newWinner) {
+  void updateChatData(Map newData) {
+    _chatData.add(newData);
+    print('the chat data $chatData');
+    notifyListeners();
+  }
+
+  void updateLastChance(Map? data) {
+    _lastChance = data;
+    notifyListeners();
+  }
+
+  void updateWinner(Map? newWinner) {
     _winner = newWinner;
     notifyListeners();
   }
