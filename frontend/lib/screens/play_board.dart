@@ -19,6 +19,8 @@ class _PlayBoardState extends State<PlayBoard> {
   String mySecret = '';
   Data myData = Data();
   bool isSubmitted = false;
+  bool showSecret = false;
+  String chatValue = '';
 
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _chatController = TextEditingController();
@@ -403,7 +405,29 @@ class _PlayBoardState extends State<PlayBoard> {
             //       )
             // :
             isSubmitted
-                ? Text(mySecret)
+                ? !showSecret
+                    ? GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            showSecret = !showSecret;
+                          });
+                        },
+                        child: const Text(
+                          '****',
+                          style: TextStyle(fontSize: 20),
+                        ),
+                      )
+                    : GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            showSecret = !showSecret;
+                          });
+                        },
+                        child: Text(
+                          mySecret,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      )
                 : Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -411,13 +435,15 @@ class _PlayBoardState extends State<PlayBoard> {
                         height: 35,
                         width: 150,
                         child: TextField(
+                          keyboardType: TextInputType.number,
                           onChanged: (value) {
                             setState(() {
                               mySecret = value;
                             });
                           },
-                          decoration: const InputDecoration(
-                            labelText: 'Enter secret code',
+                          decoration: InputDecoration(
+                            labelText:
+                                mySecret.isEmpty ? 'Enter secret code' : '',
                           ),
                         ),
                       ),
@@ -579,7 +605,7 @@ class _PlayBoardState extends State<PlayBoard> {
                   // color: Colors.grey.shade300,
                   border: Border.all(color: Colors.grey)),
               child: Padding(
-                  padding: EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8.0),
                   child: ListView.builder(
                       itemCount: dataProvider.chatData?.length,
                       itemBuilder: (context, index) {
@@ -590,7 +616,8 @@ class _PlayBoardState extends State<PlayBoard> {
                                           ['currentSender'] ==
                                       Data().userId
                                   ? Colors.blue
-                                  : Colors.grey),
+                                  : Colors.grey,
+                              fontSize: 18),
                         );
                       })),
             ),
@@ -600,12 +627,19 @@ class _PlayBoardState extends State<PlayBoard> {
                   height: 35,
                   width: 280,
                   child: TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        chatValue = value;
+                      });
+                    },
                     controller: _chatController,
-                    decoration: const InputDecoration(
-                        label: Text(
-                      'text your opponent',
-                      style: TextStyle(fontStyle: FontStyle.italic),
-                    )),
+                    decoration: InputDecoration(
+                        label: chatValue.isEmpty
+                            ? const Text(
+                                'text your opponent',
+                                style: TextStyle(fontStyle: FontStyle.italic),
+                              )
+                            : null),
                   ),
                 ),
                 IconButton(
@@ -638,10 +672,11 @@ class _PlayBoardState extends State<PlayBoard> {
                 // height: 45,
                 child: TextField(
                   keyboardType:
-                      TextInputType.multiline, // Enables multi-line input
+                      TextInputType.number, // Enables multi-line input
 
                   maxLines: null, // Expand as needed
                   textInputAction: TextInputAction.newline,
+
                   controller: _controller,
                   decoration: const InputDecoration(
                     contentPadding:
