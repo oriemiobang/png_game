@@ -38,7 +38,7 @@ export const handleSocketEvents = (socket, io) => {
       games[gameId].turn = games[gameId].player2;
       io.to(gameId).emit("gameReady", { gameId });
       console.log(playerId, "joined the game");
-      console.log(games);
+      console.log(game);
       io.emit('gameJoined', {gameJoined: true, gameId: gameId, playerId: playerId});
     } else if (games[gameId]) {
       return socket.emit("room_error", "Room does not exist!");
@@ -48,10 +48,8 @@ export const handleSocketEvents = (socket, io) => {
   });
 
   socket.on("submitSecret", ({ gameId, playerId, secretNumber }) => {
-    console.log('here are the info: ' + playerId + ' ' + gameId + ' ' + secretNumber);
     const game = games[gameId];
     if (!game) return;
-
     if (game.player1 === playerId) {
       game.player1Secret = secretNumber;
     } else {
@@ -63,6 +61,10 @@ export const handleSocketEvents = (socket, io) => {
     }
     console.log(games);
     io.to(gameId).emit("gameInfo", game);
+
+    const opponent = playerId === game.player1 ? game.player2 : game.player1;
+   
+    game.turn = opponent;
   });
 
   socket.on("makeGuess", ({ gameId, playerId, guess }) => {
@@ -79,6 +81,7 @@ export const handleSocketEvents = (socket, io) => {
     const opponent = playerId === game.player1 ? game.player2 : game.player1;
     const secretNumber = playerId === game.player1 ? game.player2Secret : game.player1Secret;
     const feedback = generateFeedback(guess, secretNumber);
+    
 
     // Store the guess and feedback
     if (playerId === game.player1) {
