@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:png_game/classes/data.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:flutter/services.dart';
 
 class CreateRoom extends StatefulWidget {
   String? gameId;
@@ -16,6 +20,26 @@ class _CreateRoomState extends State<CreateRoom> {
   List<String> items = ['Option 1', 'Option 2', 'Option 3', 'Option 4'];
   String gameId = '';
   // SocketService socketService = SocketService();
+
+  void shareCode() {
+    final gameId = Data().gameId;
+    Share.share(gameId!);
+  }
+
+  void copyCode() {
+    final gameId = Data().gameId;
+
+    Clipboard.setData(ClipboardData(text: gameId!));
+
+    Fluttertoast.showToast(
+        msg: "Code copied!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: const Color.fromARGB(255, 0, 4, 17),
+        textColor: Colors.white,
+        fontSize: 16.0);
+  }
 
   @override
   void initState() {
@@ -105,7 +129,7 @@ class _CreateRoomState extends State<CreateRoom> {
                 decoration: const BoxDecoration(color: Colors.green),
                 child: TextButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/play_board');
+                    shareCode();
                   },
                   child: const Text(
                     'Share code',
@@ -117,7 +141,9 @@ class _CreateRoomState extends State<CreateRoom> {
                 width: 20,
               ),
               IconButton(
-                onPressed: () {},
+                onPressed: () {
+                  copyCode();
+                },
                 icon: const Icon(Icons.copy),
               )
             ],

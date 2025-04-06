@@ -25,7 +25,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('http://192.168.73.222:5000', <String, dynamic>{
+    socket = io.io('http://192.168.61.222:5000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
@@ -69,6 +69,7 @@ class SocketService with ChangeNotifier {
       Data().updateLastChance(data);
       notifyListeners();
     });
+
     socket.off('sendMessage');
     socket.on('sendMessage', (data) {
       Data().updateChatData(data);
@@ -88,13 +89,17 @@ class SocketService with ChangeNotifier {
       print('Socket Error: $data');
     });
 
+    // listen for turns
+    socket.on('turnChange', (data) {
+      Data().updateTurn(data);
+    });
+
     // game data
     socket.on('gameInfo', (data) {
       gameInfo = data;
       // savedData.setData(data);
       Data().updateData(data);
       // print('this is the game info: $data');
-      notifyListeners();
     });
   }
 
