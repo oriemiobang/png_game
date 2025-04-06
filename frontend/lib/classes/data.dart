@@ -6,7 +6,9 @@ class Data with ChangeNotifier {
   String? _gameId;
   Map? _winner;
   Map? _lastChance;
-  Map? _turn;
+  String? _currentPlayer;
+  String? _currentOpponent;
+
   List _chatData = [];
 
   static final Data _instance = Data._internal();
@@ -22,8 +24,10 @@ class Data with ChangeNotifier {
   Map? get winner => _winner;
   String? get userId => _userId;
   String? get gameId => _gameId;
+  String? get currentPlayer => _currentPlayer;
+  String? get currentOpponent => _currentOpponent;
   Map? get lastChance => _lastChance;
-  Map? get turn => _turn;
+
   List? get chatData => _chatData;
 
   // Setters
@@ -32,8 +36,13 @@ class Data with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateTurn(Map newData) {
-    _turn = newData;
+  void updateCurrentOpponent(String opponent) {
+    _currentOpponent = opponent;
+    notifyListeners();
+  }
+
+  void updateCurrentPlayer(String player) {
+    _currentPlayer = player;
     notifyListeners();
   }
 

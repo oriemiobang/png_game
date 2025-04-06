@@ -59,12 +59,13 @@ export const handleSocketEvents = (socket, io) => {
     if (game.player1Secret && game.player2Secret) {
       io.to(gameId).emit("startGame", { gameId });
     }
-    console.log(games);
-    io.to(gameId).emit("gameInfo", game);
-
+    
     const opponent = playerId === game.player1 ? game.player2 : game.player1;
    
     game.turn = opponent;
+    console.log(game);
+    io.to(gameId).emit("gameInfo", game);
+
   });
 
   socket.on("makeGuess", ({ gameId, playerId, guess }) => {

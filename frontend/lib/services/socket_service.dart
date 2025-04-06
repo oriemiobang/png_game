@@ -89,16 +89,12 @@ class SocketService with ChangeNotifier {
       print('Socket Error: $data');
     });
 
-    // listen for turns
-    socket.on('turnChange', (data) {
-      Data().updateTurn(data);
-    });
-
     // game data
     socket.on('gameInfo', (data) {
       gameInfo = data;
       // savedData.setData(data);
       Data().updateData(data);
+      notifyListeners();
       // print('this is the game info: $data');
     });
   }

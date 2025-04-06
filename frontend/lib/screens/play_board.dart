@@ -29,8 +29,14 @@ class _PlayBoardState extends State<PlayBoard> {
     final data = Data().data;
     final userId = Data().userId;
 
+    print('the data in refresh: $data');
+
     String player = data?['player1'] == userId ? 'player1' : 'player2';
     String opponent = data?['player1'] == userId ? 'player2' : 'player1';
+    Data().updateCurrentPlayer(player);
+    Data().updateCurrentOpponent(opponent);
+    print('the current player is: $player');
+    print('the current Opponent is: $opponent');
 
     // Add this check
     setState(() {
@@ -240,8 +246,17 @@ class _PlayBoardState extends State<PlayBoard> {
     }
   }
 
+  final ScrollController _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
     final playBoardProvider = Provider.of<PlayBoardProvider>(context);
     final dataProvider = Provider.of<Data>(context);
 
@@ -367,14 +382,13 @@ class _PlayBoardState extends State<PlayBoard> {
       appBar: AppBar(
         actions: [
           Padding(
-            padding: const EdgeInsets.only(left: 10, right: 0),
-            child: Text(dataProvider.userId == dataProvider.data?['turn']
-                ? 'Your turn'
-                : 'Opponent\'s turn'),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 0, right: 50),
-            child: Text(currentPlayer),
+            padding: const EdgeInsets.only(left: 10, right: 10),
+            child: Text(
+              dataProvider.userId == dataProvider.data?['turn']
+                  ? 'Your turn'
+                  : 'Opponent\'s turn',
+              style: const TextStyle(color: Colors.grey, fontSize: 17),
+            ),
           ),
         ],
       ),
@@ -529,8 +543,8 @@ class _PlayBoardState extends State<PlayBoard> {
                           label: Text('N',
                               style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
-                    rows: (dataProvider.data?['guesses'][currentPlayer]
-                                as List? ??
+                    rows: (dataProvider.data?['guesses']
+                                [dataProvider.currentPlayer] as List? ??
                             [])
                         .asMap() // This gives us the index
                         .entries
@@ -570,8 +584,8 @@ class _PlayBoardState extends State<PlayBoard> {
                           label: Text('N',
                               style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
-                    rows: (dataProvider.data?['guesses'][currentOpponent]
-                                as List? ??
+                    rows: (dataProvider.data?['guesses']
+                                [dataProvider.currentOpponent] as List? ??
                             [])
                         .asMap() // This gives us the index
                         .entries
@@ -608,6 +622,7 @@ class _PlayBoardState extends State<PlayBoard> {
                   padding: const EdgeInsets.all(8.0),
                   child: ListView.builder(
                       itemCount: dataProvider.chatData?.length,
+                      controller: _scrollController,
                       itemBuilder: (context, index) {
                         return Text(
                           dataProvider.chatData?[index]['message'],
