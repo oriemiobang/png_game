@@ -8,6 +8,7 @@ class Data with ChangeNotifier {
   Map? _lastChance;
   String? _currentPlayer;
   String? _currentOpponent;
+  Map? _notYourTurn;
 
   List _chatData = [];
 
@@ -27,6 +28,7 @@ class Data with ChangeNotifier {
   String? get currentPlayer => _currentPlayer;
   String? get currentOpponent => _currentOpponent;
   Map? get lastChance => _lastChance;
+  Map? get notYourTurn => _notYourTurn;
 
   List? get chatData => _chatData;
 
@@ -38,6 +40,11 @@ class Data with ChangeNotifier {
 
   void updateCurrentOpponent(String opponent) {
     _currentOpponent = opponent;
+    notifyListeners();
+  }
+
+  void updateNotYourTurn(Map? newData) {
+    _notYourTurn = newData;
     notifyListeners();
   }
 

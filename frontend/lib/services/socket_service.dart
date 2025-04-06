@@ -81,6 +81,12 @@ class SocketService with ChangeNotifier {
         notifyListeners();
       }
     });
+
+    // listen for trun error
+    socket.on('turnWait', (data) {
+      Data().updateNotYourTurn(data);
+      notifyListeners();
+    });
     socket.onConnectError((data) {
       print('Connection Error: $data');
     });

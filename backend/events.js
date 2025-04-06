@@ -49,7 +49,13 @@ export const handleSocketEvents = (socket, io) => {
 
   socket.on("submitSecret", ({ gameId, playerId, secretNumber }) => {
     const game = games[gameId];
+   
     if (!game) return;
+    if(game.turn != playerId) {
+      io.to(gameId).emit('turnWait',{message: 'Please wait for your turn', player: playerId})
+
+      return
+    }
     if (game.player1 === playerId) {
       game.player1Secret = secretNumber;
     } else {
@@ -74,7 +80,7 @@ export const handleSocketEvents = (socket, io) => {
     const game = games[gameId];
     if (!game) return;
     if(game.turn !== playerId){
-      io.to(gameId).emit('turnWait',{message: 'Please wait for your turn'})
+      io.to(gameId).emit('turnWait',{message: 'Please wait for your turn', player: playerId})
       console.log('please wait for your turn');
       return
     }

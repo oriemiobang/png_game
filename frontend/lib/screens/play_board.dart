@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
@@ -28,19 +29,11 @@ class _PlayBoardState extends State<PlayBoard> {
   void refreshGuess() async {
     final data = Data().data;
     final userId = Data().userId;
-
-    print('the data in refresh: $data');
-
     String player = data?['player1'] == userId ? 'player1' : 'player2';
     String opponent = data?['player1'] == userId ? 'player2' : 'player1';
     Data().updateCurrentPlayer(player);
     Data().updateCurrentOpponent(opponent);
-    print('the current player is: $player');
-    print('the current Opponent is: $opponent');
-
-    // Add this check
     setState(() {
-      // guesses = data?['guesses'][player];
       currentOpponent = opponent;
       currentPlayer = player;
     });
@@ -57,134 +50,136 @@ class _PlayBoardState extends State<PlayBoard> {
   String currentPlayer = '';
   String currentOpponent = '';
 
-  void _showCustomDialog(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text(
-                    'Ok',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                )
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  // void _showCustomDialog(BuildContext context, String title, String message) {
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (BuildContext context) {
+  //       return Dialog(
+  //         shape:
+  //             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+  //         backgroundColor: Colors.white,
+  //         child: Container(
+  //           padding: const EdgeInsets.all(20),
+  //           decoration: BoxDecoration(
+  //             borderRadius: BorderRadius.circular(20),
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: Colors.black.withOpacity(0.2),
+  //                 blurRadius: 10,
+  //                 offset: const Offset(0, 5),
+  //               ),
+  //             ],
+  //           ),
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Text(
+  //                 title,
+  //                 style: const TextStyle(
+  //                   fontSize: 22,
+  //                   fontWeight: FontWeight.bold,
+  //                   color: Colors.white,
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 12),
+  //               Text(
+  //                 message,
+  //                 textAlign: TextAlign.center,
+  //                 style: const TextStyle(color: Colors.white70, fontSize: 16),
+  //               ),
+  //               const SizedBox(height: 24),
+  //               ElevatedButton(
+  //                 onPressed: () => Navigator.of(context).pop(),
+  //                 style: ElevatedButton.styleFrom(
+  //                   padding: const EdgeInsets.symmetric(
+  //                       horizontal: 24, vertical: 12),
+  //                   shape: RoundedRectangleBorder(
+  //                       borderRadius: BorderRadius.circular(12)),
+  //                 ),
+  //                 child: const Text(
+  //                   'Ok',
+  //                   style: TextStyle(fontWeight: FontWeight.bold),
+  //                 ),
+  //               )
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
-  void checkLastChance(Data dataProvider, String currentPlayer, String opponent,
-      BuildContext context) {}
+  // void checkLastChance(Data dataProvider, String currentPlayer, String opponent,
+  //     BuildContext context) {}
 
-  void checkWinner(Data dataProvider) {
-    final winnerData = dataProvider.winner;
-    if (winnerData != null) {
-      if (winnerData['winnerId'] == null) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text("Game over!"),
-              content: const Text("It's a draw"),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
-                  },
-                  child: const Text("OK"),
-                ),
-              ],
-            );
-          },
-        );
-      } else if (winnerData['winnerId'] == currentPlayer) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text("Game over!"),
-              content: const Text("Congratulations! You won the game!"),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
-                  },
-                  child: const Text("OK"),
-                ),
-              ],
-            );
-          },
-        );
-      } else {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text("Game Over!"),
-              content: const Text("Sorry! You lost. Better luck next time."),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
-                  },
-                  child: const Text("OK"),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    }
-  }
+  // void checkWinner(Data dataProvider) {
+  //   final winnerData = dataProvider.winner;
+  //   if (winnerData != null) {
+  //     if (winnerData['winnerId'] == null) {
+  //       showDialog(
+  //         context: context,
+  //         builder: (BuildContext context) {
+  //           return AlertDialog(
+  //             title: const Text("Game over!"),
+  //             content: const Text("It's a draw"),
+  //             actions: [
+  //               TextButton(
+  //                 onPressed: () {
+  //                   Navigator.of(context).pop(); // Close the dialog
+  //                 },
+  //                 child: const Text("OK"),
+  //               ),
+  //             ],
+  //           );
+  //         },
+  //       );
+  //     } else if (winnerData['winnerId'] == currentPlayer) {
+  //       showDialog(
+  //         context: context,
+  //         builder: (BuildContext context) {
+  //           return AlertDialog(
+  //             title: const Text("Game over!"),
+  //             content: const Text("Congratulations! You won the game!"),
+  //             actions: [
+  //               TextButton(
+  //                 onPressed: () {
+  //                   Navigator.of(context).pop(); // Close the dialog
+  //                 },
+  //                 child: const Text("OK"),
+  //               ),
+  //             ],
+  //           );
+  //         },
+  //       );
+  //     } else {
+  //       showDialog(
+  //         context: context,
+  //         builder: (BuildContext context) {
+  //           return AlertDialog(
+  //             title: const Text("Game Over!"),
+  //             content: const Text("Sorry! You lost. Better luck next time."),
+  //             actions: [
+  //               TextButton(
+  //                 onPressed: () {
+  //                   Navigator.of(context).pop(); // Close the dialog
+  //                 },
+  //                 child: const Text("OK"),
+  //               ),
+  //             ],
+  //           );
+  //         },
+  //       );
+  //     }
+  //   }
+  // }
 
   void submitGuess(PlayBoardProvider playBoardProvider) {
-    bool isNumb = RegExp(r'^[0-9]+$').hasMatch(myGuess);
+    // bool isNumb = RegExp(r'^[0-9]+$').hasMatch(myGuess);
+    bool isNumb = RegExp(r'^\d+$').hasMatch(myGuess);
+    bool isUnique = myGuess.split('').toSet().length == myGuess.length;
 
-    if (myGuess.length == 4 && isNumb) {
+    if (myGuess.length == 4 && isNumb && isUnique) {
       socketService.sendGuess(myGuess);
 
       // playBoardProvider.addGuess(mySecret, '5', '3');
@@ -194,7 +189,8 @@ class _PlayBoardState extends State<PlayBoard> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text("Invalid Input"),
-            content: const Text("Please enter a 4-digit number."),
+            content:
+                const Text("Please enter a 4-digit number with no repetition!"),
             actions: [
               TextButton(
                 onPressed: () {
@@ -259,6 +255,21 @@ class _PlayBoardState extends State<PlayBoard> {
     });
     final playBoardProvider = Provider.of<PlayBoardProvider>(context);
     final dataProvider = Provider.of<Data>(context);
+
+    if (dataProvider.notYourTurn != null) {
+      if (dataProvider.notYourTurn?['player'] == dataProvider.userId) {
+        Fluttertoast.showToast(
+            msg: "Please wait for your turn!",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: const Color.fromARGB(255, 0, 4, 17),
+            textColor: Colors.white,
+            fontSize: 16.0);
+
+        Data().updateNotYourTurn(null);
+      }
+    }
 
     if (dataProvider.lastChance != null) {
       final lastChanceData = Data().lastChance;
@@ -710,9 +721,9 @@ class _PlayBoardState extends State<PlayBoard> {
                     myGuess = _controller.text;
                   });
                   submitGuess(playBoardProvider);
-                  checkLastChance(
-                      dataProvider, currentPlayer, currentOpponent, context);
-                  // checkWinner(dataProvider);
+                  // checkLastChance(
+                  //     dataProvider, currentPlayer, currentOpponent, context);
+                  // // checkWinner(dataProvider);
 
                   _controller.text = '';
                 },
