@@ -1,8 +1,41 @@
 import { generateFeedback } from "./gameManager.js";
 
 const games = {}; // Active games stored in memory
+const randomGames = {};
+const randomPlaying = {};
 
 export const handleSocketEvents = (socket, io) => {
+
+  socket.on('createRandomGames', ({playerId, gameId})=>{
+   
+    randomGames[gameId] = {
+      player1: playerId,
+      player2: null,
+      player1Secret: null,
+      player2Secret: null,
+      turn: null,
+      status: "waiting",
+      lastChance: false, // Track if the last chance is active
+      guesses: { player1: [], player2: [] }, // Store guesses for both players
+
+    };
+    const game = randomGames[gameId];
+
+    socket.join(gameId);
+    io.to(gameId).emit("gameCreated", { gameId });
+    console.log(playerId, `created a new game: ${gameId}`);
+    console.log(games);
+    io.to(gameId).emit("randomGameInfo", game);
+  });
+
+  socket.on('joinRandomGame', ({playerId})=> {
+    
+    randomGames.forEach((game, index) => {
+      const gameIds = Object.keys(games);
+    });
+
+
+  });
   socket.on("createGame", ({ playerId, gameId }) => {
     console.log('here are the info: ' + playerId + ' ' + gameId);
     const game = games[gameId];
