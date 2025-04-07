@@ -8,8 +8,9 @@ export const handleSocketEvents = (socket, io) => {
 
   socket.on('createRandomGames', ({playerId, gameId})=>{
    
-    randomGames[gameId] = {
+    games[gameId] = {
       player1: playerId,
+      gameId: gameId,
       player2: null,
       player1Secret: null,
       player2Secret: null,
@@ -19,21 +20,53 @@ export const handleSocketEvents = (socket, io) => {
       guesses: { player1: [], player2: [] }, // Store guesses for both players
 
     };
-    const game = randomGames[gameId];
+    
+    randomGames[gameId] ={
+      player1: playerId,
+      gameId: gameId,
+      player2: null,
+      player1Secret: null,
+      player2Secret: null,
+      turn: null,
+      status: "waiting",
+      lastChance: false, // Track if the last chance is active
+      guesses: { player1: [], player2: [] }, // Store guesses for both players
+
+    };
+    const game = games[gameId];
 
     socket.join(gameId);
     io.to(gameId).emit("gameCreated", { gameId });
     console.log(playerId, `created a new game: ${gameId}`);
     console.log(games);
-    io.to(gameId).emit("randomGameInfo", game);
+    io.emit("randomGameInfo", randomGames);
+    io.to(gameId).emit("gameInfo", game);
   });
 
-  socket.on('joinRandomGame', ({playerId})=> {
-    
-    randomGames.forEach((game, index) => {
-      const gameIds = Object.keys(games);
-    });
+  socket.on('joinRandomGame', ({playerId, gameId})=> {
 
+   
+    if (games[gameId] && !games[gameId].player2) {
+      socket.join(gameId);
+      games[gameId].player2 = playerId;
+      games[gameId].turn = games[gameId].player2;
+      io.to(gameId).emit("gameReady", { gameId });
+      console.log(playerId, "joined the game");
+      // console.log(game);
+      io.emit('gameJoined', {gameJoined: true, gameId: gameId, playerId: playerId});
+    } else if (games[gameId]) {
+      return socket.emit("room_error", "Room does not exist!");
+    } else if (games[gameId].player2) {
+      return socket.emit("room_error", "Room is already full!");
+    }  
+     // console.log('here are the info: ' + playerId + ' ' + gameId);
+     const game = games[gameId];
+    // randomPlaying[gameId] = game;
+    delete randomGames[gameId];
+
+    io.to(gameId).emit("randomRoomGame", game);
+    io.emit("randomGameInfo", randomGames);
+    io.to(gameId).emit("gameInfo", game);
 
   });
   socket.on("createGame", ({ playerId, gameId }) => {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/screens/randomWaitRoom.dart';
 import 'package:provider/provider.dart';
 
 import 'package:png_game/screens/create_room.dart';
@@ -19,7 +20,9 @@ void main() {
       ChangeNotifierProvider(
         create: (_) => PlayBoardProvider(),
       ),
-      ChangeNotifierProvider(create: (_) => Data())
+      ChangeNotifierProvider(
+        create: (_) => Data(),
+      )
     ],
     child: const MyApp(),
   ));
@@ -40,6 +43,7 @@ class MyApp extends StatelessWidget {
         '/create_game': (context) => CreateRoom(),
         '/play_board': (context) => const PlayBoard(),
         '/scan_qr_code': (context) => const ScanQrCode(),
+        '/random_wait_room': (context) => const RandomWaitRoom()
       },
     );
   }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:png_game/classes/data.dart';
 import 'package:png_game/screens/create_room.dart';
+import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,38 +16,18 @@ class _HomePageState extends State<HomePage> {
   bool isSigned = false;
   bool isPlayWithFriend = false;
   final socketService = SocketService();
-  List<Map<String, String>> playerList = [
-    {
-      'name': 'Player 1',
-      'time': '10',
-    },
-    {
-      'name': 'Samuel',
-      'time': '10',
-    },
-    {
-      'name': 'Yishak',
-      'time': '10',
-    },
-    {
-      'name': 'peter',
-      'time': '10',
-    },
-    {
-      'name': 'anonymous',
-      'time': '10',
-    },
-    {
-      'name': 'anonymous',
-      'time': '10',
-    },
-    {
-      'name': 'john',
-      'time': '10',
-    }
-  ];
+
   @override
   Widget build(BuildContext context) {
+    final playBoardProvider = Provider.of<PlayBoardProvider>(context);
+    final dataProvider = Provider.of<Data>(context);
+    print('these are the random games: ${Data().randomGames}');
+
+    if (dataProvider.data?['player2'] != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushNamed(context, '/play_board');
+      });
+    }
     return Scaffold(
         appBar: AppBar(
           leading: const Icon(
@@ -84,8 +67,13 @@ class _HomePageState extends State<HomePage> {
                 height: 450,
                 width: double.infinity,
                 child: ListView.builder(
-                    itemCount: playerList.length,
+                    itemCount: dataProvider.randomGames?.length,
                     itemBuilder: (context, index) {
+                      String gameId =
+                          dataProvider.randomGames?.keys.elementAt(index);
+                      var gameData = dataProvider.randomGames?[gameId];
+                      print(
+                          'this is the lenght: ${dataProvider.randomGames?.length}');
                       return Container(
                         padding: const EdgeInsets.only(bottom: 5, top: 5),
                         decoration: const BoxDecoration(
@@ -93,18 +81,23 @@ class _HomePageState extends State<HomePage> {
                             bottom: BorderSide(color: Colors.grey, width: 1),
                           ),
                         ),
-                        child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                playerList[index]['name']!,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                              Text(
-                                playerList[index]['time']!,
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ]),
+                        child: GestureDetector(
+                          onTap: () {
+                            socketService.joinRandomGames(gameData['gameId']);
+                          },
+                          child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'anonymous',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                Text(
+                                  '10',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                              ]),
+                        ),
                       );
                     }),
               ),
@@ -116,7 +109,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 child: Center(
                   child: TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        String gameId = socketService.createRandomGame();
+                        Navigator.pushNamed(context, '/random_wait_room');
+                      },
                       child: const Text(
                         'CREATE A GAME',
                         style: TextStyle(color: Colors.black),

@@ -29,6 +29,7 @@ class _PlayBoardState extends State<PlayBoard> {
   void refreshGuess() async {
     final data = Data().data;
     final userId = Data().userId;
+    print('this is the data: $data');
     String player = data?['player1'] == userId ? 'player1' : 'player2';
     String opponent = data?['player1'] == userId ? 'player2' : 'player1';
     Data().updateCurrentPlayer(player);
@@ -255,6 +256,7 @@ class _PlayBoardState extends State<PlayBoard> {
     });
     final playBoardProvider = Provider.of<PlayBoardProvider>(context);
     final dataProvider = Provider.of<Data>(context);
+    print('this is my data: ${dataProvider.data}');
 
     if (dataProvider.notYourTurn != null) {
       if (dataProvider.notYourTurn?['player'] == dataProvider.userId) {

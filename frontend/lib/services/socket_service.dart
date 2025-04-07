@@ -25,7 +25,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('http://192.168.61.222:5000', <String, dynamic>{
+    socket = io.io('http://192.168.42.222:5000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
@@ -82,6 +82,11 @@ class SocketService with ChangeNotifier {
       }
     });
 
+    // listen to random game info
+    socket.on('randomGameInfo', (data) {
+      Data().updateRandomGames(data);
+      notifyListeners();
+    });
     // listen for trun error
     socket.on('turnWait', (data) {
       Data().updateNotYourTurn(data);
@@ -93,6 +98,12 @@ class SocketService with ChangeNotifier {
 
     socket.onError((data) {
       print('Socket Error: $data');
+    });
+
+    // list to random room game
+    socket.on('randomRoomGame', (data) {
+      Data().updateRandomRoomGame(data);
+      notifyListeners();
     });
 
     // game data
@@ -156,6 +167,28 @@ class SocketService with ChangeNotifier {
     return gameId;
   }
 
+  String createRandomGame() {
+    final random = Random();
+    const hexChars = '0123456789abcdef';
+
+    String playerId =
+        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
+    String gameId =
+        'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
+    player_id = playerId;
+    game_id = gameId;
+
+    // savedData.setGameId(gameId);
+    Data().updateGameId(gameId);
+    // savedData.setUserId(playerId);
+    Data().updateUserId(playerId);
+
+    socket.emit('createRandomGames', {'playerId': playerId, 'gameId': gameId});
+    notifyListeners();
+
+    return gameId;
+  }
+
   void joinGame(String gameCode) async {
     final random = Random();
 
@@ -173,6 +206,26 @@ class SocketService with ChangeNotifier {
     // Data().updateWinner({});
 
     socket.emit('joinGame', {'gameId': gameCode, 'playerId': playerId});
+    notifyListeners();
+  }
+
+  void joinRandomGames(gameCode) {
+    final random = Random();
+
+    String playerId =
+        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
+    player_id = playerId;
+    game_id = gameCode;
+    // await savedData.setUserId(playerId);
+    // await savedData.setGameId(gameCode);
+
+    Data().updateGameId(gameCode);
+
+    Data().updateUserId(playerId);
+    // Data().updateData({});
+    // Data().updateWinner({});
+
+    socket.emit('joinRandomGame', {'gameId': gameCode, 'playerId': playerId});
     notifyListeners();
   }
 }
