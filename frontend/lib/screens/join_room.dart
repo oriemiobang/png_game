@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:png_game/classes/data.dart';
 import 'package:png_game/screens/scan_qr.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
@@ -34,7 +35,25 @@ class _JoinRoomState extends State<JoinRoom> {
   }
 
   @override
+  void initState() {
+    _listenForGameJoin();
+    // TODO: implement initState
+    super.initState();
+  }
+
+  void _listenForGameJoin() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+
+    socketService.addListener(() {
+      if (socketService.gameJoined) {
+        Navigator.pushNamed(context, '/play_board');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final socketService = Provider.of<SocketService>(context, listen: false);
     return Scaffold(
       appBar: AppBar(),
       body: Padding(
@@ -79,6 +98,9 @@ class _JoinRoomState extends State<JoinRoom> {
                       setState(() {
                         qr_data = scannedData;
                         myController.text = scannedData;
+
+                        socketService.joinGame(scannedData);
+                        Data().updateGameId(scannedData);
                       });
                       print("Scanned QR Code: $scannedData");
                       // Use the scanned data here (e.g., open a URL, store it, etc.)
@@ -90,17 +112,8 @@ class _JoinRoomState extends State<JoinRoom> {
                   color: Colors.green,
                   child: TextButton(
                     onPressed: () {
-                      final socketService =
-                          Provider.of<SocketService>(context, listen: false);
                       socketService.joinGame(gameCode);
-
-                      // Listen for changes in gameJoined
-                      socketService.addListener(() {
-                        if (socketService.gameJoined) {
-                          Navigator.pushReplacementNamed(
-                              context, '/play_board');
-                        }
-                      });
+                      Data().updateGameId(gameCode);
                     },
                     child: const Text(
                       'Join room',

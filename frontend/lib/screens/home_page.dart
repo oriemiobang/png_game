@@ -62,8 +62,12 @@ class _HomePageState extends State<HomePage> {
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              SizedBox(
-                height: 450,
+              Container(
+                padding: const EdgeInsets.all(10),
+                height: 350,
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(5),
+                    color: Colors.grey.shade200),
                 width: double.infinity,
                 child: ListView.builder(
                     itemCount: dataProvider.randomGames?.length,
@@ -71,11 +75,11 @@ class _HomePageState extends State<HomePage> {
                       String gameId =
                           dataProvider.randomGames?.keys.elementAt(index);
                       var gameData = dataProvider.randomGames?[gameId];
-                      print(
-                          'this is the lenght: ${dataProvider.randomGames?.length}');
+
                       return Container(
                         padding: const EdgeInsets.only(bottom: 5, top: 5),
                         decoration: const BoxDecoration(
+                          // color: Colors.blue,
                           border: Border(
                             bottom: BorderSide(color: Colors.grey, width: 1),
                           ),
@@ -100,6 +104,9 @@ class _HomePageState extends State<HomePage> {
                       );
                     }),
               ),
+              const SizedBox(
+                height: 100,
+              ),
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
@@ -109,11 +116,33 @@ class _HomePageState extends State<HomePage> {
                 child: Center(
                   child: TextButton(
                       onPressed: () {
-                        String gameId = socketService.createRandomGame();
+                        socketService.createRandomGame();
                         Navigator.pushNamed(context, '/random_wait_room');
                       },
                       child: const Text(
                         'CREATE A GAME',
+                        style: TextStyle(color: Colors.black),
+                      )),
+                ),
+              ),
+              const SizedBox(
+                height: 10,
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.grey.shade300,
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Center(
+                  child: TextButton(
+                      onPressed: () {
+                        // setState(() {
+                        //   isPlayWithFriend = !isPlayWithFriend;
+                        // });
+                      },
+                      child: const Text(
+                        'PLAY WITH COMPUTER',
                         style: TextStyle(color: Colors.black),
                       )),
                 ),

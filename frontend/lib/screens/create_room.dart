@@ -56,7 +56,7 @@ class _CreateRoomState extends State<CreateRoom> {
 
     socketService.addListener(() {
       if (socketService.gameJoined) {
-        Navigator.pushReplacementNamed(context, '/play_board');
+        Navigator.pushNamed(context, '/play_board');
       }
     });
   }

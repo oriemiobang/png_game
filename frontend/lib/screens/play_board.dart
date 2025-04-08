@@ -47,130 +47,6 @@ class _PlayBoardState extends State<PlayBoard> {
   String currentPlayer = '';
   String currentOpponent = '';
 
-  // void _showCustomDialog(BuildContext context, String title, String message) {
-  //   showDialog(
-  //     context: context,
-  //     barrierDismissible: false,
-  //     builder: (BuildContext context) {
-  //       return Dialog(
-  //         shape:
-  //             RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-  //         backgroundColor: Colors.white,
-  //         child: Container(
-  //           padding: const EdgeInsets.all(20),
-  //           decoration: BoxDecoration(
-  //             borderRadius: BorderRadius.circular(20),
-  //             boxShadow: [
-  //               BoxShadow(
-  //                 color: Colors.black.withOpacity(0.2),
-  //                 blurRadius: 10,
-  //                 offset: const Offset(0, 5),
-  //               ),
-  //             ],
-  //           ),
-  //           child: Column(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               Text(
-  //                 title,
-  //                 style: const TextStyle(
-  //                   fontSize: 22,
-  //                   fontWeight: FontWeight.bold,
-  //                   color: Colors.white,
-  //                 ),
-  //               ),
-  //               const SizedBox(height: 12),
-  //               Text(
-  //                 message,
-  //                 textAlign: TextAlign.center,
-  //                 style: const TextStyle(color: Colors.white70, fontSize: 16),
-  //               ),
-  //               const SizedBox(height: 24),
-  //               ElevatedButton(
-  //                 onPressed: () => Navigator.of(context).pop(),
-  //                 style: ElevatedButton.styleFrom(
-  //                   padding: const EdgeInsets.symmetric(
-  //                       horizontal: 24, vertical: 12),
-  //                   shape: RoundedRectangleBorder(
-  //                       borderRadius: BorderRadius.circular(12)),
-  //                 ),
-  //                 child: const Text(
-  //                   'Ok',
-  //                   style: TextStyle(fontWeight: FontWeight.bold),
-  //                 ),
-  //               )
-  //             ],
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
-  // void checkLastChance(Data dataProvider, String currentPlayer, String opponent,
-  //     BuildContext context) {}
-
-  // void checkWinner(Data dataProvider) {
-  //   final winnerData = dataProvider.winner;
-  //   if (winnerData != null) {
-  //     if (winnerData['winnerId'] == null) {
-  //       showDialog(
-  //         context: context,
-  //         builder: (BuildContext context) {
-  //           return AlertDialog(
-  //             title: const Text("Game over!"),
-  //             content: const Text("It's a draw"),
-  //             actions: [
-  //               TextButton(
-  //                 onPressed: () {
-  //                   Navigator.of(context).pop(); // Close the dialog
-  //                 },
-  //                 child: const Text("OK"),
-  //               ),
-  //             ],
-  //           );
-  //         },
-  //       );
-  //     } else if (winnerData['winnerId'] == currentPlayer) {
-  //       showDialog(
-  //         context: context,
-  //         builder: (BuildContext context) {
-  //           return AlertDialog(
-  //             title: const Text("Game over!"),
-  //             content: const Text("Congratulations! You won the game!"),
-  //             actions: [
-  //               TextButton(
-  //                 onPressed: () {
-  //                   Navigator.of(context).pop(); // Close the dialog
-  //                 },
-  //                 child: const Text("OK"),
-  //               ),
-  //             ],
-  //           );
-  //         },
-  //       );
-  //     } else {
-  //       showDialog(
-  //         context: context,
-  //         builder: (BuildContext context) {
-  //           return AlertDialog(
-  //             title: const Text("Game Over!"),
-  //             content: const Text("Sorry! You lost. Better luck next time."),
-  //             actions: [
-  //               TextButton(
-  //                 onPressed: () {
-  //                   Navigator.of(context).pop(); // Close the dialog
-  //                 },
-  //                 child: const Text("OK"),
-  //               ),
-  //             ],
-  //           );
-  //         },
-  //       );
-  //     }
-  //   }
-  // }
-
   void submitGuess(PlayBoardProvider playBoardProvider) {
     // bool isNumb = RegExp(r'^[0-9]+$').hasMatch(myGuess);
     bool isNumb = RegExp(r'^\d+$').hasMatch(myGuess);
@@ -396,7 +272,7 @@ class _PlayBoardState extends State<PlayBoard> {
               PlayBoardClasses().setIsSubmitted(false);
               PlayBoardClasses().setMySecret('');
               PlayBoardClasses().setShowSecret(false);
-              Navigator.pushReplacementNamed(context, '/');
+              Navigator.pop(context);
             },
             icon: const Icon(Icons.arrow_back)),
         actions: [
