@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/classes/play_board_classes.dart';
 import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/storage/saved_data.dart';
@@ -16,12 +17,7 @@ class PlayBoard extends StatefulWidget {
 class _PlayBoardState extends State<PlayBoard> {
   SocketService socketService = SocketService();
   SavedData savedData = SavedData();
-  List guesses = [];
-  String mySecret = '';
   Data myData = Data();
-  bool isSubmitted = false;
-  bool showSecret = false;
-  String chatValue = '';
 
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _chatController = TextEditingController();
@@ -209,19 +205,18 @@ class _PlayBoardState extends State<PlayBoard> {
   void sendMessage() {
     final myGameId = Data().gameId;
     final myPlayerId = Data().userId;
-    print('my player id: $myPlayerId');
     socketService.chat(
         gameId: myGameId!,
         playerId: myPlayerId!,
         message: _chatController.text);
   }
 
-  void submitScret(PlayBoardProvider playBoardProvider) {
+  void submitScret(PlayBoardClasses playBoardClasees) {
+    final mySecret = playBoardClasees.mySecret;
     bool isNumb = RegExp(r'^[0-9]+$').hasMatch(mySecret);
 
     if (mySecret.length == 4 && isNumb) {
       socketService.submitSecret(mySecret);
-      playBoardProvider.submitSecret();
     } else {
       showDialog(
         context: context,
@@ -256,7 +251,7 @@ class _PlayBoardState extends State<PlayBoard> {
     });
     final playBoardProvider = Provider.of<PlayBoardProvider>(context);
     final dataProvider = Provider.of<Data>(context);
-    print('this is my data: ${dataProvider.data}');
+    final playBoardClasses = Provider.of<PlayBoardClasses>(context);
 
     if (dataProvider.notYourTurn != null) {
       if (dataProvider.notYourTurn?['player'] == dataProvider.userId) {
@@ -393,6 +388,17 @@ class _PlayBoardState extends State<PlayBoard> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+            onPressed: () {
+              PlayBoardClasses().setChatValue('');
+              PlayBoardClasses().setGuesses([]);
+              PlayBoardClasses().setIsSubmitted(false);
+              PlayBoardClasses().setMySecret('');
+              PlayBoardClasses().setShowSecret(false);
+              Navigator.pushReplacementNamed(context, '/');
+            },
+            icon: const Icon(Icons.arrow_back)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(left: 10, right: 10),
@@ -409,49 +415,21 @@ class _PlayBoardState extends State<PlayBoard> {
         padding: const EdgeInsets.all(8.0),
         child: ListView(
           children: [
-            // playBoardProvider.secretSubmitted
-            //     ? GestureDetector(
-            //         onTap: playBoardProvider.toggleHideText,
-            //         child: Align(
-            //           alignment:
-            //               Alignment.centerLeft, // Adjust alignment if needed
-            //           child: Container(
-            //             width: 60,
-            //             height: 50,
-            //             decoration: BoxDecoration(
-            //               borderRadius: BorderRadius.circular(5),
-            //               color: Colors.grey.shade100,
-            //             ),
-            //             child: Center(
-            //               child: playBoardProvider.hideText
-            //                   ? const Text('****')
-            //                   : Text(mySecret),
-            //             ), // Center text inside
-            //           ),
-            //         ),
-            //       )
-            // :
-            isSubmitted
-                ? !showSecret
+            playBoardClasses.isSubmitted
+                ? !playBoardClasses.showSecret
                     ? GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            showSecret = !showSecret;
-                          });
-                        },
+                        onTap: () => playBoardClasses
+                            .setShowSecret(!playBoardClasses.showSecret),
                         child: const Text(
                           '****',
                           style: TextStyle(fontSize: 20),
                         ),
                       )
                     : GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            showSecret = !showSecret;
-                          });
-                        },
+                        onTap: () => playBoardClasses
+                            .setShowSecret(!playBoardClasses.showSecret),
                         child: Text(
-                          mySecret,
+                          playBoardClasses.mySecret,
                           style: const TextStyle(fontSize: 20),
                         ),
                       )
@@ -464,13 +442,12 @@ class _PlayBoardState extends State<PlayBoard> {
                         child: TextField(
                           keyboardType: TextInputType.number,
                           onChanged: (value) {
-                            setState(() {
-                              mySecret = value;
-                            });
+                            PlayBoardClasses().setMySecret(value);
                           },
                           decoration: InputDecoration(
-                            labelText:
-                                mySecret.isEmpty ? 'Enter secret code' : '',
+                            labelText: playBoardClasses.mySecret.isEmpty
+                                ? 'Enter secret code'
+                                : '',
                           ),
                         ),
                       ),
@@ -482,10 +459,8 @@ class _PlayBoardState extends State<PlayBoard> {
                         height: 35,
                         child: TextButton(
                             onPressed: () {
-                              submitScret(playBoardProvider);
-                              setState(() {
-                                isSubmitted = true;
-                              });
+                              submitScret(playBoardClasses);
+                              PlayBoardClasses().setIsSubmitted(true);
                             },
                             child: const Text(
                               'Submit',
@@ -656,13 +631,11 @@ class _PlayBoardState extends State<PlayBoard> {
                   width: 280,
                   child: TextField(
                     onChanged: (value) {
-                      setState(() {
-                        chatValue = value;
-                      });
+                      PlayBoardClasses().setChatValue(value);
                     },
                     controller: _chatController,
                     decoration: InputDecoration(
-                        label: chatValue.isEmpty
+                        label: playBoardClasses.chatValue.isEmpty
                             ? const Text(
                                 'text your opponent',
                                 style: TextStyle(fontStyle: FontStyle.italic),

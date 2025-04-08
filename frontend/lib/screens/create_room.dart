@@ -63,7 +63,6 @@ class _CreateRoomState extends State<CreateRoom> {
 
   @override
   Widget build(BuildContext context) {
-    final socketService = Provider.of<SocketService>(context);
     return Scaffold(
       appBar: AppBar(),
       body: Padding(

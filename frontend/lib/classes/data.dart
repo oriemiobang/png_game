@@ -12,6 +12,8 @@ class Data with ChangeNotifier {
   Map _randomGames = {};
   Map _randomRoomGame = {};
 
+  //
+
   List _chatData = [];
 
   static final Data _instance = Data._internal();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/classes/play_board_classes.dart';
 import 'package:png_game/screens/randomWaitRoom.dart';
 import 'package:provider/provider.dart';
 
@@ -22,6 +23,9 @@ void main() {
       ),
       ChangeNotifierProvider(
         create: (_) => Data(),
+      ),
+      ChangeNotifierProvider(
+        create: (_) => PlayBoardClasses(),
       )
     ],
     child: const MyApp(),

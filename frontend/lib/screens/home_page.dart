@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/screens/create_room.dart';
-import 'package:png_game/services/playboard_provider.dart';
+
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +19,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final playBoardProvider = Provider.of<PlayBoardProvider>(context);
     final dataProvider = Provider.of<Data>(context);
     print('these are the random games: ${Data().randomGames}');
 
