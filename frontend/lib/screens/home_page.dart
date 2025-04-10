@@ -142,6 +142,7 @@ class _HomePageState extends State<HomePage> {
                 child: Center(
                   child: TextButton(
                       onPressed: () {
+                        Navigator.pushNamed(context, '/play_solo');
                         // setState(() {
                         //   isPlayWithFriend = !isPlayWithFriend;
                         // });

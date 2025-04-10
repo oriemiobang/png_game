@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/classes/play_board_classes.dart';
+import 'package:png_game/screens/play_solo.dart';
 import 'package:png_game/screens/randomWaitRoom.dart';
 import 'package:provider/provider.dart';
 
@@ -48,7 +49,8 @@ class MyApp extends StatelessWidget {
         '/create_game': (context) => CreateRoom(),
         '/play_board': (context) => const PlayBoard(),
         '/scan_qr_code': (context) => const ScanQrCode(),
-        '/random_wait_room': (context) => const RandomWaitRoom()
+        '/random_wait_room': (context) => const RandomWaitRoom(),
+        '/play_solo': (context) => const PlaySolo()
       },
     );
   }

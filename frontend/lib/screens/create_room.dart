@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/screens/play_board.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -56,7 +57,11 @@ class _CreateRoomState extends State<CreateRoom> {
 
     socketService.addListener(() {
       if (socketService.gameJoined) {
-        Navigator.pushNamed(context, '/play_board');
+        // Navigator.pushNamed(context, '/play_board');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PlayBoard()),
+        );
       }
     });
   }

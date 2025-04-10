@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/screens/play_board.dart';
 import 'package:png_game/screens/scan_qr.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
@@ -46,7 +47,11 @@ class _JoinRoomState extends State<JoinRoom> {
 
     socketService.addListener(() {
       if (socketService.gameJoined) {
-        Navigator.pushNamed(context, '/play_board');
+        // Navigator.pushNamed(context, '/play_board');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PlayBoard()),
+        );
       }
     });
   }
