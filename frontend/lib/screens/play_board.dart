@@ -413,147 +413,281 @@ class _PlayBoardState extends State<PlayBoard> {
                           color: Colors.grey.shade300,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 10),
-                          child: Row(
-                            children: const [
+                          child: const Row(
+                            children: [
                               Expanded(
                                 flex: 1,
                                 child: Text(
                                   'Attempt',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17),
                                 ),
                               ),
                               Expanded(
                                 flex: 2,
                                 child: Text(
                                   'Guesses',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17),
                                 ),
                               ),
                               Expanded(
                                 flex: 1,
                                 child: Text(
                                   'P',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17),
                                 ),
                               ),
                               Expanded(
                                 flex: 1,
                                 child: Text(
                                   'N',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17),
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        dataProvider
+                                    .data?['guesses']
+                                        [dataProvider.currentPlayer]
+                                    .length <
+                                1
+                            ? const Center(
+                                child: Text(
+                                  'your guesses appears here',
+                                  style: TextStyle(fontStyle: FontStyle.italic),
+                                ),
+                              )
+                            :
+                            // Scrollable rows
+                            Expanded(
+                                child: Scrollbar(
+                                  thumbVisibility: true,
+                                  controller: _tableScrollCtroller,
+                                  child: SingleChildScrollView(
+                                    controller: _tableScrollCtroller,
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: SizedBox(
+                                        width:
+                                            MediaQuery.of(context).size.width,
+                                        child: Column(
+                                          children: (dataProvider
+                                                              .data?['guesses']
+                                                          ?[
+                                                          dataProvider
+                                                              .currentPlayer]
+                                                      as List?)
+                                                  ?.map<Widget>((entry) {
+                                                final index = (dataProvider
+                                                                    .data?[
+                                                                'guesses'][
+                                                            dataProvider
+                                                                .currentPlayer]
+                                                        as List)
+                                                    .indexOf(entry);
+                                                final guess = entry
+                                                    as Map<String, dynamic>;
 
-                        // Scrollable rows
-                        Expanded(
-                          child: Scrollbar(
-                            thumbVisibility: true,
-                            controller: _tableScrollCtroller,
-                            child: SingleChildScrollView(
-                              controller: _tableScrollCtroller,
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: SizedBox(
-                                  width: MediaQuery.of(context).size.width,
-                                  child: Column(
-                                    children: (dataProvider.data?['guesses']?[
-                                                    dataProvider.currentPlayer]
-                                                as List?)
-                                            ?.map<Widget>((entry) {
-                                          final index = (dataProvider
-                                                      .data?['guesses'][
-                                                  dataProvider
-                                                      .currentPlayer] as List)
-                                              .indexOf(entry);
-                                          final guess =
-                                              entry as Map<String, dynamic>;
-
-                                          return Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16, vertical: 8),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                    flex: 1,
-                                                    child:
-                                                        Text('${index + 1}')),
-                                                Expanded(
-                                                    flex: 2,
-                                                    child: Text(guess['guess']
-                                                            ?.toString() ??
-                                                        '')),
-                                                Expanded(
-                                                    flex: 1,
-                                                    child: Text(guess[
-                                                                    'feedback']
-                                                                ?['position']
-                                                            ?.toString() ??
-                                                        '')),
-                                                Expanded(
-                                                    flex: 1,
-                                                    child: Text(
-                                                        guess['feedback']
+                                                return Padding(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 8),
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                          flex: 1,
+                                                          child: Text(
+                                                              '${index + 1}')),
+                                                      Expanded(
+                                                        flex: 2,
+                                                        child: Text(guess[
+                                                                    'guess']
+                                                                ?.toString() ??
+                                                            ''),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(guess[
+                                                                        'feedback']
+                                                                    ?[
+                                                                    'position']
+                                                                ?.toString() ??
+                                                            ''),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(guess[
+                                                                        'feedback']
                                                                     ?['number']
                                                                 ?.toString() ??
-                                                            '')),
-                                              ],
-                                            ),
-                                          );
-                                        })?.toList() ??
-                                        [], // Return empty list if null
+                                                            ''),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }).toList() ??
+                                              [], // Return empty list if null
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   )
-                : DataTable(
-                    columnSpacing: 20,
-                    headingRowColor:
-                        WidgetStateProperty.all(Colors.grey.shade300),
-                    columns: const [
-                      DataColumn(
-                          label: Text('Attempt',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text('Guesses',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text('P',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text('N',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
-                    ],
-                    rows: (dataProvider.data?['guesses']
-                                [dataProvider.currentOpponent] as List? ??
-                            [])
-                        .asMap() // This gives us the index
-                        .entries
-                        .map<DataRow>((entry) {
-                      final index = entry.key;
-                      final guess = entry.value as Map<String, dynamic>;
+                : Container(
+                    height: 370,
+                    width: double.infinity,
+                    color: Colors.grey.shade200,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Header row (fixed)
+                        Container(
+                          color: Colors.grey.shade300,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          child: const Row(
+                            children: [
+                              Expanded(
+                                flex: 1,
+                                child: Text(
+                                  'Attempt',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  'Guesses',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: Text(
+                                  'P',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: Text(
+                                  'N',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 17),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        dataProvider
+                                    .data?['guesses']
+                                        [dataProvider.currentPlayer]
+                                    .length <
+                                1
+                            ? const Center(
+                                child: Text(
+                                  'your guesses appears here',
+                                  style: TextStyle(fontStyle: FontStyle.italic),
+                                ),
+                              )
+                            :
+                            // Scrollable rows
+                            Expanded(
+                                child: Scrollbar(
+                                  thumbVisibility: true,
+                                  controller: _tableScrollCtroller,
+                                  child: SingleChildScrollView(
+                                    controller: _tableScrollCtroller,
+                                    child: SingleChildScrollView(
+                                      scrollDirection: Axis.horizontal,
+                                      child: SizedBox(
+                                        width:
+                                            MediaQuery.of(context).size.width,
+                                        child: Column(
+                                          children: (dataProvider
+                                                              .data?['guesses']
+                                                          ?[
+                                                          dataProvider
+                                                              .currentOpponent]
+                                                      as List?)
+                                                  ?.map<Widget>((entry) {
+                                                final index = (dataProvider
+                                                                    .data?[
+                                                                'guesses'][
+                                                            dataProvider
+                                                                .currentOpponent]
+                                                        as List)
+                                                    .indexOf(entry);
+                                                final guess = entry
+                                                    as Map<String, dynamic>;
 
-                      return DataRow(
-                        cells: [
-                          DataCell(
-                            Text('${index + 1}'),
-                          ), // Here's your attempt number
-                          DataCell(Text(guess['guess']?.toString() ?? '')),
-                          DataCell(Text(
-                              guess['feedback']?['position']?.toString() ??
-                                  '')),
-                          DataCell(Text(
-                              guess['feedback']?['number']?.toString() ?? '')),
-                        ],
-                      );
-                    }).toList(),
+                                                return Padding(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 8),
+                                                  child: Row(
+                                                    children: [
+                                                      Expanded(
+                                                          flex: 1,
+                                                          child: Text(
+                                                              '${index + 1}')),
+                                                      Expanded(
+                                                        flex: 2,
+                                                        child: Text(guess[
+                                                                    'guess']
+                                                                ?.toString() ??
+                                                            ''),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(guess[
+                                                                        'feedback']
+                                                                    ?[
+                                                                    'position']
+                                                                ?.toString() ??
+                                                            ''),
+                                                      ),
+                                                      Expanded(
+                                                        flex: 1,
+                                                        child: Text(guess[
+                                                                        'feedback']
+                                                                    ?['number']
+                                                                ?.toString() ??
+                                                            ''),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              }).toList() ??
+                                              [], // Return empty list if null
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                      ],
+                    ),
                   ),
             const SizedBox(
               height: 20,
