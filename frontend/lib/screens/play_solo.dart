@@ -13,6 +13,7 @@ class _PlaySoloState extends State<PlaySolo> {
   final TextEditingController _controller = TextEditingController();
 
   Map<String, dynamic> guesses = {'gameId': '', 'secret': '', 'guesses': []};
+  bool isGameOver = false;
 
   String generateUniqueFourDigitNumber() {
     final random = Random();
@@ -52,26 +53,80 @@ class _PlaySoloState extends State<PlaySolo> {
   }
 
   void playCheck(String guess) {
-    String mySecret = guesses['secret'];
-    int position = 0;
-    int number = 0;
-    for (int i = 0; i < guess.length; i++) {
-      if (guess[i] == mySecret[i]) {
-        position++;
+    bool isNumb = RegExp(r'^\d+$').hasMatch(guess);
+    bool isUnique = guess.split('').toSet().length == guess.length;
+
+    if (isUnique && isNumb && guess.length == 4) {
+      String mySecret = guesses['secret'];
+      int position = 0;
+      int number = 0;
+      for (int i = 0; i < guess.length; i++) {
+        if (guess[i] == mySecret[i]) {
+          position++;
+        }
+        if (mySecret.contains(guess[i])) {
+          number++;
+        }
       }
-      if (mySecret.contains(guess[i])) {
-        number++;
+      guesses['guesses'].add({
+        'guess': guess,
+        'number': '$number',
+        'position': '$position',
+      });
+
+      setState(() {});
+
+      if (position == 4) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text("You won!"),
+              content: Text(
+                  'Congratulations! You have correctly guessed the number after ${guesses['guesses'].length} attempts.'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    isGameOver = true;
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    guesses = {'gameId': '', 'secret': '', 'guesses': []};
+                    starter();
+                    isGameOver = false;
+                    setState(() {});
+                    Navigator.pop(context);
+                  },
+                  child: const Text("New Game"),
+                ),
+              ],
+            );
+          },
+        );
       }
+    } else {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Invalid input!"),
+            content: const Text(
+                'Please enter only 4 digits number with no repetitions!'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: const Text('Ok'),
+              ),
+            ],
+          );
+        },
+      );
     }
-    guesses['guesses'].add({
-      'guess': guess,
-      'number': '$number',
-      'position': '$position',
-    });
-
-    setState(() {});
-
-    if (position == 4) {}
   }
 
   @override
@@ -81,7 +136,36 @@ class _PlaySoloState extends State<PlaySolo> {
         automaticallyImplyLeading: false,
         leading: IconButton(
           onPressed: () {
-            Navigator.pop(context);
+            if (!isGameOver) {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text("Guit game?"),
+                    content:
+                        const Text('Are you sure you want to guit the game?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                        child: const Text('No'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          Navigator.pushReplacementNamed(
+                              context, '/'); // Close the dialog
+                        },
+                        child: const Text('Yes'),
+                      ),
+                    ],
+                  );
+                },
+              );
+            } else {
+              Navigator.pop(context);
+            }
           },
           icon: const Icon(Icons.arrow_back),
         ),
@@ -193,13 +277,16 @@ class _PlaySoloState extends State<PlaySolo> {
                 ),
               ),
               GestureDetector(
-                onTap: () {
-                  String secret = _controller.text;
-                  _controller.text = '';
-                  playCheck(secret);
-                },
+                onTap: isGameOver
+                    ? null
+                    : () {
+                        String secret = _controller.text;
+                        _controller.text = '';
+                        playCheck(secret);
+                      },
                 child: Container(
-                  decoration: const BoxDecoration(color: Colors.green),
+                  decoration: BoxDecoration(
+                      color: isGameOver ? Colors.grey.shade300 : Colors.green),
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: Text('Submit'),

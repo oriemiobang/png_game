@@ -25,7 +25,7 @@ class _PlayBoardState extends State<PlayBoard> {
   void refreshGuess() async {
     final data = Data().data;
     final userId = Data().userId;
-    print('this is the data: $data');
+    // print('this is the data: $data');
     String player = data?['player1'] == userId ? 'player1' : 'player2';
     String opponent = data?['player1'] == userId ? 'player2' : 'player1';
     Data().updateCurrentPlayer(player);
@@ -115,9 +115,20 @@ class _PlayBoardState extends State<PlayBoard> {
   }
 
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _tableScrollCtroller = ScrollController();
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_tableScrollCtroller.hasClients) {
+        _tableScrollCtroller.animateTo(
+          _tableScrollCtroller.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+
     Future.delayed(const Duration(milliseconds: 100), () {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
@@ -197,10 +208,8 @@ class _PlayBoardState extends State<PlayBoard> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final winnerData = Data().winner;
         final myData = Data().data;
-        print(
-            'this is the winner data $winnerData   the current player is : $currentPlayer');
-
         if (winnerData?['winnerId'] == null) {
+          Data().updateGameOver(true);
           showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -219,6 +228,7 @@ class _PlayBoardState extends State<PlayBoard> {
             },
           );
         } else if (winnerData?['winnerId'] == myData?[currentPlayer]) {
+          Data().updateGameOver(true);
           showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -237,6 +247,7 @@ class _PlayBoardState extends State<PlayBoard> {
             },
           );
         } else {
+          Data().updateGameOver(true);
           showDialog(
             context: context,
             builder: (BuildContext context) {
@@ -272,6 +283,7 @@ class _PlayBoardState extends State<PlayBoard> {
               PlayBoardClasses().setIsSubmitted(false);
               PlayBoardClasses().setMySecret('');
               PlayBoardClasses().setShowSecret(false);
+              Data().updateGameOver(false);
               Navigator.pop(context);
             },
             icon: const Icon(Icons.arrow_back)),
@@ -389,46 +401,117 @@ class _PlayBoardState extends State<PlayBoard> {
               height: 10,
             ),
             playBoardProvider.showMine
-                ? DataTable(
-                    columnSpacing: 20,
-                    headingRowColor:
-                        WidgetStateProperty.all(Colors.grey.shade300),
-                    columns: const [
-                      DataColumn(
-                          label: Text('Attempt',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text('Guesses',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text('P',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
-                      DataColumn(
-                          label: Text('N',
-                              style: TextStyle(fontWeight: FontWeight.bold))),
-                    ],
-                    rows: (dataProvider.data?['guesses']
-                                [dataProvider.currentPlayer] as List? ??
-                            [])
-                        .asMap() // This gives us the index
-                        .entries
-                        .map<DataRow>((entry) {
-                      final index = entry.key;
-                      final guess = entry.value as Map<String, dynamic>;
+                ? Container(
+                    height: 370,
+                    width: double.infinity,
+                    color: Colors.grey.shade200,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Header row (fixed)
+                        Container(
+                          color: Colors.grey.shade300,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          child: Row(
+                            children: const [
+                              Expanded(
+                                flex: 1,
+                                child: Text(
+                                  'Attempt',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  'Guesses',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: Text(
+                                  'P',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: Text(
+                                  'N',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(
-                              '${index + 1}')), // Here's your attempt number
-                          DataCell(Text(guess['guess']?.toString() ?? '')),
-                          DataCell(Text(
-                              guess['feedback']?['position']?.toString() ??
-                                  '')),
-                          DataCell(Text(
-                              guess['feedback']?['number']?.toString() ?? '')),
-                        ],
-                      );
-                    }).toList(),
+                        // Scrollable rows
+                        Expanded(
+                          child: Scrollbar(
+                            thumbVisibility: true,
+                            controller: _tableScrollCtroller,
+                            child: SingleChildScrollView(
+                              controller: _tableScrollCtroller,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: SizedBox(
+                                  width: MediaQuery.of(context).size.width,
+                                  child: Column(
+                                    children: (dataProvider.data?['guesses']?[
+                                                    dataProvider.currentPlayer]
+                                                as List?)
+                                            ?.map<Widget>((entry) {
+                                          final index = (dataProvider
+                                                      .data?['guesses'][
+                                                  dataProvider
+                                                      .currentPlayer] as List)
+                                              .indexOf(entry);
+                                          final guess =
+                                              entry as Map<String, dynamic>;
+
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 8),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                    flex: 1,
+                                                    child:
+                                                        Text('${index + 1}')),
+                                                Expanded(
+                                                    flex: 2,
+                                                    child: Text(guess['guess']
+                                                            ?.toString() ??
+                                                        '')),
+                                                Expanded(
+                                                    flex: 1,
+                                                    child: Text(guess[
+                                                                    'feedback']
+                                                                ?['position']
+                                                            ?.toString() ??
+                                                        '')),
+                                                Expanded(
+                                                    flex: 1,
+                                                    child: Text(
+                                                        guess['feedback']
+                                                                    ?['number']
+                                                                ?.toString() ??
+                                                            '')),
+                                              ],
+                                            ),
+                                          );
+                                        })?.toList() ??
+                                        [], // Return empty list if null
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   )
                 : DataTable(
                     columnSpacing: 20,
@@ -530,7 +613,20 @@ class _PlayBoardState extends State<PlayBoard> {
                       size: 35,
                     ))
               ],
-            )
+            ),
+            const SizedBox(
+              height: 10,
+            ),
+            Container(
+                width: 170,
+                color:
+                    dataProvider.gameOver ? Colors.green : Colors.grey.shade300,
+                child: TextButton(
+                    onPressed: () {},
+                    child: const Text(
+                      'New game',
+                      style: TextStyle(fontSize: 17, color: Colors.white),
+                    )))
           ],
         ),
       ),
