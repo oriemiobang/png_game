@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/screens/create_room.dart';
+import 'package:png_game/screens/play_board.dart';
 
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
@@ -20,11 +21,15 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final dataProvider = Provider.of<Data>(context);
-    print('these are the random games: ${Data().randomGames}');
+    // print('these are the random games: ${Data().randomGames}');
 
     if (dataProvider.data?['player2'] != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushNamed(context, '/play_board');
+        // Navigator.pushNamed(context, '/play_board');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PlayBoard()),
+        );
       });
     }
     return Scaffold(
