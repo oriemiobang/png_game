@@ -95,6 +95,8 @@ export const handleSocketEvents = (socket, io) => {
 
   });
 
+
+
   socket.on("joinGame", ({ gameId, playerId }) => {
     console.log('here are the info: ' + playerId + ' ' + gameId);
     const game = games[gameId];
