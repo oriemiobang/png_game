@@ -82,6 +82,12 @@ class SocketService with ChangeNotifier {
       }
     });
 
+    // listen to new game request
+    socket.on('requestNewGame', (data) {
+      Data().updateNewGae(data);
+      notifyListeners();
+    });
+
     // listen to random game info
     socket.on('randomGameInfo', (data) {
       Data().updateRandomGames(data);
@@ -227,5 +233,9 @@ class SocketService with ChangeNotifier {
 
     socket.emit('joinRandomGame', {'gameId': gameCode, 'playerId': playerId});
     notifyListeners();
+  }
+
+  void requestNewGame(playerId, gameId) {
+    socket.emit('newGame', {'playerId': playerId, 'gameId': gameId});
   }
 }

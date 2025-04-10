@@ -11,6 +11,7 @@ class Data with ChangeNotifier {
   Map? _notYourTurn;
   Map _randomGames = {};
   Map _randomRoomGame = {};
+  Map? _newGame;
   bool _gameOver = false;
 
   //
@@ -37,6 +38,7 @@ class Data with ChangeNotifier {
   Map? get notYourTurn => _notYourTurn;
   Map? get randomGames => _randomGames;
   Map? get randomRoomGame => _randomRoomGame;
+  Map? get newGame => _newGame;
 
   List? get chatData => _chatData;
 
@@ -44,6 +46,11 @@ class Data with ChangeNotifier {
 
   void updateGameOver(bool newValue) {
     _gameOver = newValue;
+    notifyListeners();
+  }
+
+  void updateNewGae(Map newData) {
+    _newGame = newData;
     notifyListeners();
   }
 

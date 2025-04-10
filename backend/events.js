@@ -95,7 +95,9 @@ export const handleSocketEvents = (socket, io) => {
 
   });
 
-
+socket.on('newGame',({gameId, playerId})=>{
+  io.to(gameId).emit('requestNewGame', {playerId: playerId, message: 'let\'s  play another game!', aprroved: null});
+})
 
   socket.on("joinGame", ({ gameId, playerId }) => {
     console.log('here are the info: ' + playerId + ' ' + gameId);
