@@ -43,16 +43,18 @@ class _JoinRoomState extends State<JoinRoom> {
   }
 
   void _listenForGameJoin() {
-    final socketService = Provider.of<SocketService>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final socketService = Provider.of<SocketService>(context, listen: false);
 
-    socketService.addListener(() {
-      if (socketService.gameJoined) {
-        // Navigator.pushNamed(context, '/play_board');
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => PlayBoard()),
-        );
-      }
+      socketService.addListener(() {
+        if (socketService.gameJoined) {
+          // Navigator.pushNamed(context, '/play_board');
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => PlayBoard()),
+          );
+        }
+      });
     });
   }
 

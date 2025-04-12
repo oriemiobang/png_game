@@ -39,6 +39,7 @@ class _PlayBoardState extends State<PlayBoard> {
   @override
   void initState() {
     refreshGuess();
+    listener();
     // TODO: implement initState
     super.initState();
   }
@@ -117,6 +118,151 @@ class _PlayBoardState extends State<PlayBoard> {
   final ScrollController _scrollController = ScrollController();
   final ScrollController _tableScrollCtroller = ScrollController();
 
+  // change listener
+  void listener() {
+    final dataProvider = Provider.of<Data>(context, listen: false);
+    dataProvider.addListener(() {
+      // check for your turn
+      if (dataProvider.notYourTurn != null) {
+        if (dataProvider.notYourTurn?['player'] == dataProvider.userId) {
+          Fluttertoast.showToast(
+              msg: "Please wait for your turn!",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: const Color.fromARGB(255, 0, 4, 17),
+              textColor: Colors.white,
+              fontSize: 16.0);
+
+          Data().updateNotYourTurn(null);
+        }
+      }
+
+// check for last chancce
+      if (dataProvider.lastChance != null) {
+        final lastChanceData = Data().lastChance;
+        final myData = Data().data;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (lastChanceData?['chanceTo'] == myData?[currentPlayer]) {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text("Last Chance"),
+                  content: const Text(
+                      'Your opponent guessed correctly! This is your last chance to draw the game.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: const Text("OK"),
+                    ),
+                  ],
+                );
+              },
+            );
+          } else {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text("Last Chance"),
+                  content: const Text(
+                      'You have guessed correctly! your opponent has a last chance to draw the game.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: const Text("OK"),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
+        });
+
+        Data().updateLastChance(null);
+      }
+    });
+
+    // check for a winner
+    // Show dialog only if winner is set (not null)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (dataProvider.winner != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final winnerData = Data().winner;
+          final myData = Data().data;
+          if (winnerData?['winnerId'] == null) {
+            Data().updateGameOver(true);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text("Game over!"),
+                  content: const Text("It's a draw"),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: const Text("OK"),
+                    ),
+                  ],
+                );
+              },
+            );
+          } else if (winnerData?['winnerId'] == myData?[currentPlayer]) {
+            Data().updateGameOver(true);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text("Game over!"),
+                  content: const Text("Congratulations! You won the game!"),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: const Text("OK"),
+                    ),
+                  ],
+                );
+              },
+            );
+          } else {
+            Data().updateGameOver(true);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text("Game Over!"),
+                  content:
+                      const Text("Sorry! You lost. Better luck next time."),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: const Text("OK"),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
+
+          // Optionally reset the winner so dialog doesn't repeat
+          dataProvider.updateWinner(
+              null); // Make sure your updateWinner handles null safely
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -129,149 +275,18 @@ class _PlayBoardState extends State<PlayBoard> {
       }
     });
 
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      });
     });
     final playBoardProvider = Provider.of<PlayBoardProvider>(context);
     final dataProvider = Provider.of<Data>(context);
     final playBoardClasses = Provider.of<PlayBoardClasses>(context);
-
-    if (dataProvider.notYourTurn != null) {
-      if (dataProvider.notYourTurn?['player'] == dataProvider.userId) {
-        Fluttertoast.showToast(
-            msg: "Please wait for your turn!",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            timeInSecForIosWeb: 1,
-            backgroundColor: const Color.fromARGB(255, 0, 4, 17),
-            textColor: Colors.white,
-            fontSize: 16.0);
-
-        Data().updateNotYourTurn(null);
-      }
-    }
-
-    if (dataProvider.lastChance != null) {
-      final lastChanceData = Data().lastChance;
-      final myData = Data().data;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (lastChanceData?['chanceTo'] == myData?[currentPlayer]) {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Last Chance"),
-                content: const Text(
-                    'Your opponent guessed correctly! This is your last chance to draw the game.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Close the dialog
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-        } else {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Last Chance"),
-                content: const Text(
-                    'You have guessed correctly! your opponent has a last chance to draw the game.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Close the dialog
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-        }
-      });
-
-      Data().updateLastChance(null);
-    }
-
-    // Show dialog only if winner is set (not null)
-    if (dataProvider.winner != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final winnerData = Data().winner;
-        final myData = Data().data;
-        if (winnerData?['winnerId'] == null) {
-          Data().updateGameOver(true);
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Game over!"),
-                content: const Text("It's a draw"),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Close the dialog
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-        } else if (winnerData?['winnerId'] == myData?[currentPlayer]) {
-          Data().updateGameOver(true);
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Game over!"),
-                content: const Text("Congratulations! You won the game!"),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Close the dialog
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-        } else {
-          Data().updateGameOver(true);
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Game Over!"),
-                content: const Text("Sorry! You lost. Better luck next time."),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Close the dialog
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-        }
-
-        // Optionally reset the winner so dialog doesn't repeat
-        dataProvider.updateWinner(
-            null); // Make sure your updateWinner handles null safely
-      });
-    }
 
     return Scaffold(
       appBar: AppBar(
