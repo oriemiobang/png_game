@@ -12,6 +12,7 @@ import 'package:png_game/screens/play_board.dart';
 import 'package:png_game/screens/scan_qr.dart';
 import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
+import 'package:png_game/screens/sign_in.dart';
 
 void main() {
   runApp(MultiProvider(
@@ -50,7 +51,8 @@ class MyApp extends StatelessWidget {
         '/play_board': (context) => const PlayBoard(),
         '/scan_qr_code': (context) => const ScanQrCode(),
         '/random_wait_room': (context) => const RandomWaitRoom(),
-        '/play_solo': (context) => const PlaySolo()
+        '/play_solo': (context) => const PlaySolo(),
+        '/signin' : (context) => const SignIn(),
       },
     );
   }

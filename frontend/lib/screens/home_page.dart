@@ -34,10 +34,67 @@ class _HomePageState extends State<HomePage> {
     }
     return Scaffold(
         appBar: AppBar(
-          leading: const Icon(
-            Icons.menu,
-            size: 35,
-          ),
+          leading:   PopupMenuButton<String>(
+  icon: Icon(Icons.menu, size: 32),
+  itemBuilder: (BuildContext context) {
+    return [
+            
+      PopupMenuItem<String>(
+        value: 'Sign in',
+        child:Row(children: [
+          Icon(Icons.login,color:Colors.black, size:20),
+          SizedBox(width:8),
+          Text('Sign in', style: TextStyle(color:Colors.black)),
+        ],)
+      ),
+      PopupMenuItem<String>(
+        value: 'Sign Up',
+        child:Row(children: [
+          Icon(Icons.person_add,color:Colors.black, size:20),
+          SizedBox(width:8),
+          Text('Sign up', style: TextStyle(color:Colors.black)),
+        ],)
+      ),
+      PopupMenuItem<String>(
+  value: 'Log out',
+  child: Row(
+    children: [
+      Icon(Icons.logout, color: Colors.black, size: 20),
+      SizedBox(width: 8),
+      Text(
+        'Log out',
+        style: TextStyle(color: Colors.black),
+      ),
+    ],
+  ),
+),
+PopupMenuItem<String>(
+        value: 'About',
+        child:Row(children: [
+          Icon(Icons.question_mark, color:Colors.black,size:20),
+          SizedBox(width:8),
+          Text('About', style: TextStyle(color:Colors.black),),
+        ],)
+      ),
+
+    ];
+  },
+  onSelected: (String value) {
+                  if (value == 'Sign in') {
+                    Navigator.pushNamed(context, '/signin');
+                  }
+                   else if (value == 'Sign Up') {
+                    Navigator.pushNamed(context, '/signup');
+                }
+                else if (value == 'Log out') {
+                    Navigator.pushNamed(context, '/logout');}
+                    else if (value == 'About') {
+                   Navigator.pushNamed(context, '/about');} 
+
+
+  },
+  offset: Offset(0, 35), 
+),
           actions: [
             TextButton(
               child: isSigned

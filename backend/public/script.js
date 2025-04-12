@@ -1,4 +1,4 @@
-const socket = io('http://localhost:5000');
+const socket = io('http://localhost:3000');
 let game_id;
 let player_id;
 let secret_number;
