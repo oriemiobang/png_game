@@ -156,7 +156,58 @@ class _PlayBoardState extends State<PlayBoard> {
     final playBoardProvider = Provider.of<PlayBoardProvider>(context);
     final dataProvider = Provider.of<Data>(context);
     final playBoardClasses = Provider.of<PlayBoardClasses>(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+// check for new game request
+      if (dataProvider.newGame != null) {
+        final requestData = dataProvider.newGame;
+        final myId = dataProvider.userId;
+        print('here is the request data: $requestData');
+        if (requestData?['isApproved'] == false) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("New game"),
+                content: const Text('Let\'s play a new game'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Text('No'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      final playerId = dataProvider.userId;
+                      final gameId = dataProvider.gameId;
+                      socketService.requestNewGame(playerId, gameId, true);
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              );
+            },
+          );
+        } else if (requestData?['isApproved'] == true) {
+          PlayBoardClasses().setGuesses([]);
+          PlayBoardClasses().setIsSubmitted(false);
+          PlayBoardClasses().setMySecret('');
+          PlayBoardClasses().setShowSecret(false);
+          Data().updateGameOver(false);
 
+          Fluttertoast.showToast(
+              msg: "New game started!",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: const Color.fromARGB(255, 0, 4, 17),
+              textColor: Colors.white,
+              fontSize: 16.0);
+        }
+        Data().updateNewGame(null);
+      }
+    });
     // check for your turn
     if (dataProvider.notYourTurn != null) {
       if (dataProvider.notYourTurn?['player'] == dataProvider.userId) {
@@ -828,7 +879,11 @@ class _PlayBoardState extends State<PlayBoard> {
                 color:
                     dataProvider.gameOver ? Colors.green : Colors.grey.shade300,
                 child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      final gameId = Data().gameId;
+                      final playerId = Data().userId;
+                      socketService.requestNewGame(playerId, gameId, false);
+                    },
                     child: const Text(
                       'New game',
                       style: TextStyle(fontSize: 17, color: Colors.white),
