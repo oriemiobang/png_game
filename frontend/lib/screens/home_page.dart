@@ -36,7 +36,7 @@ class _HomePageState extends State<HomePage> {
       dataProvider.addListener(() {
         if (socketService.gameJoined) {
           // Navigator.pushNamed(context, '/play_board');
-          context.push('player_board');
+          context.go('/play_board');
           // Navigator.push(
           //   context,
           //   MaterialPageRoute(builder: (context) => const PlayBoard()),

@@ -301,14 +301,49 @@ class _PlayBoardState extends State<PlayBoard> {
         automaticallyImplyLeading: false,
         leading: IconButton(
             onPressed: () {
-              PlayBoardClasses().setChatValue('');
-              PlayBoardClasses().setGuesses([]);
-              PlayBoardClasses().setIsSubmitted(false);
-              PlayBoardClasses().setMySecret('');
-              PlayBoardClasses().setShowSecret(false);
-              Data().updateGameOver(false);
-              // Navigator.pushNamed(context, '/');
-              context.go('/');
+              if (dataProvider.gameOver) {
+                PlayBoardClasses().setChatValue('');
+                PlayBoardClasses().setGuesses([]);
+                PlayBoardClasses().setIsSubmitted(false);
+                PlayBoardClasses().setMySecret('');
+                PlayBoardClasses().setShowSecret(false);
+                Data().updateGameOver(false);
+                // Navigator.pushNamed(context, '/');
+                context.go('/');
+              } else {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text("Leave game?"),
+                      content: const Text(
+                          "Are you sure you want to leave the game?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: Text('No'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            PlayBoardClasses().setChatValue('');
+                            PlayBoardClasses().setGuesses([]);
+                            PlayBoardClasses().setIsSubmitted(false);
+                            PlayBoardClasses().setMySecret('');
+                            PlayBoardClasses().setShowSecret(false);
+                            Data().updateGameOver(false);
+                            // Navigator.pushNamed(context, '/');
+                            Navigator.of(context).pop(); // Close the dialog
+                            context.go('/');
+                          },
+                          child: const Text("Yes"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              }
             },
             icon: const Icon(Icons.arrow_back)),
         actions: [
