@@ -25,7 +25,11 @@ class _PlayBoardState extends State<PlayBoard> {
   final TextEditingController _chatController = TextEditingController();
 
   void refreshGuess() async {
+    // final dataProvider = Provider.of<Data>(context, listen: false);
     final data = Data().data;
+    // final data = dataProvider.data;
+    // final userId = dataProvider.userId;
+
     final userId = Data().userId;
     // print('this is the data: $data');
     String player = data?['player1'] == userId ? 'player1' : 'player2';
@@ -42,6 +46,7 @@ class _PlayBoardState extends State<PlayBoard> {
   void initState() {
     refreshGuess();
     listener();
+
     // TODO: implement initState
     super.initState();
   }
@@ -123,72 +128,99 @@ class _PlayBoardState extends State<PlayBoard> {
   // change listener
   void listener() {
     final dataProvider = Provider.of<Data>(context, listen: false);
-    dataProvider.addListener(() {
-      // check for your turn
-      if (dataProvider.notYourTurn != null) {
-        if (dataProvider.notYourTurn?['player'] == dataProvider.userId) {
-          Fluttertoast.showToast(
-              msg: "Please wait for your turn!",
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
-              timeInSecForIosWeb: 1,
-              backgroundColor: const Color.fromARGB(255, 0, 4, 17),
-              textColor: Colors.white,
-              fontSize: 16.0);
 
-          Data().updateNotYourTurn(null);
-        }
-      }
+    //end
+  }
 
-// check for last chancce
-      if (dataProvider.lastChance != null) {
-        final lastChanceData = Data().lastChance;
-        final myData = Data().data;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (lastChanceData?['chanceTo'] == myData?[currentPlayer]) {
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: const Text("Last Chance"),
-                  content: const Text(
-                      'Your opponent guessed correctly! This is your last chance to draw the game.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close the dialog
-                      },
-                      child: const Text("OK"),
-                    ),
-                  ],
-                );
-              },
-            );
-          } else {
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: const Text("Last Chance"),
-                  content: const Text(
-                      'You have guessed correctly! your opponent has a last chance to draw the game.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close the dialog
-                      },
-                      child: const Text("OK"),
-                    ),
-                  ],
-                );
-              },
-            );
-          }
-        });
-
-        Data().updateLastChance(null);
+  @override
+  Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_tableScrollCtroller.hasClients) {
+        _tableScrollCtroller.animateTo(
+          _tableScrollCtroller.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      });
+    });
+    final playBoardProvider = Provider.of<PlayBoardProvider>(context);
+    final dataProvider = Provider.of<Data>(context);
+    final playBoardClasses = Provider.of<PlayBoardClasses>(context);
+
+    // check for your turn
+    if (dataProvider.notYourTurn != null) {
+      if (dataProvider.notYourTurn?['player'] == dataProvider.userId) {
+        Fluttertoast.showToast(
+            msg: "Please wait for your turn!",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: const Color.fromARGB(255, 0, 4, 17),
+            textColor: Colors.white,
+            fontSize: 16.0);
+
+        Data().updateNotYourTurn(null);
+      }
+    }
+
+// check for last chancce
+    if (dataProvider.lastChance != null) {
+      final lastChanceData = Data().lastChance;
+      final myData = Data().data;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (lastChanceData?['chanceTo'] == myData?[currentPlayer]) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Last Chance"),
+                content: const Text(
+                    'Your opponent guessed correctly! This is your last chance to draw the game.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text("Last Chance"),
+                content: const Text(
+                    'You have guessed correctly! your opponent has a last chance to draw the game.'),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(); // Close the dialog
+                    },
+                    child: const Text("OK"),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      });
+
+      Data().updateLastChance(null);
+    }
 
     // check for a winner
     // Show dialog only if winner is set (not null)
@@ -263,46 +295,20 @@ class _PlayBoardState extends State<PlayBoard> {
         });
       }
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_tableScrollCtroller.hasClients) {
-        _tableScrollCtroller.animateTo(
-          _tableScrollCtroller.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
-    });
-    final playBoardProvider = Provider.of<PlayBoardProvider>(context);
-    final dataProvider = Provider.of<Data>(context);
-    final playBoardClasses = Provider.of<PlayBoardClasses>(context);
 
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: IconButton(
             onPressed: () {
-              // PlayBoardClasses().setChatValue('');
-              // PlayBoardClasses().setGuesses([]);
-              // PlayBoardClasses().setIsSubmitted(false);
-              // PlayBoardClasses().setMySecret('');
-              // PlayBoardClasses().setShowSecret(false);
-              // Data().updateGameOver(false);
-              Navigator.pushNamed(context, '/');
-              context.pop();
+              PlayBoardClasses().setChatValue('');
+              PlayBoardClasses().setGuesses([]);
+              PlayBoardClasses().setIsSubmitted(false);
+              PlayBoardClasses().setMySecret('');
+              PlayBoardClasses().setShowSecret(false);
+              Data().updateGameOver(false);
+              // Navigator.pushNamed(context, '/');
+              context.go('/');
             },
             icon: const Icon(Icons.arrow_back)),
         actions: [
@@ -365,8 +371,21 @@ class _PlayBoardState extends State<PlayBoard> {
                         height: 35,
                         child: TextButton(
                             onPressed: () {
-                              submitScret(playBoardClasses);
-                              PlayBoardClasses().setIsSubmitted(true);
+                              if (dataProvider.data?['turn'] ==
+                                  dataProvider.userId) {
+                                submitScret(playBoardClasses);
+                                PlayBoardClasses().setIsSubmitted(true);
+                              } else {
+                                Fluttertoast.showToast(
+                                    msg: "Please wait for your turn!",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.BOTTOM,
+                                    timeInSecForIosWeb: 1,
+                                    backgroundColor:
+                                        const Color.fromARGB(255, 0, 4, 17),
+                                    textColor: Colors.white,
+                                    fontSize: 16.0);
+                              }
                             },
                             child: const Text(
                               'Submit',
@@ -618,7 +637,7 @@ class _PlayBoardState extends State<PlayBoard> {
                         ),
                         dataProvider
                                     .data?['guesses']
-                                        [dataProvider.currentPlayer]
+                                        [dataProvider.currentOpponent]
                                     .length <
                                 1
                             ? const Center(

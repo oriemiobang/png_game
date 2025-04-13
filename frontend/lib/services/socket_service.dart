@@ -25,7 +25,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('http://192.168.1.18:3000', <String, dynamic>{
+    socket = io.io('http://192.168.213.222:3000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
@@ -117,6 +117,7 @@ class SocketService with ChangeNotifier {
       gameInfo = data;
       // savedData.setData(data);
       Data().updateData(data);
+      print('data in the game info: $data');
       notifyListeners();
       // print('this is the game info: $data');
     });

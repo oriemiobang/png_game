@@ -114,7 +114,8 @@ socket.on('newGame',({gameId, playerId})=>{
       return socket.emit("room_error", "Room does not exist!");
     } else if (games[gameId].player2) {
       return socket.emit("room_error", "Room is already full!");
-    }  io.to(gameId).emit("gameInfo", game);
+    }  
+    io.to(gameId).emit("gameInfo", game);
   });
 
   socket.on("submitSecret", ({ gameId, playerId, secretNumber }) => {

@@ -18,8 +18,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isSigned = false;
   bool isPlayWithFriend = false;
-  final socketService = SocketService();
+  // final socketService = SocketService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  SocketService socketService = SocketService();
 
   @override
   void initState() {
@@ -33,7 +34,7 @@ class _HomePageState extends State<HomePage> {
       final dataProvider = Provider.of<Data>(context, listen: false);
 
       dataProvider.addListener(() {
-        if (dataProvider.data?['player2'] != null) {
+        if (socketService.gameJoined) {
           // Navigator.pushNamed(context, '/play_board');
           context.push('player_board');
           // Navigator.push(
@@ -206,7 +207,8 @@ class _HomePageState extends State<HomePage> {
                   child: TextButton(
                       onPressed: () {
                         socketService.createRandomGame();
-                        Navigator.pushNamed(context, '/random_wait_room');
+                        // Navigator.pushNamed(context, '/random_wait_room');
+                        context.push('/random_wait_room');
                       },
                       child: const Text(
                         'CREATE A GAME',
@@ -226,13 +228,14 @@ class _HomePageState extends State<HomePage> {
                 child: Center(
                   child: TextButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/play_solo');
+                        // Navigator.pushNamed(context, '/play_solo');
+                        context.push('/play_solo');
                         // setState(() {
                         //   isPlayWithFriend = !isPlayWithFriend;
                         // });
                       },
                       child: const Text(
-                        'PLAY WITH COMPUTER',
+                        'PLAY SOLO',
                         style: TextStyle(color: Colors.black),
                       )),
                 ),
@@ -298,7 +301,8 @@ class _HomePageState extends State<HomePage> {
                           ),
                           child: TextButton(
                             onPressed: () {
-                              Navigator.pushNamed(context, '/join_game');
+                              // Navigator.pushNamed(context, '/join_game');
+                              context.push('/join_game');
                             },
                             child: Text(
                               'JOIN GAME',

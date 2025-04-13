@@ -57,15 +57,18 @@ class _CreateRoomState extends State<CreateRoom> {
   void _listenForGameJoin() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final socketService = Provider.of<SocketService>(context, listen: false);
+      final dataProvider = Provider.of<Data>(context, listen: false);
 
       socketService.addListener(() {
-        if (socketService.gameJoined) {
-          // Navigator.pushNamed(context, '/play_board');
-          context.go('/play_board');
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(builder: (context) => PlayBoard()),
-          // );
+        if (dataProvider.data != null) {
+          if (socketService.gameJoined) {
+            // Navigator.pushNamed(context, '/play_board');
+            context.go('/play_board');
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(builder: (context) => PlayBoard()),
+            // );
+          }
         }
       });
     });
