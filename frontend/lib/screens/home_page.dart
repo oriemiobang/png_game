@@ -60,8 +60,8 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.pushNamed(context, '/signin');
               },
-              splashColor: Colors.grey.withOpacity(0.3), // Adjust splash color
-              highlightColor: Colors.grey.withOpacity(0.3),
+              // splashColor: Colors.grey.withOpacity(0.3), // Adjust splash color
+              // highlightColor: Colors.grey.withOpacity(0.3),
                   child: DrawerHeader(
                     decoration: BoxDecoration(
                      
@@ -94,16 +94,25 @@ class _HomePageState extends State<HomePage> {
                   leading: Icon(Icons.settings),
                   title: Text('Settings'),
                   onTap: () {
-                     // Close the drawer
+                     
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
+                  leading: Icon(Icons.person),
+                  title: Text('About us'),
+                  onTap: () {
+                   
+                    Navigator.pop(context); 
                   },
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
                   leading: Icon(Icons.question_mark_outlined),
-                  title: Text('About us'),
+                  title: Text('Help'),
                   onTap: () {
-                    // Handle the tap
-                    Navigator.pop(context); // Close the drawer
+                   
+                    Navigator.pushNamed(context, '/help'); 
                   },
                 ),
                 ListTile(
@@ -111,8 +120,8 @@ class _HomePageState extends State<HomePage> {
                   leading: Icon(Icons.thumb_up_sharp),
                   title: Text('Rate us'),
                   onTap: () {
-                    // Handle the tap
-                    Navigator.pop(context); // Close the drawer
+                    
+                    Navigator.pop(context); 
                   },
                 ),
               ],

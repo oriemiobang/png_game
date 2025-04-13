@@ -143,8 +143,17 @@ Row(children: [
     ],
   ),
 ),
-  SizedBox(height:180),
   
+  SizedBox(height:160),
+  Row(children: [
+    SizedBox(width:50),
+    Text("Don't have an account?", style: TextStyle(fontSize:17, color:Colors.grey),),
+    
+    TextButton(onPressed: (){
+      Navigator.pushNamed(context, '/signup');
+    },
+    child: Text("Register now", style:TextStyle(color:Colors.green)))
+  ],)
   
           ],
         ),
