@@ -1,29 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-class SignIn extends StatefulWidget {
-  const SignIn({super.key});
+class SignUp extends StatefulWidget {
+  const SignUp({super.key});
 
   @override
-  State<SignIn> createState() => _SignInState();
+  State<SignUp> createState() => _SignUpState();
 }
-class _SignInState extends State<SignIn> {
-  bool isPasswordVisible = false;
+class _SignUpState extends State<SignUp> {
 @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
       ),
       body: 
-      
-        Column(
+      SingleChildScrollView(
+        child:Column(
           
           children: [
             SizedBox(height:20),
             Container(
               width:340,
-              child: Text('Welcome back! Glad \nto see you. Again!',
+              child: Text('Hello! Register to get \nstarted',
               textAlign: TextAlign.start, style: TextStyle(fontSize: 24, color:Colors.black, fontWeight: FontWeight.bold))),
             SizedBox(height:20),
             SizedBox(
@@ -40,12 +39,12 @@ class _SignInState extends State<SignIn> {
       focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.black, width: 2.0),
       ),
-                      hintText: 'Enter your Email',
+                      hintText: 'Username',
                     ),
                   ),
             ),
-            SizedBox(height:15),
-     SizedBox(
+            SizedBox(height:10),
+            SizedBox(
               width : 340,
               height:50,
               child: TextField(
@@ -59,26 +58,50 @@ class _SignInState extends State<SignIn> {
       focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Colors.black, width: 2.0),
       ),
-                      hintText: 'Enter your Password',
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                          color: Colors.black54,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            isPasswordVisible = !isPasswordVisible; // Toggle visibility
-                          });
-                        },
+                      hintText: 'Email',
+                    ),
+                  ),
+            ),
+            SizedBox(height:10),
+            SizedBox(
+              width : 340,
+              height:50,
+              child: TextField(
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 2.0),
                       ),
+                      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.grey, width: 2),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.black, width: 2.0),
+      ),
+                      hintText: 'Password',
+                    ),
+                  ),
+            ),
+            SizedBox(height:10),
+     SizedBox(
+              width : 340,
+              height:50,
+              child: TextField(
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 2.0),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.grey, width:2),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.black, width: 2.0),
+      ),
+                      hintText: 'Confirm Password',
+                      
                     ),
     ),
   ),
-Row(children: [
-  SizedBox(width: 220),
-  TextButton(onPressed:(){}, 
-  child: Text('Forget Password ?', style: TextStyle(color:Colors.black)))
-],),
+SizedBox(height:15),
  Container(
   decoration: BoxDecoration(
                 color: Colors.black,
@@ -98,10 +121,10 @@ Row(children: [
     backgroundColor: Colors.black,  // Background color
     // Text color
   ),
-   child: Text("Login", style: TextStyle(color: Colors.white, fontSize: 16),)),
+   child: Text("Register", style: TextStyle(color: Colors.white, fontSize: 16),)),
  ),
  SizedBox(height:60),
-  Text("Or Login with",style: TextStyle(color: Colors.black, fontSize: 16),),
+  Text("Or Register with",style: TextStyle(color: Colors.black, fontSize: 16),),
   SizedBox(height:30),
   Container(
   child: Row(
@@ -143,12 +166,21 @@ Row(children: [
     ],
   ),
 ),
-  SizedBox(height:180),
-  
+  SizedBox(height:60),
+  Row(children: [
+    SizedBox(width:50),
+    Text("Don't have an account?", style: TextStyle(fontSize:17, color:Colors.grey),),
+    
+    TextButton(onPressed: (){
+      Navigator.pushNamed(context, '/signup');
+    },
+    child: Text("Register now", style:TextStyle(color:Colors.green)))
+  ],)
   
           ],
-        ),
-      
+          
+        )
+    ),
     );
-}
+  }
 }

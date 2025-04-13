@@ -17,6 +17,7 @@ class _HomePageState extends State<HomePage> {
   bool isSigned = false;
   bool isPlayWithFriend = false;
   final socketService = SocketService();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
@@ -33,93 +34,94 @@ class _HomePageState extends State<HomePage> {
       });
     }
     return Scaffold(
+      key: _scaffoldKey,
         appBar: AppBar(
-          leading:   PopupMenuButton<String>(
-  icon: Icon(Icons.menu, size: 32),
-  itemBuilder: (BuildContext context) {
-    return [
-            
-      PopupMenuItem<String>(
-        value: 'Sign in',
-        child:Row(children: [
-          Icon(Icons.login,color:Colors.black, size:20),
-          SizedBox(width:8),
-          Text('Sign in', style: TextStyle(color:Colors.black)),
-        ],)
-      ),
-      PopupMenuItem<String>(
-        value: 'Sign Up',
-        child:Row(children: [
-          Icon(Icons.person_add,color:Colors.black, size:20),
-          SizedBox(width:8),
-          Text('Sign up', style: TextStyle(color:Colors.black)),
-        ],)
-      ),
-      PopupMenuItem<String>(
-  value: 'Log out',
-  child: Row(
-    children: [
-      Icon(Icons.logout, color: Colors.black, size: 20),
-      SizedBox(width: 8),
-      Text(
-        'Log out',
-        style: TextStyle(color: Colors.black),
-      ),
-    ],
-  ),
-),
-PopupMenuItem<String>(
-        value: 'About',
-        child:Row(children: [
-          Icon(Icons.question_mark, color:Colors.black,size:20),
-          SizedBox(width:8),
-          Text('About', style: TextStyle(color:Colors.black),),
-        ],)
-      ),
-
-    ];
-  },
-  onSelected: (String value) {
-                  if (value == 'Sign in') {
-                    Navigator.pushNamed(context, '/signin');
-                  }
-                   else if (value == 'Sign Up') {
-                    Navigator.pushNamed(context, '/signup');
-                }
-                else if (value == 'Log out') {
-                    Navigator.pushNamed(context, '/logout');}
-                    else if (value == 'About') {
-                   Navigator.pushNamed(context, '/about');} 
-
-
-  },
-  offset: Offset(0, 35), 
-),
-          actions: [
-            TextButton(
-              child: isSigned
-                  ? Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(25),
-                        border: Border.all(color: Colors.grey),
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        size: 30,
-                        color: Colors.grey,
-                      ),
-                    )
-                  : const Text('Sign in'),
-              onPressed: () {
-                setState(() {
-                  isSigned = !isSigned;
-                });
-              },
-            )
-          ],
+          leading: IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () {
+              _scaffoldKey.currentState?.openDrawer();
+            },
+          ),
+          actions: [],
         ),
+        drawer: Container(
+          decoration: BoxDecoration(
+            color: Colors.white, // Background color
+            borderRadius: BorderRadius.circular(0), // Circularity of 10
+          ),
+          width:250,
+          child: Drawer(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: <Widget>[
+                SizedBox(
+                  height:150,
+                  child:InkWell(
+              onTap: () {
+                Navigator.pushNamed(context, '/signin');
+              },
+              splashColor: Colors.grey.withOpacity(0.3), // Adjust splash color
+              highlightColor: Colors.grey.withOpacity(0.3),
+                  child: DrawerHeader(
+                    decoration: BoxDecoration(
+                     
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+              Icons.account_circle_rounded, // Change to your desired icon
+              size: 60, // Size of the icon
+              color: Colors.black54, // Color of the icon
+            ),
+            SizedBox(width:10),
+            Text('login or register', style:TextStyle(color:Colors.black, fontSize:16)),
+                      ],
+                    ),
+                  ),
+                ),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
+                  leading: Icon(Icons.home),
+                  title: Text('Home'),
+                  onTap: () {
+                    
+                    Navigator.pop(context); 
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
+                  leading: Icon(Icons.settings),
+                  title: Text('Settings'),
+                  onTap: () {
+                     // Close the drawer
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
+                  leading: Icon(Icons.question_mark_outlined),
+                  title: Text('About us'),
+                  onTap: () {
+                    // Handle the tap
+                    Navigator.pop(context); // Close the drawer
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
+                  leading: Icon(Icons.thumb_up_sharp),
+                  title: Text('Rate us'),
+                  onTap: () {
+                    // Handle the tap
+                    Navigator.pop(context); // Close the drawer
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+          
+        
         body: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
