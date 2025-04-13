@@ -16,7 +16,7 @@ class Data with ChangeNotifier {
 
   //
 
-  List _chatData = [];
+  final List _chatData = [];
 
   static final Data _instance = Data._internal();
 
