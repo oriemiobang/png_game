@@ -1,0 +1,2 @@
+C:/Users/hp/Desktop/PNG_game/png_game/frontend/android/app/.cxx/Debug/4e6tw95c/x86/CMakeFiles/edit_cache.dir
+C:/Users/hp/Desktop/PNG_game/png_game/frontend/android/app/.cxx/Debug/4e6tw95c/x86/CMakeFiles/rebuild_cache.dir
