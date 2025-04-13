@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:png_game/main.dart';
 
 class PlaySolo extends StatefulWidget {
   const PlaySolo({super.key});
@@ -154,8 +156,9 @@ class _PlaySoloState extends State<PlaySolo> {
                       TextButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          Navigator.pushReplacementNamed(
-                              context, '/'); // Close the dialog
+                          context.pop();
+                          // Navigator.pushReplacementNamed(
+                          //     context, '/'); // Close the dialog
                         },
                         child: const Text('Yes'),
                       ),

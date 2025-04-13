@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/main.dart';
 import 'package:png_game/screens/play_board.dart';
 import 'package:provider/provider.dart';
 
@@ -25,10 +27,11 @@ class _RandomWaitRoomState extends State<RandomWaitRoom> {
       dataProvider.addListener(() {
         if (dataProvider.data?['player2'] != null) {
           // Navigator.pushNamed(context, '/play_board');
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PlayBoard()),
-          );
+          context.go('playe_board');
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(builder: (context) => const PlayBoard()),
+          // );
         }
       });
     });

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:png_game/classes/data.dart';
+// import 'package:png_game/main.dart';
 import 'package:png_game/screens/create_room.dart';
-import 'package:png_game/screens/play_board.dart';
+// import 'package:png_game/screens/play_board.dart';
 
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
@@ -33,10 +35,11 @@ class _HomePageState extends State<HomePage> {
       dataProvider.addListener(() {
         if (dataProvider.data?['player2'] != null) {
           // Navigator.pushNamed(context, '/play_board');
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PlayBoard()),
-          );
+          context.push('player_board');
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(builder: (context) => const PlayBoard()),
+          // );
         }
       });
     });
@@ -57,7 +60,7 @@ class _HomePageState extends State<HomePage> {
     //   }
     // });
     return Scaffold(
-      key: _scaffoldKey,
+        key: _scaffoldKey,
         appBar: AppBar(
           leading: IconButton(
             icon: Icon(Icons.menu),
@@ -72,44 +75,46 @@ class _HomePageState extends State<HomePage> {
             color: Colors.white, // Background color
             borderRadius: BorderRadius.circular(0), // Circularity of 10
           ),
-          width:250,
+          width: 250,
           child: Drawer(
             child: ListView(
               padding: EdgeInsets.zero,
               children: <Widget>[
                 SizedBox(
-                  height:150,
-                  child:InkWell(
-              onTap: () {
-                Navigator.pushNamed(context, '/signin');
-              },
-              splashColor: Colors.grey.withOpacity(0.3), // Adjust splash color
-              highlightColor: Colors.grey.withOpacity(0.3),
-                  child: DrawerHeader(
-                    decoration: BoxDecoration(
-                     
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-              Icons.account_circle_rounded, // Change to your desired icon
-              size: 60, // Size of the icon
-              color: Colors.black54, // Color of the icon
-            ),
-            SizedBox(width:10),
-            Text('login or register', style:TextStyle(color:Colors.black, fontSize:16)),
-                      ],
+                  height: 150,
+                  child: InkWell(
+                    onTap: () {
+                      // Navigator.pushNamed(context, '/signin');
+                      context.push('/signin');
+                    },
+                    splashColor:
+                        Colors.grey.withOpacity(0.3), // Adjust splash color
+                    highlightColor: Colors.grey.withOpacity(0.3),
+                    child: DrawerHeader(
+                      decoration: BoxDecoration(),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons
+                                .account_circle_rounded, // Change to your desired icon
+                            size: 60, // Size of the icon
+                            color: Colors.black54, // Color of the icon
+                          ),
+                          SizedBox(width: 10),
+                          Text('login or register',
+                              style:
+                                  TextStyle(color: Colors.black, fontSize: 16)),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
                   leading: Icon(Icons.home),
                   title: Text('Home'),
                   onTap: () {
-                    
-                    Navigator.pop(context); 
+                    Navigator.pop(context);
                   },
                 ),
                 ListTile(
@@ -117,7 +122,7 @@ class _HomePageState extends State<HomePage> {
                   leading: Icon(Icons.settings),
                   title: Text('Settings'),
                   onTap: () {
-                     // Close the drawer
+                    // Close the drawer
                   },
                 ),
                 ListTile(
@@ -142,9 +147,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-        
-          
-        
         body: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(

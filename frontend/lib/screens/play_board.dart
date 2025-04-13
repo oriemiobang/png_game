@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:go_router/go_router.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/classes/play_board_classes.dart';
+import 'package:png_game/main.dart';
 import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/storage/saved_data.dart';
@@ -300,6 +302,7 @@ class _PlayBoardState extends State<PlayBoard> {
               // PlayBoardClasses().setShowSecret(false);
               // Data().updateGameOver(false);
               Navigator.pushNamed(context, '/');
+              context.pop();
             },
             icon: const Icon(Icons.arrow_back)),
         actions: [
