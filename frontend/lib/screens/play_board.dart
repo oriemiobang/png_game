@@ -293,13 +293,13 @@ class _PlayBoardState extends State<PlayBoard> {
         automaticallyImplyLeading: false,
         leading: IconButton(
             onPressed: () {
-              PlayBoardClasses().setChatValue('');
-              PlayBoardClasses().setGuesses([]);
-              PlayBoardClasses().setIsSubmitted(false);
-              PlayBoardClasses().setMySecret('');
-              PlayBoardClasses().setShowSecret(false);
-              Data().updateGameOver(false);
-              Navigator.pop(context);
+              // PlayBoardClasses().setChatValue('');
+              // PlayBoardClasses().setGuesses([]);
+              // PlayBoardClasses().setIsSubmitted(false);
+              // PlayBoardClasses().setMySecret('');
+              // PlayBoardClasses().setShowSecret(false);
+              // Data().updateGameOver(false);
+              Navigator.pushNamed(context, '/');
             },
             icon: const Icon(Icons.arrow_back)),
         actions: [

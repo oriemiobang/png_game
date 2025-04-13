@@ -14,23 +14,25 @@ import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
 
 void main() {
-  runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider(
-        create: (context) => SocketService(),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => PlayBoardProvider(),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => Data(),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => PlayBoardClasses(),
-      )
-    ],
-    child: const MyApp(),
-  ));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => SocketService(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PlayBoardProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => Data(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PlayBoardClasses(),
+        )
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
