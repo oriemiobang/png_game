@@ -22,7 +22,7 @@ class _SignUpState extends State<SignUp> {
           child: Column(
         children: [
           SizedBox(height: 20),
-          Container(
+          SizedBox(
               width: 340,
               child: Text('Hello! Register to get \nstarted',
                   textAlign: TextAlign.start,

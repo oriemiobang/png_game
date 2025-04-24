@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "39600448473",
+    "project_id": "png-game-da9ba",
+    "storage_bucket": "png-game-da9ba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:39600448473:android:c94943ea1da151ff43efc8",
+        "android_client_info": {
+          "package_name": "com.bellatech.png_game"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDoOAmhklMlJ7s_-VAMlAPwWq63wod1Ew"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -21,7 +21,7 @@ class _SignInState extends State<SignIn> {
           
           children: [
             SizedBox(height:20),
-            Container(
+            SizedBox(
               width:340,
               child: Text('Welcome back! Glad \nto see you. Again!',
               textAlign: TextAlign.start, style: TextStyle(fontSize: 24, color:Colors.black, fontWeight: FontWeight.bold))),

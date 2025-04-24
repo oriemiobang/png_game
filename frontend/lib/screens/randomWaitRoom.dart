@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/classes/data.dart';
-import 'package:png_game/main.dart';
-import 'package:png_game/screens/play_board.dart';
 import 'package:provider/provider.dart';
 
 class RandomWaitRoom extends StatefulWidget {
