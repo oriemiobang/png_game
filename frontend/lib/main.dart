@@ -6,7 +6,6 @@ import 'package:png_game/screens/play_solo.dart';
 import 'package:png_game/screens/randomWaitRoom.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:png_game/screens/create_room.dart';
 import 'package:png_game/screens/home_page.dart';
 import 'package:png_game/screens/join_room.dart';
@@ -19,18 +18,14 @@ import 'package:png_game/screens/sign_up.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
-WidgetsFlutterBinding.ensureInitialized();
-try{
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
     await Firebase.initializeApp(
-
-    options: DefaultFirebaseOptions.currentPlatform,
-
-);
-}
- on Exception catch(_, exe){
-  print(exe);
-}
-
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } on Exception catch (_, exe) {
+    print(exe);
+  }
   runApp(
     MultiProvider(
       providers: [

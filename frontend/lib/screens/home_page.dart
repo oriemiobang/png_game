@@ -86,7 +86,7 @@ class _HomePageState extends State<HomePage> {
                   child: InkWell(
                     onTap: () {
                       // Navigator.pushNamed(context, '/signin');
-                      context.push('/signin');
+                      context.push('/signup');
                     },
                     splashColor:
                         Colors.grey.withOpacity(0.3), // Adjust splash color
