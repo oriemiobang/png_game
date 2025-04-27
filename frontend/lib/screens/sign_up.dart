@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:png_game/firebase_service/auth.dart';
 import 'package:png_game/main.dart';
 
 class SignUp extends StatefulWidget {
@@ -11,6 +12,57 @@ class SignUp extends StatefulWidget {
 }
 
 class _SignUpState extends State<SignUp> {
+
+
+  final AuthService _auth = AuthService();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+
+    String capitalize(String str) {
+    // Split the string into words
+    List<String> words = str.split(' ');
+
+    // Capitalize the first character of each word
+    for (int i = 0; i < words.length; i++) {
+      if (words[i].isNotEmpty) {
+        words[i] = words[i][0].toUpperCase() + words[i].substring(1);
+      }
+    }
+
+    // Join the words back into a string
+    return words.join(' ');
+  }
+
+
+    void alert(message) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return SizedBox(
+            width: double.infinity,
+            child: AlertDialog(
+              title: const Text('Could not register!'),
+              content: Text('$message'),
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('OK'))
+              ],
+            ),
+          );
+        });
+  }
+
+  String password = '';
+  String userName = '';
+  String email = '';
+  String rePassword = '';
+  bool matching  = false;
+  bool loading = false;
+  String error = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,10 +83,25 @@ class _SignUpState extends State<SignUp> {
                       color: Colors.black,
                       fontWeight: FontWeight.bold))),
           SizedBox(height: 20),
-          SizedBox(
+
+
+          Form(
+
+            key: _formKey,
+            
+            child: Column(children: [
+
+                  SizedBox(
             width: 340,
             height: 50,
-            child: TextField(
+            child: TextFormField(
+              onChanged: (val){
+               setState(() {
+                  userName = val;
+               });
+              },
+                validator: (value) =>
+                                value!.isEmpty ? 'Your name is required' : null,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey, width: 2.0),
@@ -49,11 +116,20 @@ class _SignUpState extends State<SignUp> {
               ),
             ),
           ),
-          SizedBox(height: 10),
+
+
+        SizedBox(height: 10),
           SizedBox(
             width: 340,
             height: 50,
-            child: TextField(
+            child: TextFormField(
+                   onChanged: (val) {
+                              setState(() {
+                                email = val;
+                              });
+                            },
+                 validator: (value) =>
+                                value!.isEmpty ? 'Email is required' : null,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey, width: 2.0),
@@ -68,11 +144,34 @@ class _SignUpState extends State<SignUp> {
               ),
             ),
           ),
-          SizedBox(height: 10),
+
+                SizedBox(height: 10),
           SizedBox(
             width: 340,
             height: 50,
-            child: TextField(
+            child: TextFormField(
+              validator:(value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Password is required';
+                              }
+                              if (value.length < 4) {
+                                return 'Password should be at least 4 characters';
+                              }
+                              if (matching) {
+                                setState(() {
+                                  matching =
+                                      false; // Set matching to false when passwords don't match
+                                });
+                                return 'Passwords do not match';
+                              }
+                              return null;
+                            } ,
+              onChanged: (val){
+                setState(() {
+                  password = val;
+                });
+              },
+              obscureText: true,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey, width: 2.0),
@@ -88,10 +187,33 @@ class _SignUpState extends State<SignUp> {
             ),
           ),
           SizedBox(height: 10),
-          SizedBox(
+    SizedBox(
             width: 340,
             height: 50,
-            child: TextField(
+            child: TextFormField(
+                obscureText: true,
+                            onChanged: (val) {
+                              setState(() {
+                                rePassword = val;
+                              });
+                            },
+
+                 validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Password is required';
+                              }
+                              if (value.length < 4) {
+                                return 'Password should be at least 4 characters';
+                              }
+                              if (matching) {
+                                setState(() {
+                                  matching =
+                                      false; // Set matching to false when passwords don't match
+                                });
+                                return 'Passwords do not match';
+                              }
+                              return null;
+                            },
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey, width: 2.0),
@@ -107,6 +229,9 @@ class _SignUpState extends State<SignUp> {
             ),
           ),
           SizedBox(height: 15),
+
+
+
           Container(
             decoration: BoxDecoration(
               color: Colors.black,
@@ -122,7 +247,42 @@ class _SignUpState extends State<SignUp> {
             ),
             width: 300,
             child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () async{
+                  if(_formKey.currentState!.validate()){
+
+                    if(rePassword.trim() != password.trim()){
+                        setState(() {
+                                    error = 'Passwords do not match';
+                                    matching = true;
+                                  });
+
+                    }
+
+                  } else {
+                    setState(() {
+                      loading = true;
+                    });
+
+                             String capitalizedName = capitalize(userName);
+                                  String trimPassword = password.trim();
+                                  String trimEmail = email.trim();
+
+                                  dynamic result = await _auth.registerWithEmailAndPassword(email: trimEmail, password: trimPassword, name: capitalizedName);
+
+
+                                        if (result == null) {
+                                    setState(() {
+                                      error =
+                                          'Please make sure your email is valid and your internet connection is stable.';
+                                      loading = false;
+                                    });
+
+                                    alert(error);
+                                  }
+                  }
+
+                  // register logic here 
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black, // Background color
                   // Text color
@@ -130,15 +290,18 @@ class _SignUpState extends State<SignUp> {
                 child: Text(
                   "Register",
                   style: TextStyle(color: Colors.white, fontSize: 16),
-                )),
+                ),),
           ),
+          ],),),
+    
+  
           SizedBox(height: 60),
           Text(
             "Or Register with",
             style: TextStyle(color: Colors.black, fontSize: 16),
           ),
           SizedBox(height: 30),
-          Container(
+          SizedBox(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center, // Center the icons
               children: [
