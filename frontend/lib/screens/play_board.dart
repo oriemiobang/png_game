@@ -524,7 +524,7 @@ class _PlayBoardState extends State<PlayBoard> {
             ),
             playBoardProvider.showMine
                 ? Container(
-                    height: 370,
+                    height: 300,
                     width: double.infinity,
                     color: Colors.grey.shade200,
                     child: Column(
@@ -668,7 +668,7 @@ class _PlayBoardState extends State<PlayBoard> {
                     ),
                   )
                 : Container(
-                    height: 370,
+                    height: 300,
                     width: double.infinity,
                     color: Colors.grey.shade200,
                     child: Column(
@@ -876,7 +876,7 @@ class _PlayBoardState extends State<PlayBoard> {
             Container(
                 width: 170,
                 color:
-                    dataProvider.gameOver ? Colors.green : Colors.grey.shade300,
+                    dataProvider.gameOver ? Colors.black : Colors.grey.shade300,
                 child: TextButton(
                     onPressed: () {
                       final gameId = Data().gameId;
@@ -935,10 +935,10 @@ class _PlayBoardState extends State<PlayBoard> {
                   _controller.text = '';
                 },
                 child: Container(
-                  decoration: const BoxDecoration(color: Colors.green),
+                  decoration: const BoxDecoration(color: Colors.black),
                   child: const Padding(
                     padding: EdgeInsets.all(8.0),
-                    child: Text('Submit'),
+                    child: Text('Submit', style: TextStyle(color: Colors.white),),
                   ),
                 ),
               )

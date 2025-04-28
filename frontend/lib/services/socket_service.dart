@@ -25,7 +25,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('http://192.168.213.222:3000', <String, dynamic>{
+    socket = io.io('https://png-game.onrender.com', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/screens/loading.dart';
 // import 'package:png_game/main.dart';
 // import 'package:png_game/screens/play_board.dart';
 import 'package:png_game/screens/scan_qr.dart';
@@ -64,11 +65,11 @@ class _JoinRoomState extends State<JoinRoom> {
       });
     });
   }
-
+bool loading = false;
   @override
   Widget build(BuildContext context) {
     final socketService = Provider.of<SocketService>(context, listen: false);
-    return Scaffold(
+    return loading? Loading(): Scaffold(
       appBar: AppBar(),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -109,7 +110,9 @@ class _JoinRoomState extends State<JoinRoom> {
                     );
 
                     if (scannedData != null) {
+
                       setState(() {
+                        loading = true;
                         qr_data = scannedData;
                         myController.text = scannedData;
                         gameCode = scannedData;
@@ -126,6 +129,7 @@ class _JoinRoomState extends State<JoinRoom> {
                   color: Colors.green,
                   child: TextButton(
                     onPressed: () {
+                      loading = true;
                       socketService.joinGame(gameCode);
                       Data().updateGameId(gameCode);
                     },
