@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/classes/play_board_classes.dart';
 import 'package:png_game/firebase_options.dart';
+import 'package:png_game/firebase_service/auth.dart';
+import 'package:png_game/models/my_user.dart';
 import 'package:png_game/screens/play_solo.dart';
 import 'package:png_game/screens/randomWaitRoom.dart';
 import 'package:provider/provider.dart';
@@ -102,11 +104,13 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
+    return  StreamProvider<MyUser?>.value(value: AuthService().user, initialData: null, child:    MaterialApp.router(
       routerConfig: _router,
       // darkTheme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
       title: 'PNG Game',
-    );
+    ) ,);
+    
+
   }
 }

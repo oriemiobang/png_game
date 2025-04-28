@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/firebase_service/auth.dart';
+import 'package:png_game/models/my_user.dart';
 // import 'package:png_game/main.dart';
 import 'package:png_game/screens/create_room.dart';
 // import 'package:png_game/screens/play_board.dart';
@@ -21,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   // final socketService = SocketService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   SocketService socketService = SocketService();
+    final AuthService _auth = AuthService();
 
   @override
   void initState() {
@@ -49,6 +52,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final dataProvider = Provider.of<Data>(context);
+     final user = Provider.of<MyUser?>(context);
     // // print('these are the random games: ${Data().randomGames}');
 
     // WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -83,10 +87,13 @@ class _HomePageState extends State<HomePage> {
               children: <Widget>[
                 SizedBox(
                   height: 150,
-                  child: InkWell(
+                  child: user != null? Center(child: ListTile(leading: Icon(Icons.person, size: 40,), 
+                  title: Text('Oriemi Obang', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  ),) : InkWell(
                     onTap: () {
                       // Navigator.pushNamed(context, '/signin');
-                      context.push('/signup');
+                      context.push('/signin');
                     },
                     splashColor:
                         Colors.grey.withOpacity(0.3), // Adjust splash color
@@ -144,6 +151,18 @@ class _HomePageState extends State<HomePage> {
                     Navigator.pop(context); // Close the drawer
                   },
                 ),
+
+                user != null? ListTile(
+                contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
+                  leading: Icon(Icons.logout),
+                  title: Text('Log out'),
+                  onTap: () {
+                    _auth.signOut();
+                   // handle log out
+                   
+                  },
+
+                ): SizedBox()
               ],
             ),
           ),
