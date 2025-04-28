@@ -194,6 +194,7 @@ class _PlayBoardState extends State<PlayBoard> {
           PlayBoardClasses().setMySecret('');
           PlayBoardClasses().setShowSecret(false);
           Data().updateGameOver(false);
+          dataProvider.updateChatData({});
 
           Fluttertoast.showToast(
               msg: "New game started!",
@@ -358,6 +359,8 @@ class _PlayBoardState extends State<PlayBoard> {
                 PlayBoardClasses().setMySecret('');
                 PlayBoardClasses().setShowSecret(false);
                 Data().updateGameOver(false);
+                Data().updateChatData({});
+              
                 // Navigator.pushNamed(context, '/');
                 context.go('/');
               } else {
@@ -383,6 +386,8 @@ class _PlayBoardState extends State<PlayBoard> {
                             PlayBoardClasses().setMySecret('');
                             PlayBoardClasses().setShowSecret(false);
                             Data().updateGameOver(false);
+                              Data().updateChatData({});
+                         
                             // Navigator.pushNamed(context, '/');
                             Navigator.of(context).pop(); // Close the dialog
                             context.go('/');
@@ -823,7 +828,7 @@ class _PlayBoardState extends State<PlayBoard> {
                   border: Border.all(color: Colors.grey)),
               child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: ListView.builder(
+                  child: dataProvider.chatData!.isNotEmpty?  ListView.builder(
                       itemCount: dataProvider.chatData?.length,
                       controller: _scrollController,
                       itemBuilder: (context, index) {
@@ -837,7 +842,7 @@ class _PlayBoardState extends State<PlayBoard> {
                                   : Colors.grey,
                               fontSize: 18),
                         );
-                      })),
+                      }): Text('your texts appears here')),
             ),
             Row(
               children: [
