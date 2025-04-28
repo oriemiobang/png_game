@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/firebase_service/auth.dart';
 import 'package:png_game/main.dart';
+import 'package:png_game/screens/loading.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -61,7 +63,7 @@ class _SignUpState extends State<SignUp> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return loading? Loading():  Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -267,6 +269,17 @@ class _SignUpState extends State<SignUp> {
                           });
 
                           alert(error);
+                        } else {
+                             Fluttertoast.showToast(
+                                msg: "Signed up succesfully",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                timeInSecForIosWeb: 1,
+                                backgroundColor: Colors.black,
+                                textColor: Colors.white,
+                                webShowClose: false,
+                                fontSize: 16.0);
+                          context.go('/');
                         }
                       } 
                       } 
@@ -337,15 +350,15 @@ class _SignUpState extends State<SignUp> {
             children: [
               SizedBox(width: 50),
               Text(
-                "Don't have an account?",
+                "Already have an account?",
                 style: TextStyle(fontSize: 17, color: Colors.grey),
               ),
               TextButton(
                   onPressed: () {
                     // Navigator.pushNamed(context, '/signup');
-                    context.go('/signup');
+                    context.go('/signin');
                   },
-                  child: Text("Register now",
+                  child: Text("Sign in now",
                       style: TextStyle(color: Colors.green)))
             ],
           )

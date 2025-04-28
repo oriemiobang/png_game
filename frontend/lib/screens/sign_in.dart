@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:go_router/go_router.dart';
+import 'package:png_game/firebase_service/auth.dart';
+import 'package:png_game/screens/loading.dart';
+// import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({super.key});
@@ -9,10 +13,41 @@ class SignIn extends StatefulWidget {
 }
 
 class _SignInState extends State<SignIn> {
+    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final AuthService _auth = AuthService();
   bool isPasswordVisible = false;
+    String email = '';
+  String password = '';
+  String rePassword = '';
+  String name = '';
+  // int points = 0;
+  String error = '';
+  bool loading = false;
+
+    void alert(message) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return SizedBox(
+            width: double.infinity,
+            child: AlertDialog(
+              title: const Text('Could not sign in!'),
+              content: Text('$message'),
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text('OK'))
+              ],
+            ),
+          );
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return loading? Loading():  Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -29,10 +64,22 @@ class _SignInState extends State<SignIn> {
                       color: Colors.black,
                       fontWeight: FontWeight.bold))),
           SizedBox(height: 20),
-          SizedBox(
+          Form(
+            key: _formKey,
+            child: Column(
+            children: [
+
+                SizedBox(
             width: 340,
             height: 50,
-            child: TextField(
+            child: TextFormField(
+              onChanged: (val) {
+                                setState(() {
+                                  email = val;
+                                });
+                              },
+              validator: (value) =>
+                                  value!.isEmpty ? 'Email is required' : null,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey, width: 2.0),
@@ -47,11 +94,21 @@ class _SignInState extends State<SignIn> {
               ),
             ),
           ),
+                  
           SizedBox(height: 15),
           SizedBox(
             width: 340,
             height: 50,
-            child: TextField(
+            child: TextFormField(
+                    obscureText: true,
+                              onChanged: (val) {
+                                setState(() {
+                                  password = val;
+                                });
+                              },
+                              validator: (value) => value!.length < 4
+                                  ? 'password should be at least 4 digit'
+                                  : null,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey, width: 2.0),
@@ -78,11 +135,16 @@ class _SignInState extends State<SignIn> {
               ),
             ),
           ),
+            ],
+          ),),
+
           Row(
             children: [
               SizedBox(width: 220),
               TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    context.go('/forgotpassword');
+                  },
                   child: Text('Forget Password ?',
                       style: TextStyle(color: Colors.black)))
             ],
@@ -102,7 +164,44 @@ class _SignInState extends State<SignIn> {
             ),
             width: 300,
             child: ElevatedButton(
-                onPressed: () {},
+                onPressed: ()  async{
+                  if(_formKey.currentState!.validate()){
+                    print('loggin in');
+
+                    setState(() {
+                      loading = true;
+                    });
+
+                            String trimPassword = password.trim();
+                                  String trimEmail = email.trim();
+                                  dynamic result =
+                                      await _auth.signInWithEmailAndPassword(
+                                          trimEmail, trimPassword);
+                                  // print(result);
+                                  if (result == null) {
+                                    setState(() {
+                                      error =
+                                          'This could be because of wrong email or password, or unstable internet connection, please check and try again.';
+                                      loading = false;
+                                      // print(error);
+                                    });
+
+                                    alert(error);
+                                  } else {
+                                       Fluttertoast.showToast(
+                                        msg: "Signed in succesfully",
+                                        toastLength: Toast.LENGTH_SHORT,
+                                        gravity: ToastGravity.BOTTOM,
+                                        timeInSecForIosWeb: 1,
+                                        backgroundColor: Colors.black,
+                                        textColor: Colors.white,
+                                        webShowClose: false,
+                                        fontSize: 16.0);
+                                        context.go('/');
+
+                                  }
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black, // Background color
                   // Text color
@@ -110,7 +209,7 @@ class _SignInState extends State<SignIn> {
                 child: Text(
                   "Login",
                   style: TextStyle(color: Colors.white, fontSize: 16),
-                )),
+                ),),
           ),
           SizedBox(height: 60),
           Text(
@@ -158,7 +257,23 @@ class _SignInState extends State<SignIn> {
               ],
             ),
           ),
-          SizedBox(height: 180),
+          SizedBox(height: 20),
+          Row(
+            children: [
+              SizedBox(width: 50),
+              Text(
+                "Don't have an account?",
+                style: TextStyle(fontSize: 17, color: Colors.grey),
+              ),
+              TextButton(
+                  onPressed: () {
+                    // Navigator.pushNamed(context, '/signup');
+                    context.go('/signup');
+                  },
+                  child: Text("Register now",
+                      style: TextStyle(color: Colors.green)))
+            ],
+          )
         ],
       ),
     );
