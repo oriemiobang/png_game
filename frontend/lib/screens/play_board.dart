@@ -3,6 +3,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/classes/play_board_classes.dart';
+import 'package:png_game/firebase_service/auth.dart';
+import 'package:png_game/firebase_service/database_service.dart';
 import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/storage/saved_data.dart';
@@ -22,6 +24,8 @@ class _PlayBoardState extends State<PlayBoard> {
 
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _chatController = TextEditingController();
+  AuthService _authService = AuthService();
+  DatabaseService _databaseService = DatabaseService();
 
   void refreshGuess() async {
     // final dataProvider = Provider.of<Data>(context, listen: false);
@@ -304,6 +308,7 @@ class _PlayBoardState extends State<PlayBoard> {
             showDialog(
               context: context,
               builder: (BuildContext context) {
+                
                 return AlertDialog(
                   title: const Text("Game over!"),
                   content: const Text("Congratulations! You won the game!"),
@@ -828,7 +833,7 @@ class _PlayBoardState extends State<PlayBoard> {
                   border: Border.all(color: Colors.grey)),
               child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: dataProvider.chatData!.isNotEmpty?  ListView.builder(
+                  child: ListView.builder(
                       itemCount: dataProvider.chatData?.length,
                       controller: _scrollController,
                       itemBuilder: (context, index) {
@@ -842,7 +847,7 @@ class _PlayBoardState extends State<PlayBoard> {
                                   : Colors.grey,
                               fontSize: 18),
                         );
-                      }): Text('your texts appears here')),
+                      }),),
             ),
             Row(
               children: [

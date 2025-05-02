@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/firebase_service/auth.dart';
-import 'package:png_game/main.dart';
 import 'package:png_game/screens/loading.dart';
 
 class SignUp extends StatefulWidget {
