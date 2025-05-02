@@ -137,6 +137,7 @@ class _PlayBoardState extends State<PlayBoard> {
 
   @override
   Widget build(BuildContext context) {
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_tableScrollCtroller.hasClients) {
         _tableScrollCtroller.animateTo(
@@ -289,6 +290,8 @@ class _PlayBoardState extends State<PlayBoard> {
             showDialog(
               context: context,
               builder: (BuildContext context) {
+
+                
                 return AlertDialog(
                   title: const Text("Game over!"),
                   content: const Text("It's a draw"),
@@ -410,7 +413,10 @@ class _PlayBoardState extends State<PlayBoard> {
         
       },
       child: Scaffold(
+        backgroundColor: Colors.grey.shade100,
         appBar: AppBar(
+          // backgroundColor: Colors.white,
+          forceMaterialTransparency: true,
           automaticallyImplyLeading: false,
           leading: IconButton(
               onPressed: () {
@@ -470,7 +476,7 @@ class _PlayBoardState extends State<PlayBoard> {
                 dataProvider.userId == dataProvider.data?['turn']
                     ? 'Your turn'
                     : 'Opponent\'s turn',
-                style: const TextStyle(color: Colors.grey, fontSize: 17),
+                style:  TextStyle(color:dataProvider.userId == dataProvider.data?['turn']? Colors.green: Colors.red, fontSize: 17, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -479,6 +485,7 @@ class _PlayBoardState extends State<PlayBoard> {
           padding: const EdgeInsets.all(8.0),
           child: ListView(
             children: [
+          
               playBoardClasses.isSubmitted
                   ? !playBoardClasses.showSecret
                       ? GestureDetector(
@@ -497,94 +504,108 @@ class _PlayBoardState extends State<PlayBoard> {
                             style: const TextStyle(fontSize: 20),
                           ),
                         )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        SizedBox(
-                          height: 35,
-                          width: 150,
-                          child: TextField(
-                            keyboardType: TextInputType.number,
-                            onChanged: (value) {
-                              PlayBoardClasses().setMySecret(value);
-                            },
-                            decoration: InputDecoration(
-                              labelText: playBoardClasses.mySecret.isEmpty
-                                  ? 'Enter secret code'
-                                  : '',
+                  : Padding(
+                    padding: const EdgeInsets.only(right: 20, ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          SizedBox(
+                            height: 35,
+                            width: 150,
+                            child: TextField(
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) {
+                                PlayBoardClasses().setMySecret(value);
+                              },
+                              decoration: InputDecoration(
+                                labelText: playBoardClasses.mySecret.isEmpty
+                                    ? 'Enter secret code'
+                                    : '',
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(
-                          width: 10,
-                        ),
-                        Container(
-                          color: Colors.green,
-                          height: 35,
-                          child: TextButton(
-                              onPressed: () {
-                                if (dataProvider.data?['turn'] ==
-                                    dataProvider.userId) {
-                                  submitScret(playBoardClasses);
-                                  PlayBoardClasses().setIsSubmitted(true);
-                                } else {
-                                  Fluttertoast.showToast(
-                                      msg: "Please wait for your turn!",
-                                      toastLength: Toast.LENGTH_SHORT,
-                                      gravity: ToastGravity.BOTTOM,
-                                      timeInSecForIosWeb: 1,
-                                      backgroundColor:
-                                          const Color.fromARGB(255, 0, 4, 17),
-                                      textColor: Colors.white,
-                                      fontSize: 16.0);
-                                }
-                              },
-                              child: const Text(
-                                'Submit',
-                                style: TextStyle(color: Colors.black),
-                              )),
-                        )
-                      ],
-                    ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Container(
+                         
+                            decoration: BoxDecoration(
+                                 color: Colors.white,
+                              borderRadius: BorderRadius.circular(10.0),
+                            ),
+                            height: 35,
+                            width: 120,
+                            child: TextButton(
+                                onPressed: () {
+                                  if (dataProvider.data?['turn'] ==
+                                      dataProvider.userId) {
+                                    submitScret(playBoardClasses);
+                                    PlayBoardClasses().setIsSubmitted(true);
+                                  } else {
+                                    Fluttertoast.showToast(
+                                        msg: "Please wait for your turn!",
+                                        toastLength: Toast.LENGTH_SHORT,
+                                        gravity: ToastGravity.BOTTOM,
+                                        timeInSecForIosWeb: 1,
+                                        backgroundColor:
+                                            const Color.fromARGB(255, 0, 4, 17),
+                                        textColor: Colors.white,
+                                        fontSize: 16.0);
+                                  }
+                                },
+                                child: const Text(
+                                  'Submit',
+                                  style: TextStyle(color: Colors.green),
+                                )),
+                          )
+                        ],
+                      ),
+                  ),
               const SizedBox(
                 height: 10,
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () => playBoardProvider.toggleBoard(true),
-                    child: Container(
-                      width: 170,
-                      color: playBoardProvider.showMine
-                          ? Colors.grey.shade200
-                          : null,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          'My board',
-                          style: TextStyle(color: Colors.grey.shade800),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[300]
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      onTap: () => playBoardProvider.toggleBoard(true),
+                      child: Container(
+                        width: 170,
+                        color: playBoardProvider.showMine
+                            ? Colors.white
+                            : null,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'My board',
+                            style: TextStyle(color: Colors.grey.shade800),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: () => playBoardProvider.toggleBoard(false),
-                    child: Container(
-                      width: 170,
-                      color: !playBoardProvider.showMine
-                          ? Colors.grey.shade200
-                          : null,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          'Opponent\'s board',
-                          style: TextStyle(color: Colors.grey.shade800),
+                    GestureDetector(
+                      onTap: () => playBoardProvider.toggleBoard(false),
+                      child: Container(
+                        width: 170,
+                        color: !playBoardProvider.showMine
+                            ? Colors.white
+                            : null,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'Opponent\'s board',
+                            style: TextStyle(color: Colors.grey.shade800),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(
                 height: 10,
@@ -593,13 +614,22 @@ class _PlayBoardState extends State<PlayBoard> {
                   ? Container(
                       height: 300,
                       width: double.infinity,
-                      color: Colors.grey.shade200,
+                     decoration: BoxDecoration(
+                       color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                       border: Border.all(width: 1, color: Colors.grey.shade300)
+                     ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           // Header row (fixed)
                           Container(
-                            color: Colors.grey.shade300,
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10)),
+                              border: Border.all(width: 1, color: Colors.grey.shade300)
+                          ),
+
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 10),
                             child: const Row(
@@ -650,7 +680,7 @@ class _PlayBoardState extends State<PlayBoard> {
                                   1
                               ? const Center(
                                   child: Text(
-                                    'your guesses appears here',
+                                    '\n\nyour guesses appear here',
                                     style: TextStyle(fontStyle: FontStyle.italic),
                                   ),
                                 )
@@ -737,13 +767,23 @@ class _PlayBoardState extends State<PlayBoard> {
                   : Container(
                       height: 300,
                       width: double.infinity,
-                      color: Colors.grey.shade200,
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(width: 1, color: Colors.grey.shade300)
+                      ),
+                    
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           // Header row (fixed)
                           Container(
-                            color: Colors.grey.shade300,
+                          decoration: BoxDecoration(color: Colors.white,
+                          border: Border.all(width: 1, color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.only(topLeft: Radius.circular(10), 
+                          topRight: Radius.circular(10))
+                          
+                          ),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 10),
                             child: const Row(
@@ -794,7 +834,7 @@ class _PlayBoardState extends State<PlayBoard> {
                                   1
                               ? const Center(
                                   child: Text(
-                                    'your guesses appears here',
+                                    '\n\nyour opponent guesses appear here',
                                     style: TextStyle(fontStyle: FontStyle.italic),
                                   ),
                                 )
@@ -886,23 +926,24 @@ class _PlayBoardState extends State<PlayBoard> {
                 // width: 350,
                 decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(5),
+                    color: Colors.white,
                     // color: Colors.grey.shade300,
-                    border: Border.all(color: Colors.grey)),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),),
                 child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ListView.builder(
+                    padding: dataProvider.chatData!.isEmpty? EdgeInsets.only(left: 50) :   EdgeInsets.all(8.0),
+                    child: dataProvider.chatData!.isEmpty? Text('\n\n\nmessages appear here', style: TextStyle(fontStyle: FontStyle.italic),) : ListView.builder(
                         itemCount: dataProvider.chatData?.length,
                         controller: _scrollController,
                         itemBuilder: (context, index) {
                           return Text(
-                            dataProvider.chatData?[index]['message'],
+                            dataProvider.chatData?[index]['message'] ?? '',
                             style: TextStyle(
                                 color: dataProvider.chatData?[index]
                                             ['currentSender'] ==
                                         Data().userId
                                     ? Colors.blue
                                     : Colors.grey,
-                                fontSize: 18),
+                                fontSize: 17),
                           );
                         }),),
               ),
@@ -932,7 +973,7 @@ class _PlayBoardState extends State<PlayBoard> {
                       },
                       icon: Icon(
                         Icons.send,
-                        color: Colors.grey.shade500,
+                        color:  Colors.blue,
                         size: 35,
                       ))
                 ],
@@ -945,11 +986,11 @@ class _PlayBoardState extends State<PlayBoard> {
                   color:
                       dataProvider.gameOver ? Colors.black : Colors.grey.shade300,
                   child: TextButton(
-                      onPressed: () {
+                      onPressed: dataProvider.gameOver ? () {
                         final gameId = Data().gameId;
                         final playerId = Data().userId;
                         socketService.requestNewGame(playerId, gameId, false);
-                      },
+                      }: null,
                       child: const Text(
                         'New game',
                         style: TextStyle(fontSize: 17, color: Colors.white),
@@ -1002,10 +1043,14 @@ class _PlayBoardState extends State<PlayBoard> {
                     _controller.text = '';
                   },
                   child: Container(
-                    decoration: const BoxDecoration(color: Colors.black),
+                    width: 80,
+                    decoration:  BoxDecoration(color: Colors.black,
+                    borderRadius: BorderRadius.circular(10)
+                    
+                    ),
                     child: const Padding(
                       padding: EdgeInsets.all(8.0),
-                      child: Text('Submit', style: TextStyle(color: Colors.white),),
+                      child: Text('Submit', style: TextStyle(color: Colors.white, fontSize: 17.9),),
                     ),
                   ),
                 )
