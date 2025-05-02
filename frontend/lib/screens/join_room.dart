@@ -70,14 +70,15 @@ bool loading = false;
   Widget build(BuildContext context) {
     final socketService = Provider.of<SocketService>(context, listen: false);
     return loading? Loading(): Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
           children: [
-            const Center(
+             Center(
               child:
-                  Text('Challenge your friend', style: TextStyle(fontSize: 18)),
+                  Text('Challenge your friend', style: TextStyle(fontSize: 18, color: Colors.grey.shade600)),
             ),
             const SizedBox(
               height: 20,
@@ -85,7 +86,12 @@ bool loading = false;
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SizedBox(
+               Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10)
+                ),
+              child:   Row(children: [ SizedBox(
                   height: 40,
                   width: 210,
                   child: TextField(
@@ -96,7 +102,10 @@ bool loading = false;
                       });
                     },
                     decoration: const InputDecoration(
-                      hintText: 'Enter room code',
+                      
+                      hintText: '\t\tEnter room code',
+                      hintStyle: TextStyle(color: Colors.grey),
+                      border: InputBorder.none
                     ),
                   ),
                 ),
@@ -123,10 +132,14 @@ bool loading = false;
                       // Use the scanned data here (e.g., open a URL, store it, etc.)
                     }
                   },
-                ),
+                ),],)
+               ),
                 Container(
-                  height: 35,
-                  color: Colors.green,
+                  height: 55,
+                  decoration: BoxDecoration(
+                       color: Colors.green.shade500,
+                       borderRadius: BorderRadius.circular(10)
+                  ),
                   child: TextButton(
                     onPressed: () {
                       loading = true;
@@ -135,7 +148,7 @@ bool loading = false;
                     },
                     child: const Text(
                       'Join room',
-                      style: TextStyle(color: Colors.black),
+                      style: TextStyle(color: Colors.white, fontSize: 16.5),
                     ),
                   ),
                 )

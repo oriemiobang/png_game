@@ -65,8 +65,10 @@ class _HomePageState extends State<HomePage> {
     //   }
     // });
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
         key: _scaffoldKey,
         appBar: AppBar(
+          forceMaterialTransparency: true,
           leading: IconButton(
             icon: Icon(Icons.menu),
             onPressed: () {
@@ -169,14 +171,15 @@ class _HomePageState extends State<HomePage> {
         ),
         body: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Column(
+          child: ListView(
+          
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 height: 350,
                 decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(5),
-                    color: Colors.grey.shade200),
+                    color: Colors.white),
                 width: double.infinity,
                 child: ListView.builder(
                     itemCount: dataProvider.randomGames?.length,
@@ -219,7 +222,7 @@ class _HomePageState extends State<HomePage> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey.shade300,
+                  color: const Color.fromARGB(71, 64, 131, 255),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Center(
@@ -241,7 +244,7 @@ class _HomePageState extends State<HomePage> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey.shade300,
+                  color: const Color.fromARGB(71, 64, 131, 255),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Center(
@@ -265,7 +268,7 @@ class _HomePageState extends State<HomePage> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey.shade300,
+                  color:  const Color.fromARGB(71, 64, 131, 255),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Center(
@@ -291,7 +294,7 @@ class _HomePageState extends State<HomePage> {
                         Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey.shade200,
+                            color:  const Color.fromARGB(71, 64, 131, 255),
                             border: Border.all(color: Colors.grey.shade100),
                           ),
                           child: TextButton(
@@ -315,7 +318,7 @@ class _HomePageState extends State<HomePage> {
                         Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey.shade200,
+                            color:  const Color.fromARGB(71, 64, 131, 255),
                             border: Border.all(color: Colors.grey.shade100),
                           ),
                           child: TextButton(
