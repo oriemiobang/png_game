@@ -71,7 +71,7 @@ bool loading = false;
     final socketService = Provider.of<SocketService>(context, listen: false);
     return loading? Loading(): Scaffold(
       backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(),
+      appBar: AppBar(forceMaterialTransparency: true,),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(

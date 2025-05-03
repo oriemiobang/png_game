@@ -566,6 +566,7 @@ class _PlayBoardState extends State<PlayBoard> {
                 height: 10,
               ),
               Container(
+                height: 40,
                 decoration: BoxDecoration(
                   color: Colors.grey[300]
                 ),
@@ -576,6 +577,7 @@ class _PlayBoardState extends State<PlayBoard> {
                       onTap: () => playBoardProvider.toggleBoard(true),
                       child: Container(
                         width: 170,
+                        height: 40,
                         color: playBoardProvider.showMine
                             ? Colors.white
                             : null,
@@ -583,7 +585,7 @@ class _PlayBoardState extends State<PlayBoard> {
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
                             'My board',
-                            style: TextStyle(color: Colors.grey.shade800),
+                            style: TextStyle(color: Colors.grey.shade800, fontSize: 17.5),
                           ),
                         ),
                       ),
@@ -592,6 +594,7 @@ class _PlayBoardState extends State<PlayBoard> {
                       onTap: () => playBoardProvider.toggleBoard(false),
                       child: Container(
                         width: 170,
+                        height: 40,
                         color: !playBoardProvider.showMine
                             ? Colors.white
                             : null,
@@ -599,7 +602,7 @@ class _PlayBoardState extends State<PlayBoard> {
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
                             'Opponent\'s board',
-                            style: TextStyle(color: Colors.grey.shade800),
+                            style: TextStyle(color: Colors.grey.shade800, fontSize: 17.5),
                           ),
                         ),
                       ),

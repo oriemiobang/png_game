@@ -77,13 +77,14 @@ class _CreateRoomState extends State<CreateRoom> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(forceMaterialTransparency: true,),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(children: [
-          const Text(
+           Text(
             'Challenge your friend',
-            style: TextStyle(fontSize: 18),
+            style: TextStyle(fontSize: 25, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
           ),
           // Row(
           //   mainAxisAlignment: MainAxisAlignment
@@ -123,43 +124,50 @@ class _CreateRoomState extends State<CreateRoom> {
             height: 10,
           ),
           Center(
-            child: QrImageView(
-              data: gameId,
-              version: QrVersions.auto,
-              size: 200.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15)
+              ),
+              padding: EdgeInsets.all(15),
+              child: QrImageView(
+                backgroundColor: Colors.white,
+                data: gameId,
+                version: QrVersions.auto,
+                size: 220.0,
+              ),
             ),
           ),
 
           const SizedBox(
-            height: 10,
+            height: 15,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                height: 35,
-                decoration: const BoxDecoration(color: Colors.green),
-                child: TextButton(
-                  onPressed: () {
-                    shareCode();
-                  },
-                  child: const Text(
-                    'Share code',
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ),
+          Container(
+            height: 40,
+            width: 240,
+            decoration:  BoxDecoration(color: Colors.green.shade500, 
+            borderRadius: BorderRadius.circular(10)
+            ),
+            child: TextButton.icon(
+              icon: Transform.flip(  flipX: true,child: Icon(Icons.reply, size: 30, color: Colors.white,)),
+              onPressed: () {
+                shareCode();
+              },
+              label: const Text(
+                'Share code',
+                style: TextStyle(color: Colors.white, fontSize: 18),
               ),
-              const SizedBox(
-                width: 20,
+            ),
+          ),
+            const SizedBox(
+                height: 15,
               ),
               IconButton(
                 onPressed: () {
                   copyCode();
                 },
-                icon: const Icon(Icons.copy),
+                icon: const Icon(Icons.copy, size: 40,),
               )
-            ],
-          )
         ]),
       ),
     );
