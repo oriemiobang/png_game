@@ -26,6 +26,7 @@ class _PlayBoardState extends State<PlayBoard> {
   final TextEditingController _chatController = TextEditingController();
   AuthService _authService = AuthService();
   DatabaseService _databaseService = DatabaseService();
+      bool thereIsNewGame = false;
 
   void refreshGuess() async {
     // final dataProvider = Provider.of<Data>(context, listen: false);
@@ -37,6 +38,7 @@ class _PlayBoardState extends State<PlayBoard> {
     // print('this is the data: $data');
     String player = data?['player1'] == userId ? 'player1' : 'player2';
     String opponent = data?['player1'] == userId ? 'player2' : 'player1';
+
     Data().updateCurrentPlayer(player);
     Data().updateCurrentOpponent(opponent);
     setState(() {
@@ -101,8 +103,9 @@ class _PlayBoardState extends State<PlayBoard> {
   void submitScret(PlayBoardClasses playBoardClasees) {
     final mySecret = playBoardClasees.mySecret;
     bool isNumb = RegExp(r'^[0-9]+$').hasMatch(mySecret);
+      bool isUnique = myGuess.split('').toSet().length == myGuess.length;
 
-    if (mySecret.length == 4 && isNumb) {
+    if ((mySecret.length == 4 )&& isNumb && isUnique) {
       socketService.submitSecret(mySecret);
     } else {
       showDialog(
@@ -200,6 +203,10 @@ class _PlayBoardState extends State<PlayBoard> {
           PlayBoardClasses().setShowSecret(false);
           Data().updateGameOver(false);
           dataProvider.updateChatData({});
+          thereIsNewGame = true;
+          setState(() {
+            
+          });
 
           Fluttertoast.showToast(
               msg: "New game started!",
