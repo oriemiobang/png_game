@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
@@ -27,6 +29,27 @@ class _PlayBoardState extends State<PlayBoard> {
   AuthService _authService = AuthService();
   DatabaseService _databaseService = DatabaseService();
       bool thereIsNewGame = false;
+  int _remainingTime = 30;
+    double _progressTime = 1.0;
+  late Timer _timer;
+
+  void _startTimer() {
+    _timer = Timer.periodic(Duration(seconds: 1), _updateTimer);
+  }
+
+    void _updateTimer(Timer timer) {
+    setState(() {
+      if (_remainingTime == 0) {
+        _timer.cancel();
+      
+      } else {
+   
+        _remainingTime--;
+        _progressTime = _remainingTime / 30.0;
+      }
+    });
+  }
+
 
   void refreshGuess() async {
     // final dataProvider = Provider.of<Data>(context, listen: false);
