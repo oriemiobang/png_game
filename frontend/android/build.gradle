@@ -4,8 +4,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.2.1' // Update AGP version
+        // classpath 'com.android.tools.build:gradle:8.2.1' // Update AGP version
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.10" // Adjust as needed
+        classpath 'com.android.tools.build:gradle:8.3.2'
+
     }
 }
 

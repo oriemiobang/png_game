@@ -26,8 +26,8 @@ class _PlayBoardState extends State<PlayBoard> {
 
   final TextEditingController _controller = TextEditingController();
   final TextEditingController _chatController = TextEditingController();
-  AuthService _authService = AuthService();
-  DatabaseService _databaseService = DatabaseService();
+  final AuthService _authService = AuthService();
+  final DatabaseService _databaseService = DatabaseService();
       bool thereIsNewGame = false;
   int _remainingTime = 30;
     double _progressTime = 1.0;
