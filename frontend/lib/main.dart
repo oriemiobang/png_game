@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/classes/play_board_classes.dart';
+import 'package:png_game/firebase_options.dart';
+import 'package:png_game/firebase_service/auth.dart';
+import 'package:png_game/models/my_user.dart';
 import 'package:png_game/screens/play_solo.dart';
 import 'package:png_game/screens/randomWaitRoom.dart';
 import 'package:provider/provider.dart';
-
+import 'package:go_router/go_router.dart';
 import 'package:png_game/screens/create_room.dart';
 import 'package:png_game/screens/home_page.dart';
 import 'package:png_game/screens/join_room.dart';
@@ -15,26 +18,86 @@ import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/screens/sign_in.dart';
 import 'package:png_game/screens/sign_up.dart';
 import 'package:png_game/screens/help_page.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
-  runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider(
-        create: (context) => SocketService(),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => PlayBoardProvider(),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => Data(),
-      ),
-      ChangeNotifierProvider(
-        create: (_) => PlayBoardClasses(),
-      )
-    ],
-    child: const MyApp(),
-  ));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } on Exception catch (_, exe) {
+    print(exe);
+  }
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => SocketService(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PlayBoardProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => Data(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PlayBoardClasses(),
+        )
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
+
+// changing route to go_router for easy routing
+final GoRouter _router = GoRouter(
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => HomePage(),
+    ),
+    GoRoute(
+      path: '/join_game',
+      builder: (context, state) => JoinRoom(),
+    ),
+    GoRoute(
+      path: '/create_game',
+      builder: (context, state) => CreateRoom(),
+    ),
+    GoRoute(
+      path: '/play_board',
+      builder: (context, state) => PlayBoard(),
+    ),
+    GoRoute(
+      path: '/scan_qr_code',
+      builder: (context, state) => ScanQrCode(),
+    ),
+    GoRoute(
+      path: '/random_wait_room',
+      builder: (context, state) => RandomWaitRoom(),
+    ),
+    GoRoute(
+      path: '/play_solo',
+      builder: (context, state) => PlaySolo(),
+    ),
+    GoRoute(
+      path: '/signin',
+      builder: (context, state) => SignIn(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) => SignUp(),
+    ),
+    // GoRoute(
+    //   path: '/details/:id',
+    //   builder: (context, state) {
+    //     final id = state.pathParameters['id'];
+    //     return DetailsPage(id: id!);
+    //   },
+    // ),
+  ],
+);
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -42,23 +105,13 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return  StreamProvider<MyUser?>.value(value: AuthService().user, initialData: null, child:    MaterialApp.router(
+      routerConfig: _router,
       // darkTheme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
       title: 'PNG Game',
-      routes: {
-        '/': (context) => const HomePage(),
-        '/join_game': (context) => const JoinRoom(),
-        '/create_game': (context) => CreateRoom(),
-        '/play_board': (context) => const PlayBoard(),
-        '/scan_qr_code': (context) => const ScanQrCode(),
-        '/random_wait_room': (context) => const RandomWaitRoom(),
-        '/play_solo': (context) => const PlaySolo(),
-        '/signin' : (context) => const SignIn(),
-        '/signup' : (context) => const SignUp(),
-        '/help' : (context) => const HelpPage(),
+    ) ,);
+    
 
-      },
-    );
   }
 }

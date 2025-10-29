@@ -25,7 +25,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('http://192.168.1.18:3000', <String, dynamic>{
+    socket = io.io('https://png-game.onrender.com', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
@@ -82,12 +82,6 @@ class SocketService with ChangeNotifier {
       }
     });
 
-    // listen to new game request
-    socket.on('requestNewGame', (data) {
-      Data().updateNewGae(data);
-      notifyListeners();
-    });
-
     // listen to random game info
     socket.on('randomGameInfo', (data) {
       Data().updateRandomGames(data);
@@ -112,11 +106,18 @@ class SocketService with ChangeNotifier {
       notifyListeners();
     });
 
+    socket.on('requestNewGame', (data) {
+      Data().updateNewGame(data);
+      notifyListeners();
+      print('request data $data');
+    });
+
     // game data
     socket.on('gameInfo', (data) {
       gameInfo = data;
       // savedData.setData(data);
       Data().updateData(data);
+      print('data in the game info: $data');
       notifyListeners();
       // print('this is the game info: $data');
     });
@@ -235,7 +236,8 @@ class SocketService with ChangeNotifier {
     notifyListeners();
   }
 
-  void requestNewGame(playerId, gameId) {
-    socket.emit('newGame', {'playerId': playerId, 'gameId': gameId});
+  void requestNewGame(playerId, gameId, approved) {
+    socket.emit('newGame',
+        {'playerId': playerId, 'gameId': gameId, 'approved': approved});
   }
 }

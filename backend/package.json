@@ -7,13 +7,14 @@
     "start": "node server.js"
   },
   "keywords": [],
- "type": "module",
+  "type": "module",
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "node-fetch": "^3.3.2",
     "socket.io": "^4.8.1"
   }
 }

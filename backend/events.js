@@ -95,9 +95,29 @@ export const handleSocketEvents = (socket, io) => {
 
   });
 
-socket.on('newGame',({gameId, playerId})=>{
-  io.to(gameId).emit('requestNewGame', {playerId: playerId, message: 'let\'s  play another game!', aprroved: null});
-})
+socket.on('newGame',({gameId, playerId, approved})=>{
+  if(approved){
+    io.to(gameId).emit('requestNewGame', 
+      {
+      playerId: playerId, 
+      message: 'let\'s  play another game!',
+      isApproved: approved});
+
+      games[gameId].player1Secret;
+      games[gameId].player2Secret;
+      games[gameId].turn = playerId;
+      games[gameId].lastChance = false;
+      games[gameId].guesses.player1 = []
+      games[gameId].guesses.player2 = []
+      const game = games[gameId];
+      io.to(gameId).emit('gameInfo', game);
+  } else{
+    socket.to(gameId).emit('requestNewGame', {
+      playerId: playerId, 
+      message: 'let\'s  play another game!', 
+      isApproved: approved});
+  }
+});
 
   socket.on("joinGame", ({ gameId, playerId }) => {
     console.log('here are the info: ' + playerId + ' ' + gameId);
@@ -114,7 +134,8 @@ socket.on('newGame',({gameId, playerId})=>{
       return socket.emit("room_error", "Room does not exist!");
     } else if (games[gameId].player2) {
       return socket.emit("room_error", "Room is already full!");
-    }  io.to(gameId).emit("gameInfo", game);
+    }  
+    io.to(gameId).emit("gameInfo", game);
   });
 
   socket.on("submitSecret", ({ gameId, playerId, secretNumber }) => {
@@ -178,8 +199,8 @@ socket.on('newGame',({gameId, playerId})=>{
         io.to(gameId).emit("gameEnd", { winnerId: null, message: "It's a draw!" });
         console.log('the game is a draw');
         io.to(gameId).emit("gameInfo", game);
-        delete games[gameId];
-        // game.turn = null;
+        // delete games[gameId];
+        game.turn = null;
         return;
     } else if (game.guesses.player1.length !== game.guesses.player2.length) {
         // If this is the first correct guess, give the opponent one last chance
@@ -191,8 +212,8 @@ socket.on('newGame',({gameId, playerId})=>{
         io.to(gameId).emit("gameEnd", { winnerId: playerId, message: "Game Over!"});
         console.log('game over');
         io.to(gameId).emit("gameInfo", game);
-        delete games[gameId];
-        // game.turn = null;
+        // delete games[gameId];
+        game.turn = null;
 
         return
     }
@@ -205,7 +226,8 @@ socket.on('newGame',({gameId, playerId})=>{
     io.to(gameId).emit("gameEnd", { winnerId: opponent, message: "Game Over! Opponent wins." });
     console.log('Game Over! Opponent wins.');
     io.to(gameId).emit("gameInfo", game);
-    delete games[gameId];
+    game.turn = null;
+    // delete games[gameId];
     return;
   }
       // Switch turns if no one has won yet

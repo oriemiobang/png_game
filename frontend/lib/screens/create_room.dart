@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:png_game/classes/data.dart';
-import 'package:png_game/screens/play_board.dart';
+// import 'package:png_game/main.dart';
+// import 'package:png_game/screens/play_board.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -53,29 +55,36 @@ class _CreateRoomState extends State<CreateRoom> {
   }
 
   void _listenForGameJoin() {
-    final socketService = Provider.of<SocketService>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final socketService = Provider.of<SocketService>(context, listen: false);
+      final dataProvider = Provider.of<Data>(context, listen: false);
 
-    socketService.addListener(() {
-      if (socketService.gameJoined) {
-        // Navigator.pushNamed(context, '/play_board');
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => PlayBoard()),
-        );
-      }
+      socketService.addListener(() {
+        if (dataProvider.data != null) {
+          if (socketService.gameJoined) {
+            // Navigator.pushNamed(context, '/play_board');
+            context.go('/play_board');
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(builder: (context) => PlayBoard()),
+            // );
+          }
+        }
+      });
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      backgroundColor: Colors.grey.shade100,
+      appBar: AppBar(forceMaterialTransparency: true,),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(children: [
-          const Text(
+           Text(
             'Challenge your friend',
-            style: TextStyle(fontSize: 18),
+            style: TextStyle(fontSize: 25, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
           ),
           // Row(
           //   mainAxisAlignment: MainAxisAlignment
@@ -115,43 +124,50 @@ class _CreateRoomState extends State<CreateRoom> {
             height: 10,
           ),
           Center(
-            child: QrImageView(
-              data: gameId,
-              version: QrVersions.auto,
-              size: 200.0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15)
+              ),
+              padding: EdgeInsets.all(15),
+              child: QrImageView(
+                backgroundColor: Colors.white,
+                data: gameId,
+                version: QrVersions.auto,
+                size: 220.0,
+              ),
             ),
           ),
 
           const SizedBox(
-            height: 10,
+            height: 15,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                height: 35,
-                decoration: const BoxDecoration(color: Colors.green),
-                child: TextButton(
-                  onPressed: () {
-                    shareCode();
-                  },
-                  child: const Text(
-                    'Share code',
-                    style: TextStyle(color: Colors.black),
-                  ),
-                ),
+          Container(
+            height: 40,
+            width: 240,
+            decoration:  BoxDecoration(color: Colors.green.shade500, 
+            borderRadius: BorderRadius.circular(10)
+            ),
+            child: TextButton.icon(
+              icon: Transform.flip(  flipX: true,child: Icon(Icons.reply, size: 30, color: Colors.white,)),
+              onPressed: () {
+                shareCode();
+              },
+              label: const Text(
+                'Share code',
+                style: TextStyle(color: Colors.white, fontSize: 18),
               ),
-              const SizedBox(
-                width: 20,
+            ),
+          ),
+            const SizedBox(
+                height: 15,
               ),
               IconButton(
                 onPressed: () {
                   copyCode();
                 },
-                icon: const Icon(Icons.copy),
+                icon: const Icon(Icons.copy, size: 40,),
               )
-            ],
-          )
         ]),
       ),
     );

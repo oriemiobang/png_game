@@ -49,7 +49,7 @@ class Data with ChangeNotifier {
     notifyListeners();
   }
 
-  void updateNewGae(Map newData) {
+  void updateNewGame(Map? newData) {
     _newGame = newData;
     notifyListeners();
   }

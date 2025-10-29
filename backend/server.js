@@ -1,3 +1,4 @@
+import fetch from "node-fetch";
 import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
@@ -29,3 +30,11 @@ io.on("connection", (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, "0.0.0.0",() => console.log(`Server running on port ${PORT}`));
+
+
+// Self-ping every 4 minutes to prevent Render sleeping
+setInterval(() => {
+  fetch("https://png-game.onrender.com/")
+    .then(() => console.log("Self-ping to keep server alive"))
+    .catch((err) => console.error("Self-ping failed:", err));
+}, 4 * 60 * 1000);

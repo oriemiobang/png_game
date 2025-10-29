@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/firebase_service/auth.dart';
+import 'package:png_game/models/my_user.dart';
+// import 'package:png_game/main.dart';
 import 'package:png_game/screens/create_room.dart';
-import 'package:png_game/screens/play_board.dart';
+// import 'package:png_game/screens/play_board.dart';
 
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
@@ -16,26 +20,55 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool isSigned = false;
   bool isPlayWithFriend = false;
-  final socketService = SocketService();
+  // final socketService = SocketService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  SocketService socketService = SocketService();
+    final AuthService _auth = AuthService();
+
+  @override
+  void initState() {
+    listener();
+    // TODO: implement initState
+    super.initState();
+  }
+
+  void listener() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final dataProvider = Provider.of<Data>(context, listen: false);
+
+      dataProvider.addListener(() {
+        if (socketService.gameJoined) {
+          // Navigator.pushNamed(context, '/play_board');
+          context.go('/play_board');
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(builder: (context) => const PlayBoard()),
+          // );
+        }
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final dataProvider = Provider.of<Data>(context);
-    // print('these are the random games: ${Data().randomGames}');
+     final user = Provider.of<MyUser?>(context);
+    // // print('these are the random games: ${Data().randomGames}');
 
-    if (dataProvider.data?['player2'] != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Navigator.pushNamed(context, '/play_board');
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => PlayBoard()),
-        );
-      });
-    }
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   if (dataProvider.data?['player2'] != null) {
+    //     // Navigator.pushNamed(context, '/play_board');
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(builder: (context) => PlayBoard()),
+    //     );
+    //   }
+    // });
     return Scaffold(
-      key: _scaffoldKey,
+      backgroundColor: Colors.grey.shade50,
+        key: _scaffoldKey,
         appBar: AppBar(
+          forceMaterialTransparency: true,
           leading: IconButton(
             icon: Icon(Icons.menu),
             onPressed: () {
@@ -49,44 +82,49 @@ class _HomePageState extends State<HomePage> {
             color: Colors.white, // Background color
             borderRadius: BorderRadius.circular(0), // Circularity of 10
           ),
-          width:250,
+          width: 250,
           child: Drawer(
             child: ListView(
               padding: EdgeInsets.zero,
               children: <Widget>[
                 SizedBox(
-                  height:150,
-                  child:InkWell(
-              onTap: () {
-                Navigator.pushNamed(context, '/signin');
-              },
-              // splashColor: Colors.grey.withOpacity(0.3), // Adjust splash color
-              // highlightColor: Colors.grey.withOpacity(0.3),
-                  child: DrawerHeader(
-                    decoration: BoxDecoration(
-                     
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-              Icons.account_circle_rounded, // Change to your desired icon
-              size: 60, // Size of the icon
-              color: Colors.black54, // Color of the icon
-            ),
-            SizedBox(width:10),
-            Text('login or register', style:TextStyle(color:Colors.black, fontSize:16)),
-                      ],
+                  height: 150,
+                  child: user != null? Center(child: ListTile(leading: Icon(Icons.person, size: 40,), 
+                  title: Text('Oriemi Obang', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  ),) : InkWell(
+                    onTap: () {
+                      // Navigator.pushNamed(context, '/signin');
+                      context.push('/signin');
+                    },
+                    // splashColor:
+                        Colors.grey.withOpacity(0.3), // Adjust splash color
+                    // highlightColor: Colors.grey.withOpacity(0.3),
+                    child: DrawerHeader(
+                      decoration: BoxDecoration(),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons
+                                .account_circle_rounded, // Change to your desired icon
+                            size: 60, // Size of the icon
+                            color: Colors.black54, // Color of the icon
+                          ),
+                          SizedBox(width: 10),
+                          Text('login or register',
+                              style:
+                                  TextStyle(color: Colors.black, fontSize: 16)),
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 ),
                 ListTile(
                   contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
                   leading: Icon(Icons.home),
                   title: Text('Home'),
                   onTap: () {
-                    
-                    Navigator.pop(context); 
+                    Navigator.pop(context);
                   },
                 ),
                 ListTile(
@@ -94,16 +132,7 @@ class _HomePageState extends State<HomePage> {
                   leading: Icon(Icons.settings),
                   title: Text('Settings'),
                   onTap: () {
-                     
-                  },
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
-                  leading: Icon(Icons.person),
-                  title: Text('About us'),
-                  onTap: () {
-                   
-                    Navigator.pop(context); 
+                    // Close the drawer
                   },
                 ),
                 ListTile(
@@ -120,27 +149,37 @@ class _HomePageState extends State<HomePage> {
                   leading: Icon(Icons.thumb_up_sharp),
                   title: Text('Rate us'),
                   onTap: () {
-                    
-                    Navigator.pop(context); 
+                    // Handle the tap
+                    Navigator.pop(context); // Close the drawer
                   },
                 ),
+
+                user != null? ListTile(
+                contentPadding: EdgeInsets.symmetric(horizontal: 25.0),
+                  leading: Icon(Icons.logout),
+                  title: Text('Log out'),
+                  onTap: () {
+                    _auth.signOut();
+                   // handle log out
+                   
+                  },
+
+                ): SizedBox()
               ],
             ),
           ),
         ),
-        
-          
-        
         body: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Column(
+          child: ListView(
+          
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
                 height: 350,
                 decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(5),
-                    color: Colors.grey.shade200),
+                    color: Colors.white),
                 width: double.infinity,
                 child: ListView.builder(
                     itemCount: dataProvider.randomGames?.length,
@@ -183,14 +222,15 @@ class _HomePageState extends State<HomePage> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey.shade300,
+                  color: const Color.fromARGB(71, 64, 131, 255),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Center(
                   child: TextButton(
                       onPressed: () {
                         socketService.createRandomGame();
-                        Navigator.pushNamed(context, '/random_wait_room');
+                        // Navigator.pushNamed(context, '/random_wait_room');
+                        context.push('/random_wait_room');
                       },
                       child: const Text(
                         'CREATE A GAME',
@@ -204,19 +244,20 @@ class _HomePageState extends State<HomePage> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey.shade300,
+                  color: const Color.fromARGB(71, 64, 131, 255),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Center(
                   child: TextButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, '/play_solo');
+                        // Navigator.pushNamed(context, '/play_solo');
+                        context.push('/play_solo');
                         // setState(() {
                         //   isPlayWithFriend = !isPlayWithFriend;
                         // });
                       },
                       child: const Text(
-                        'PLAY WITH COMPUTER',
+                        'PLAY SOLO',
                         style: TextStyle(color: Colors.black),
                       )),
                 ),
@@ -227,7 +268,7 @@ class _HomePageState extends State<HomePage> {
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: Colors.grey.shade300,
+                  color:  const Color.fromARGB(71, 64, 131, 255),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Center(
@@ -253,7 +294,7 @@ class _HomePageState extends State<HomePage> {
                         Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey.shade200,
+                            color:  const Color.fromARGB(71, 64, 131, 255),
                             border: Border.all(color: Colors.grey.shade100),
                           ),
                           child: TextButton(
@@ -277,12 +318,13 @@ class _HomePageState extends State<HomePage> {
                         Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
-                            color: Colors.grey.shade200,
+                            color:  const Color.fromARGB(71, 64, 131, 255),
                             border: Border.all(color: Colors.grey.shade100),
                           ),
                           child: TextButton(
                             onPressed: () {
-                              Navigator.pushNamed(context, '/join_game');
+                              // Navigator.pushNamed(context, '/join_game');
+                              context.push('/join_game');
                             },
                             child: Text(
                               'JOIN GAME',

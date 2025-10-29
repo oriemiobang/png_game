@@ -1,0 +1,1 @@
+/home/ghostbot/Projects/FlutterProjects/png_game/frontend/build/app/intermediates/cxx/Debug/6q2z236r/obj/x86_64
