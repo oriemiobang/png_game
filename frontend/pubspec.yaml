@@ -50,6 +50,8 @@ dependencies:
   intl: ^0.20.2
   connectivity_plus: ^6.1.4
   flutter_spinkit: ^5.2.1
+  iconsax: ^0.0.8
+  ionicons: ^0.2.2
 
 dev_dependencies:
   flutter_test:

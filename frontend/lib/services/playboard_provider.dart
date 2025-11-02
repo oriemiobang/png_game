@@ -6,6 +6,7 @@ class PlayBoardProvider with ChangeNotifier {
   bool _secretSubmitted = false;
   bool _hideText = false;
   bool _showMine = true;
+  bool _writeText = false;
   SocketService socketService = SocketService();
   SavedData savedData = SavedData();
 
@@ -24,6 +25,7 @@ class PlayBoardProvider with ChangeNotifier {
   bool get hideText => _hideText;
   bool get showMine => _showMine;
   String get gameId => _gameId;
+  bool get writeText => _writeText;
   String get playerId => _playerId;
   // List get guesses => _guesses;
 
@@ -34,6 +36,11 @@ class PlayBoardProvider with ChangeNotifier {
 
   void setPlayerId(String id) {
     _playerId = id;
+    notifyListeners();
+  }
+
+  void setWriteText ( bool value){
+    _writeText = value;
     notifyListeners();
   }
 
