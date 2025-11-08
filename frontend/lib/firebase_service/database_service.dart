@@ -120,22 +120,20 @@ class DatabaseService {
 
   // png user List from snapshot
 
-  List<PngUser> pngListFromSnopshot(QuerySnapshot snapshot) {
+  List<PNGUser> pngListFromSnopshot(QuerySnapshot snapshot) {
     return snapshot.docs.map((doc) {
       final Map<String, dynamic>? data = doc.data() as Map<String, dynamic>?;
 
-      return PngUser(
+      return PNGUser(
           createdAt: data?['createdAt'] ?? '',
           games: data?['games'] ?? [],
           isOnline: data?['isOnline'] ?? true,
-          loses: data?['loses'] ?? 0,
-          playerId: data?['playerId'] ?? '',
-          userName: data?['userName'] ?? '',
-          wins: data?['wins'] ?? 0);
+          userName: data?['userName'] ?? ''
+      );
     }).toList();
   }
 
-  Stream<List<PngUser?>?> get png_user {
+  Stream<List<PNGUser?>?> get png_user {
     return pngCollection.snapshots().map(pngListFromSnopshot);
   }
 
@@ -150,8 +148,6 @@ class DatabaseService {
         userName: data?['userName'] ?? '',
         createdAt: data?['createdAt'] ?? '',
         isOnline: data?['isOnline'] ?? true,
-        wins: data?['wins'] ?? 0,
-        loses: data?['losses'] ?? 0,
         games: data?['games'] ?? []);
   }
 

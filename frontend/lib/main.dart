@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/classes/play_board_classes.dart';
+import 'package:png_game/features/home/home_page.dart';
 import 'package:png_game/firebase_options.dart';
 import 'package:png_game/firebase_service/auth.dart';
 import 'package:png_game/models/my_user.dart';
+import 'package:png_game/screens/create_game.dart';
 import 'package:png_game/screens/play_solo.dart';
 import 'package:png_game/screens/randomWaitRoom.dart';
+import 'package:png_game/screens/rooms_page.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/screens/create_room.dart';
-import 'package:png_game/screens/home_page.dart';
 import 'package:png_game/screens/join_room.dart';
 import 'package:png_game/screens/play_board.dart';
 import 'package:png_game/screens/scan_qr.dart';
@@ -25,92 +27,99 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-  } on Exception catch (_, exe) {
-    print(exe);
+  } on Exception catch (e) {
+    print('Firebase initialization error: $e');
   }
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (context) => SocketService(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => PlayBoardProvider(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => Data(),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => PlayBoardClasses(),
-        )
-      ],
-      child: const MyApp(),
-    ),
-  );
+  runApp(const MyApp());
 }
-
-// changing route to go_router for easy routing
-final GoRouter _router = GoRouter(
-  routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => HomePage(),
-    ),
-    GoRoute(
-      path: '/join_game',
-      builder: (context, state) => JoinRoom(),
-    ),
-    GoRoute(
-      path: '/create_game',
-      builder: (context, state) => CreateRoom(),
-    ),
-    GoRoute(
-      path: '/play_board',
-      builder: (context, state) => PlayBoard(),
-    ),
-    GoRoute(
-      path: '/scan_qr_code',
-      builder: (context, state) => ScanQrCode(),
-    ),
-    GoRoute(
-      path: '/random_wait_room',
-      builder: (context, state) => RandomWaitRoom(),
-    ),
-    GoRoute(
-      path: '/play_solo',
-      builder: (context, state) => PlaySolo(),
-    ),
-    GoRoute(
-      path: '/signin',
-      builder: (context, state) => SignIn(),
-    ),
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => SignUp(),
-    ),
-    // GoRoute(
-    //   path: '/details/:id',
-    //   builder: (context, state) {
-    //     final id = state.pathParameters['id'];
-    //     return DetailsPage(id: id!);
-    //   },
-    // ),
-  ],
-);
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return  StreamProvider<MyUser?>.value(value: AuthService().user, initialData: null, child:    MaterialApp.router(
-      routerConfig: _router,
-      // darkTheme: ThemeData.dark(),
-      debugShowCheckedModeBanner: false,
-      title: 'PNG Game',
-    ) ,);
-    
-
+    return MultiProvider(
+      providers: [
+        // Add AuthService provider
+        Provider<AuthService>(
+          create: (_) => AuthService(),
+        ),
+        ChangeNotifierProvider<SocketService>(
+          create: (context) => SocketService(),
+        ),
+        ChangeNotifierProvider<PlayBoardProvider>(
+          create: (_) => PlayBoardProvider(),
+        ),
+        ChangeNotifierProvider<Data>(
+          create: (_) => Data(),
+        ),
+        ChangeNotifierProvider<PlayBoardClasses>(
+          create: (_) => PlayBoardClasses(),
+        ),
+        // StreamProvider for user authentication state
+        StreamProvider<MyUser?>(
+          create: (context) => context.read<AuthService>().user,
+          initialData: null,
+        ),
+      ],
+      child: MaterialApp.router(
+        routerConfig: _router,
+        debugShowCheckedModeBanner: false,
+        title: 'PNG Game',
+      ),
+    );
   }
 }
+
+// GoRouter configuration
+final GoRouter _router = GoRouter(
+  routes: [
+    GoRoute(
+      path: '/',
+      builder: (context, state) => const HomePage(),
+    ),
+    GoRoute(
+      path: '/join_game',
+      builder: (context, state) => const JoinRoom(),
+    ),
+    GoRoute(
+      path: '/rooms_page',
+      builder: (context, state) => const GameRooms(),
+    ),
+    GoRoute(
+      path: '/create_game',
+      builder: (context, state) => const CreateGames(),
+    ),
+    GoRoute(
+      path: '/create_room', // Fixed duplicate path
+      builder: (context, state) {
+        final gameId = state.extra as String?;
+        return CreateRoom(gameId: gameId ?? '');
+      },
+    ),
+    GoRoute(
+      path: '/play_board',
+      builder: (context, state) => const PlayBoard(),
+    ),
+    GoRoute(
+      path: '/scan_qr_code',
+      builder: (context, state) => const ScanQrCode(),
+    ),
+    GoRoute(
+      path: '/random_wait_room',
+      builder: (context, state) => const RandomWaitRoom(),
+    ),
+    GoRoute(
+      path: '/play_solo',
+      builder: (context, state) => const PlaySolo(),
+    ),
+    GoRoute(
+      path: '/signin',
+      builder: (context, state) => const SignIn(),
+    ),
+    GoRoute(
+      path: '/signup',
+      builder: (context, state) => const SignUp(),
+    ),
+  ],
+);

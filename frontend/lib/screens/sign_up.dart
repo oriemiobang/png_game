@@ -303,46 +303,46 @@ class _SignUpState extends State<SignUp> {
             style: TextStyle(color: Colors.black, fontSize: 16),
           ),
           SizedBox(height: 30),
-          SizedBox(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center, // Center the icons
-              children: [
-                SizedBox(width: 10),
-                IconButton(
-                  icon: Image.asset(
-                    'assets/fblogo.webp',
-                    width: 35, // Set width for the icon
-                    height: 35, // Set height for the icon
-                  ),
-                  onPressed: () {
-                    // Add your Google action here
-                  },
-                ),
-                SizedBox(width: 80), // Space between icons
-                IconButton(
-                  icon: Image.asset(
-                    'assets/google_logo.webp',
-                    width: 45, // Set width for the icon
-                    height: 45, // Set height for the icon
-                  ),
-                  onPressed: () {
-                    // Add your LinkedIn action here
-                  },
-                ),
-                SizedBox(width: 65),
-                IconButton(
-                  icon: Image.asset(
-                    'assets/apple3.webp',
-                    width: 53, // Set width for the icon
-                    height: 53, // Set height for the icon
-                  ),
-                  onPressed: () {
-                    // Add your LinkedIn action here
-                  },
-                ),
-              ],
-            ),
-          ),
+          // SizedBox(
+          //   child: Row(
+          //     mainAxisAlignment: MainAxisAlignment.center, // Center the icons
+          //     children: [
+          //       SizedBox(width: 10),
+          //       IconButton(
+          //         icon: Image.asset(
+          //           'assets/fblogo.webp',
+          //           width: 35, // Set width for the icon
+          //           height: 35, // Set height for the icon
+          //         ),
+          //         onPressed: () {
+          //           // Add your Google action here
+          //         },
+          //       ),
+          //       SizedBox(width: 80), // Space between icons
+          //       IconButton(
+          //         icon: Image.asset(
+          //           'assets/google_logo.webp',
+          //           width: 45, // Set width for the icon
+          //           height: 45, // Set height for the icon
+          //         ),
+          //         onPressed: () {
+          //           // Add your LinkedIn action here
+          //         },
+          //       ),
+          //       SizedBox(width: 65),
+          //       IconButton(
+          //         icon: Image.asset(
+          //           'assets/apple3.webp',
+          //           width: 53, // Set width for the icon
+          //           height: 53, // Set height for the icon
+          //         ),
+          //         onPressed: () {
+          //           // Add your LinkedIn action here
+          //         },
+          //       ),
+          //     ],
+          //   ),
+          // ),
           SizedBox(height: 60),
           Row(
             children: [
