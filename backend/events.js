@@ -6,6 +6,37 @@ const randomPlaying = {};
 
 export const handleSocketEvents = (socket, io) => {
 
+
+  // Add this to your existing handleSocketEvents function in events.js
+
+socket.on('rejoinGame', ({ gameId, playerId }) => {
+  console.log(`Player ${playerId} attempting to rejoin game ${gameId}`);
+  
+  const game = games[gameId];
+  if (!game) {
+    return socket.emit('rejoinFailed', { message: 'Game no longer exists' });
+  }
+
+  // Check if player was part of this game
+  if (game.player1 !== playerId && game.player2 !== playerId) {
+    return socket.emit('rejoinFailed', { message: 'You were not part of this game' });
+  }
+
+  socket.join(gameId);
+  
+  // Send current game state to rejoining player
+  io.to(socket.id).emit('gameRejoined', { 
+    gameId, 
+    playerId,
+    gameState: game 
+  });
+  
+  // Notify other players
+  socket.to(gameId).emit('playerReconnected', { playerId });
+  
+  console.log(`Player ${playerId} successfully rejoined game ${gameId}`);
+});
+
   socket.on('createRandomGames', ({playerId, gameId})=>{
    
     games[gameId] = {

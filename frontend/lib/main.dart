@@ -20,6 +20,7 @@ import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/screens/sign_in.dart';
 import 'package:png_game/screens/sign_up.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:png_game/services/app_lifecycle_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,8 +34,25 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late AppLifecycleService _lifecycleService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeLifecycleService();
+  }
+
+  void _initializeLifecycleService() {
+    // This will be properly initialized in the build method where we have access to context
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,11 +79,34 @@ class MyApp extends StatelessWidget {
           create: (context) => context.read<AuthService>().user,
           initialData: null,
         ),
+        // Provider for AppLifecycleService
+        Provider<AppLifecycleService>(
+          create: (context) {
+            final socketService = context.read<SocketService>();
+            final service = AppLifecycleService(
+              onResume: () {
+                print('App resumed - reconnecting socket');
+                socketService.reconnect();
+              },
+              onPause: () {
+                print('App paused - disconnecting socket');
+                socketService.disconnect();
+              },
+            );
+            service.initialize();
+            return service;
+          },
+          dispose: (_, service) => service.dispose(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: _router,
         debugShowCheckedModeBanner: false,
         title: 'PNG Game',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: true,
+        ),
       ),
     );
   }
@@ -91,7 +132,7 @@ final GoRouter _router = GoRouter(
       builder: (context, state) => const CreateGames(),
     ),
     GoRoute(
-      path: '/create_room', // Fixed duplicate path
+      path: '/create_room',
       builder: (context, state) {
         final gameId = state.extra as String?;
         return CreateRoom(gameId: gameId ?? '');
