@@ -10,12 +10,12 @@ class SocketService with ChangeNotifier {
   bool gameJoined = false;
   dynamic gameInfo = {};
   SavedData savedData = SavedData();
-  
-  // Add reconnection properties
-  bool _isManuallyDisconnected = false;
-  int _reconnectAttempts = 0;
-  final int _maxReconnectAttempts = 5;
-  
+
+  //   Map? _data;
+  // String? _userId; // New private variable
+  // String? _gameId;
+  // Map? _winner;
+
   String game_id = '';
   String player_id = '';
 
@@ -27,109 +27,44 @@ class SocketService with ChangeNotifier {
   void connect() {
     socket = io.io('https://png-game.onrender.com', <String, dynamic>{
       'transports': ['websocket'],
-      'autoConnect': true,
-      'reconnection': true,
-      'reconnectionAttempts': _maxReconnectAttempts,
-      'reconnectionDelay': 1000,
-      'reconnectionDelayMax': 5000,
-      'timeout': 20000,
+      'autoConnect': false
     });
 
     socket.connect();
 
-    // Listen to connects
+// listen to conects
     socket.onConnect((_) {
       isConnected = true;
-      _reconnectAttempts = 0;
-      print('Connected to server');
-      
-      // Rejoin game if we were in one
-      if (gameJoined && game_id.isNotEmpty && player_id.isNotEmpty) {
-        _rejoinGame();
-      }
-      
+      print('connected to server');
       notifyListeners();
     });
 
-    // Listen to reconnection events (using available methods)
-    socket.onReconnect((_) {
-      print('Reconnected to server');
-      isConnected = true;
-      _reconnectAttempts = 0;
-      
-      // Rejoin game after reconnection
-      if (gameJoined && game_id.isNotEmpty && player_id.isNotEmpty) {
-        _rejoinGame();
-      }
-      
-      notifyListeners();
-    });
-
-    // Listen to reconnection errors
-    socket.onReconnectError((data) {
-      print('Reconnection Error: $data');
-      _reconnectAttempts++;
-      isConnected = false;
-      notifyListeners();
-    });
-
-    socket.onReconnectFailed((_) {
-      print('Reconnection Failed after $_reconnectAttempts attempts');
-      isConnected = false;
-      notifyListeners();
-    });
-
-    // Listen to connecting event (this is available and similar to onReconnecting)
-    socket.on('connecting', (_) {
-      print('Connecting to server...');
-      isConnected = false;
-      notifyListeners();
-    });
-
-    // Listen to disconnects
+    // list to disconects
     socket.onDisconnect((_) {
       isConnected = false;
-      print('Disconnected from server');
+      print('disconnected from server');
       notifyListeners();
     });
 
-    // Listen to game joiner
+    // listen to game joiner
     socket.on('gameJoined', (data) async {
       gameJoined = true;
+
       game_id = data['gameId'];
       player_id = data['playerId'];
-      
-      // Save game state for reconnection
-      await _saveGameState();
-      
-      print('Game joined: $data');
+      final gameId = Data().gameId;
+      // await savedData.getSaveGameId();
+      final userId = Data().userId;
+      // await savedData.getUserId();
+
+      // print('$game_id, $player_id');
+      // print('$gameId, $userId');
+
+      print(data);
       notifyListeners();
     });
 
-    // Listen to game rejoined event (from backend)
-    socket.on('gameRejoined', (data) {
-      print('Successfully rejoined game: ${data['gameId']}');
-      gameInfo = data['gameState'];
-      Data().updateData(data['gameState']);
-      notifyListeners();
-    });
-
-    // Listen to rejoin failed event
-    socket.on('rejoinFailed', (data) {
-      print('Failed to rejoin game: ${data['message']}');
-      gameJoined = false;
-      game_id = '';
-      player_id = '';
-      notifyListeners();
-    });
-
-    // Listen to player reconnected event
-    socket.on('playerReconnected', (data) {
-      print('Player ${data['playerId']} reconnected to the game');
-      // You can show a snackbar or notification here
-    });
-
-    // Listen to last chance
+    // list to last chance
     socket.on('lastChance', (data) {
       Data().updateLastChance(data);
       notifyListeners();
@@ -139,38 +74,33 @@ class SocketService with ChangeNotifier {
     socket.on('sendMessage', (data) {
       Data().updateChatData(data);
     });
-    
     socket.on('gameEnd', (data) {
       if (data != null) {
         Data().updateWinner(data);
-        print('Game end data: $data');
+        print('game end data: $data');
         notifyListeners();
       }
     });
 
-    // Listen to random game info
+    // listen to random game info
     socket.on('randomGameInfo', (data) {
       Data().updateRandomGames(data);
       notifyListeners();
     });
-    
-    // Listen for turn error
+    // listen for trun error
     socket.on('turnWait', (data) {
       Data().updateNotYourTurn(data);
       notifyListeners();
     });
-    
     socket.onConnectError((data) {
       print('Connection Error: $data');
-      isConnected = false;
-      notifyListeners();
     });
 
     socket.onError((data) {
       print('Socket Error: $data');
     });
 
-    // Listen to random room game
+    // list to random room game
     socket.on('randomRoomGame', (data) {
       Data().updateRandomRoomGame(data);
       notifyListeners();
@@ -179,115 +109,63 @@ class SocketService with ChangeNotifier {
     socket.on('requestNewGame', (data) {
       Data().updateNewGame(data);
       notifyListeners();
-      print('Request data $data');
+      print('request data $data');
     });
 
-    // Game data
+    // game data
     socket.on('gameInfo', (data) {
       gameInfo = data;
+      // savedData.setData(data);
       Data().updateData(data);
-      print('Data in the game info: $data');
+      print('data in the game info: $data');
       notifyListeners();
+      // print('this is the game info: $data');
     });
-  }
-
-  // Rejoin game after reconnection
-  void _rejoinGame() async {
-    print('Rejoining game: $game_id as player: $player_id');
-    
-    // Add a small delay to ensure socket is ready
-    await Future.delayed(Duration(milliseconds: 500));
-    
-    socket.emit('rejoinGame', {
-      'gameId': game_id,
-      'playerId': player_id
-    });
-  }
-
-  // Save game state for reconnection
-  Future<void> _saveGameState() async {
-    // You can save this to shared preferences for persistence
-    // For now, we'll just keep it in memory
-    print('Game state saved for reconnection - Game: $game_id, Player: $player_id');
-  }
-
-  // Manual disconnect (call this when app goes to background)
-  void disconnect() {
-    _isManuallyDisconnected = true;
-    socket.disconnect();
-    isConnected = false;
-    print('Manually disconnected socket');
-    notifyListeners();
-  }
-
-  // Manual reconnect (call this when app comes to foreground)
-  void reconnect() {
-    _isManuallyDisconnected = false;
-    if (!isConnected) {
-      print('Manually reconnecting socket...');
-      socket.connect();
-    }
   }
 
   void sendGuess(String guess) async {
-    if (!isConnected) {
-      print('Not connected, cannot send guess');
-      return;
-    }
-    
     final gameId = Data().gameId;
+    // await savedData.getSaveGameId();
     final userId = Data().userId;
-    
-    print('Sending guess: $guess for game: $gameId, user: $userId');
-    
+    // await savedData.getUserId();
+    // print('$gameId, $userId, $guess');
+    // print('guess: $guess, gameId: $gameId, userId: $userId');
     socket.emit(
-      'makeGuess', 
-      {'gameId': gameId, 'playerId': userId, 'guess': guess}
-    );
+        'makeGuess', {'gameId': gameId, 'playerId': userId, 'guess': guess});
   }
 
-  void chat({
-    required String gameId,
-    required String playerId,
-    required String message
-  }) {
-    if (!isConnected) {
-      print('Not connected, cannot send message');
-      return;
-    }
-    
+  void chat(
+      {required String gameId,
+      required String playerId,
+      required String message}) {
     socket.emit(
-      'chat', 
-      {'gameId': gameId, 'playerId': playerId, 'message': message}
-    );
+        'chat', {'gameId': gameId, 'playerId': playerId, 'message': message});
   }
 
   void submitSecret(String secret) async {
-    if (!isConnected) {
-      print('Not connected, cannot submit secret');
-      return;
-    }
-    
     final gameId = Data().gameId;
+    // await savedData.getSaveGameId();
     final userId = Data().userId;
-    
-    print('Submitting secret for game: $gameId, user: $userId');
-    
+    // await savedData.getUserId();
+    // print('secret: $secret, gameId: $gameId, userId: $userId');
     socket.emit('submitSecret',
-      {'gameId': gameId, 'playerId': userId, 'secretNumber': secret}
-    );
+        {'gameId': gameId, 'playerId': userId, 'secretNumber': secret});
   }
 
   String createGame() {
     final random = Random();
     const hexChars = '0123456789abcdef';
 
-    String playerId = 'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
-    String gameId = 'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
+    String playerId =
+        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
+    String gameId =
+        'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
     player_id = playerId;
     game_id = gameId;
 
+    // savedData.setGameId(gameId);
     Data().updateGameId(gameId);
+    // savedData.setUserId(playerId);
     Data().updateUserId(playerId);
 
     socket.emit('createGame', {'playerId': playerId, 'gameId': gameId});
@@ -300,12 +178,16 @@ class SocketService with ChangeNotifier {
     final random = Random();
     const hexChars = '0123456789abcdef';
 
-    String playerId = 'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
-    String gameId = 'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
+    String playerId =
+        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
+    String gameId =
+        'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
     player_id = playerId;
     game_id = gameId;
 
+    // savedData.setGameId(gameId);
     Data().updateGameId(gameId);
+    // savedData.setUserId(playerId);
     Data().updateUserId(playerId);
 
     socket.emit('createRandomGames', {'playerId': playerId, 'gameId': gameId});
@@ -317,12 +199,18 @@ class SocketService with ChangeNotifier {
   void joinGame(String gameCode) async {
     final random = Random();
 
-    String playerId = 'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
+    String playerId =
+        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
     player_id = playerId;
     game_id = gameCode;
+    // await savedData.setUserId(playerId);
+    // await savedData.setGameId(gameCode);
 
     Data().updateGameId(gameCode);
+
     Data().updateUserId(playerId);
+    // Data().updateData({});
+    // Data().updateWinner({});
 
     socket.emit('joinGame', {'gameId': gameCode, 'playerId': playerId});
     notifyListeners();
@@ -331,31 +219,25 @@ class SocketService with ChangeNotifier {
   void joinRandomGames(gameCode) {
     final random = Random();
 
-    String playerId = 'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
+    String playerId =
+        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
     player_id = playerId;
     game_id = gameCode;
+    // await savedData.setUserId(playerId);
+    // await savedData.setGameId(gameCode);
 
     Data().updateGameId(gameCode);
+
     Data().updateUserId(playerId);
+    // Data().updateData({});
+    // Data().updateWinner({});
 
     socket.emit('joinRandomGame', {'gameId': gameCode, 'playerId': playerId});
     notifyListeners();
   }
 
   void requestNewGame(playerId, gameId, approved) {
-    if (!isConnected) {
-      print('Not connected, cannot request new game');
-      return;
-    }
-    
     socket.emit('newGame',
-      {'playerId': playerId, 'gameId': gameId, 'approved': approved}
-    );
+        {'playerId': playerId, 'gameId': gameId, 'approved': approved});
   }
-
-  // Getter for connection status
-  bool get connectionStatus => isConnected;
-  
-  // Getter for game joined status
-  bool get isGameJoined => gameJoined;
 }
