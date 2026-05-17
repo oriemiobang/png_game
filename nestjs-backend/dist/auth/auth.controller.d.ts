@@ -3,7 +3,7 @@ export declare class AuthController {
     private authService;
     constructor(authService: AuthService);
     signUp(body: any): Promise<{
-        access_token: any;
+        access_token: string;
         user: {
             id: string;
             email: string;
@@ -11,7 +11,7 @@ export declare class AuthController {
         };
     }>;
     signIn(body: any): Promise<{
-        access_token: any;
+        access_token: string;
         user: {
             id: string;
             email: string;
@@ -19,7 +19,7 @@ export declare class AuthController {
         };
     }>;
     googleSignIn(body: any): Promise<{
-        access_token: any;
+        access_token: string;
         user: {
             id: string;
             email: string;

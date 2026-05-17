@@ -6,7 +6,7 @@ export declare class AuthService {
     private googleClient;
     constructor(prisma: PrismaService, jwtService: JwtService);
     signUp(email: string, pass: string, name: string): Promise<{
-        access_token: any;
+        access_token: string;
         user: {
             id: string;
             email: string;
@@ -14,7 +14,7 @@ export declare class AuthService {
         };
     }>;
     signIn(email: string, pass: string): Promise<{
-        access_token: any;
+        access_token: string;
         user: {
             id: string;
             email: string;
@@ -22,7 +22,7 @@ export declare class AuthService {
         };
     }>;
     verifyGoogleToken(idToken: string): Promise<{
-        access_token: any;
+        access_token: string;
         user: {
             id: string;
             email: string;
