@@ -109,4 +109,12 @@ class Data with ChangeNotifier {
     _userId = newUserId;
     notifyListeners();
   }
+
+  List _publicRooms = [];
+  List get publicRooms => _publicRooms;
+
+  void updatePublicRooms(List rooms) {
+    _publicRooms = rooms;
+    notifyListeners();
+  }
 }

@@ -25,7 +25,7 @@ class SocketService with ChangeNotifier {
   }
 
   void connect() {
-    socket = io.io('https://png-game.onrender.com', <String, dynamic>{
+    socket = io.io('http://127.0.0.1:3000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
@@ -43,6 +43,11 @@ class SocketService with ChangeNotifier {
     socket.onDisconnect((_) {
       isConnected = false;
       print('disconnected from server');
+      notifyListeners();
+    });
+
+    socket.on('publicRooms', (data) {
+      Data().updatePublicRooms(data as List);
       notifyListeners();
     });
 
@@ -152,7 +157,7 @@ class SocketService with ChangeNotifier {
         {'gameId': gameId, 'playerId': userId, 'secretNumber': secret});
   }
 
-  String createGame() {
+  String createGame({int maxRounds = 3, int timeLimit = 60, bool isPrivate = false}) {
     final random = Random();
     const hexChars = '0123456789abcdef';
 
@@ -168,7 +173,15 @@ class SocketService with ChangeNotifier {
     // savedData.setUserId(playerId);
     Data().updateUserId(playerId);
 
-    socket.emit('createGame', {'playerId': playerId, 'gameId': gameId});
+    socket.emit('createGame', {
+      'playerId': playerId, 
+      'gameId': gameId,
+      'settings': {
+        'maxRounds': maxRounds,
+        'timeLimit': timeLimit,
+        'isPrivate': isPrivate
+      }
+    });
     notifyListeners();
 
     return gameId;
@@ -239,5 +252,13 @@ class SocketService with ChangeNotifier {
   void requestNewGame(playerId, gameId, approved) {
     socket.emit('newGame',
         {'playerId': playerId, 'gameId': gameId, 'approved': approved});
+  }
+
+  void reportTimeout() {
+    final gameId = Data().gameId;
+    final userId = Data().userId;
+    if (gameId != null && userId != null) {
+      socket.emit('timeout', {'gameId': gameId, 'playerId': userId});
+    }
   }
 }

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/models/my_user.dart';
@@ -13,35 +12,18 @@ class UserDrawerHeader extends StatelessWidget {
     return SizedBox(
       height: 150,
       child: user != null
-          ? FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('png')
-                  .doc(user!.uid)
-                  .get(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || !snapshot.data!.exists) {
-                  return const Center(child: Text('No user data found'));
-                }
-
-                final userData = snapshot.data!.data() as Map<String, dynamic>;
-                final userName = userData['userName'] ?? 'Player';
-
-                return Center(
-                  child: ListTile(
-                    leading: const Icon(Icons.person, size: 40),
-                    title: Text(
-                      userName,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+          ? Center(
+              child: ListTile(
+                leading: const Icon(Icons.person, size: 40),
+                title: Text(
+                  user!.name ?? 'Player',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              },
+                ),
+                subtitle: user!.email != null ? Text(user!.email!) : null,
+              ),
             )
           : _buildLoginPrompt(context),
     );

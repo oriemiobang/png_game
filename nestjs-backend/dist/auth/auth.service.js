@@ -1,0 +1,100 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthService = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma/prisma.service");
+const jwt_1 = require("@nestjs/jwt");
+const bcrypt = require("bcrypt");
+const google_auth_library_1 = require("google-auth-library");
+let AuthService = class AuthService {
+    constructor(prisma, jwtService) {
+        this.prisma = prisma;
+        this.jwtService = jwtService;
+        this.googleClient = new google_auth_library_1.OAuth2Client();
+    }
+    async signUp(email, pass, name) {
+        const existing = await this.prisma.user.findUnique({ where: { email } });
+        if (existing) {
+            throw new common_1.HttpException('User with this email already exists', common_1.HttpStatus.BAD_REQUEST);
+        }
+        const salt = await bcrypt.genSalt(10);
+        const password = await bcrypt.hash(pass, salt);
+        const user = await this.prisma.user.create({
+            data: { email, password, name },
+        });
+        return this.generateToken(user.id, user.email, user.name);
+    }
+    async signIn(email, pass) {
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            throw new common_1.HttpException('Invalid credentials', common_1.HttpStatus.UNAUTHORIZED);
+        }
+        if (!user.password) {
+            throw new common_1.HttpException('Please login with Google', common_1.HttpStatus.UNAUTHORIZED);
+        }
+        const isMatch = await bcrypt.compare(pass, user.password);
+        if (!isMatch) {
+            throw new common_1.HttpException('Invalid credentials', common_1.HttpStatus.UNAUTHORIZED);
+        }
+        return this.generateToken(user.id, user.email, user.name);
+    }
+    async verifyGoogleToken(idToken) {
+        try {
+            const ticket = await this.googleClient.verifyIdToken({
+                idToken,
+            });
+            const payload = ticket.getPayload();
+            if (!payload || !payload.email) {
+                throw new common_1.HttpException('Invalid Google Token', common_1.HttpStatus.UNAUTHORIZED);
+            }
+            let user = await this.prisma.user.findUnique({
+                where: { googleId: payload.sub },
+            });
+            if (!user) {
+                user = await this.prisma.user.findUnique({ where: { email: payload.email } });
+                if (user) {
+                    user = await this.prisma.user.update({
+                        where: { id: user.id },
+                        data: { googleId: payload.sub },
+                    });
+                }
+                else {
+                    user = await this.prisma.user.create({
+                        data: {
+                            email: payload.email,
+                            name: payload.name || 'Google User',
+                            googleId: payload.sub,
+                        },
+                    });
+                }
+            }
+            return this.generateToken(user.id, user.email, user.name);
+        }
+        catch (e) {
+            throw new common_1.HttpException('Google authentication failed: ' + e.message, common_1.HttpStatus.UNAUTHORIZED);
+        }
+    }
+    generateToken(userId, email, name) {
+        const payload = { sub: userId, email, name };
+        return {
+            access_token: this.jwtService.sign(payload),
+            user: { id: userId, email, name },
+        };
+    }
+};
+exports.AuthService = AuthService;
+exports.AuthService = AuthService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService, typeof (_a = typeof jwt_1.JwtService !== "undefined" && jwt_1.JwtService) === "function" ? _a : Object])
+], AuthService);
+//# sourceMappingURL=auth.service.js.map

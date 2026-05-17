@@ -1,175 +1,321 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:png_game/classes/data.dart';
-// import 'package:png_game/main.dart';
-// import 'package:png_game/screens/play_board.dart';
-import 'package:png_game/services/socket_service.dart';
-import 'package:provider/provider.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:ionicons/ionicons.dart';
+import 'package:provider/provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:png_game/classes/data.dart';
+import 'package:png_game/services/socket_service.dart';
 
 class CreateRoom extends StatefulWidget {
-  String? gameId;
-  CreateRoom({super.key, this.gameId});
+  final String? gameId;
+  const CreateRoom({super.key, this.gameId});
 
   @override
   State<CreateRoom> createState() => _CreateRoomState();
 }
 
-class _CreateRoomState extends State<CreateRoom> {
-  String? selectedValue; // Stores the selected item
-  List<String> items = ['Option 1', 'Option 2', 'Option 3', 'Option 4'];
-  String gameId = '';
-  // SocketService socketService = SocketService();
-
-  void shareCode() {
-    final gameId = Data().gameId;
-    Share.share(gameId!);
-  }
-
-  void copyCode() {
-    final gameId = Data().gameId;
-
-    Clipboard.setData(ClipboardData(text: gameId!));
-
-    Fluttertoast.showToast(
-        msg: "Code copied!",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        timeInSecForIosWeb: 1,
-        backgroundColor: const Color.fromARGB(255, 0, 4, 17),
-        textColor: Colors.white,
-        fontSize: 16.0);
-  }
+class _CreateRoomState extends State<CreateRoom> with SingleTickerProviderStateMixin {
+  late String gameId;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
-    gameId = widget.gameId!;
+    super.initState();
+    gameId = widget.gameId ?? Data().gameId ?? '';
+    
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listenForGameJoin();
     });
-    // TODO: implement initState
-    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
   }
 
   void _listenForGameJoin() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final socketService = Provider.of<SocketService>(context, listen: false);
-      final dataProvider = Provider.of<Data>(context, listen: false);
+    final socketService = context.read<SocketService>();
+    final dataProvider = context.read<Data>();
 
-      socketService.addListener(() {
-        if (dataProvider.data != null) {
-          if (socketService.gameJoined) {
-            // Navigator.pushNamed(context, '/play_board');
-            context.go('/play_board');
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(builder: (context) => PlayBoard()),
-            // );
-          }
-        }
-      });
-    });
+    void listener() {
+      if (dataProvider.data != null && socketService.gameJoined) {
+        socketService.removeListener(listener);
+        if (mounted) context.go('/play_board');
+      }
+    }
+    
+    socketService.addListener(listener);
+  }
+
+  void _copyCode() {
+    Clipboard.setData(ClipboardData(text: gameId));
+    Fluttertoast.showToast(
+      msg: "Code copied to clipboard!",
+      backgroundColor: Colors.black87,
+      textColor: Colors.white,
+    );
+  }
+
+  void _shareCode() {
+    Share.share('Join my PNG game room! Code: $gameId');
+  }
+
+  void _showQrCode() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Scan to Join', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 200,
+          height: 200,
+          child: QrImageView(
+            data: gameId,
+            version: QrVersions.auto,
+            size: 200.0,
+          ),
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.pop(context), 
+              child: const Text('Close', style: TextStyle(fontWeight: FontWeight.bold))
+            )
+          )
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(forceMaterialTransparency: true,),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(children: [
-           Text(
-            'Challenge your friend',
-            style: TextStyle(fontSize: 25, color: Colors.grey.shade600, fontWeight: FontWeight.bold),
-          ),
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment
-          //       .spaceBetween, // Space between children horizontally
-          //   crossAxisAlignment:
-          //       CrossAxisAlignment.center, // Center children vertically
-          //   children: [
-          // SizedBox(
-          //   height: 100,
-          //   width: 150,
-          //   child: TextField(
-          //     decoration: InputDecoration(hintText: 'Enter 4 digits 0 - 9'),
-          //   ),
-          // ),
-          // SizedBox(
-          //   width: 145,
-          //   height: 50,
-          //   child: DropdownButton<String>(
-          //     hint: Text("Max minutes"),
-          //     value: selectedValue, // Current selected value
-          //     onChanged: (newValue) {
-          //       setState(() {
-          //         selectedValue = newValue;
-          //       });
-          //     },
-          //     items: items.map((String item) {
-          //       return DropdownMenuItem<String>(
-          //         value: item,
-          //         child: Text(item),
-          //       );
-          //     }).toList(),
-          //   ),
-          // ),
-          //   ],
-          // )
-          const SizedBox(
-            height: 10,
-          ),
-          Center(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(15)
-              ),
-              padding: EdgeInsets.all(15),
-              child: QrImageView(
-                backgroundColor: Colors.white,
-                data: gameId,
-                version: QrVersions.auto,
-                size: 220.0,
-              ),
-            ),
-          ),
-
-          const SizedBox(
-            height: 15,
-          ),
-          Container(
-            height: 40,
-            width: 240,
-            decoration:  BoxDecoration(color: Colors.green.shade500, 
-            borderRadius: BorderRadius.circular(10)
-            ),
-            child: TextButton.icon(
-              icon: Transform.flip(  flipX: true,child: Icon(Icons.reply, size: 30, color: Colors.white,)),
-              onPressed: () {
-                shareCode();
-              },
-              label: const Text(
-                'Share code',
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ),
-          ),
-            const SizedBox(
-                height: 15,
-              ),
-              IconButton(
-                onPressed: () {
-                  copyCode();
-                },
-                icon: const Icon(Icons.copy, size: 40,),
-              )
-        ]),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Ionicons.arrow_back, color: Colors.black87),
+          onPressed: () => context.go('/'),
+        ),
       ),
+      body: Container(
+        width: double.infinity,
+        color: Colors.blueGrey.shade50,
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              
+              // Animated Waiting Icon
+              ScaleTransition(
+                scale: _pulseAnimation,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.2),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                  ),
+                  child: Icon(Ionicons.time, size: 40, color: Colors.blue.shade600),
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              const Text(
+                'Waiting for opponent...',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Share the code below with your friend',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 40),
+
+              // Room Code Card
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5)),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text('ROOM CODE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 1.5)),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              gameId,
+                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          onPressed: _copyCode,
+                          icon: Icon(Ionicons.copy_outline, color: Colors.blue.shade600, size: 22),
+                          tooltip: 'Copy Code',
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          onPressed: _showQrCode,
+                          icon: Icon(Ionicons.qr_code_outline, color: Colors.blue.shade600, size: 22),
+                          tooltip: 'Show QR Code',
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: _shareCode,
+                        icon: const Icon(Ionicons.share_social, color: Colors.white),
+                        label: const Text('Share Code', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade600,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 32),
+
+              // Players List
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PLAYERS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade500, letterSpacing: 1.5)),
+                    const SizedBox(height: 12),
+                    _buildPlayerRow(name: 'You (Host)', isHost: true),
+                    const SizedBox(height: 12),
+                    _buildPlayerRow(name: 'Waiting...', isHost: false, isEmpty: true),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+
+              // Game Settings Footer
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildSettingItem(Ionicons.trophy_outline, 'Best of 3'),
+                    Container(width: 1, height: 40, color: Colors.grey.shade300),
+                    _buildSettingItem(Ionicons.time_outline, '60s / turn'),
+                    Container(width: 1, height: 40, color: Colors.grey.shade300),
+                    _buildSettingItem(Ionicons.lock_open_outline, 'Public'),
+                  ],
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlayerRow({required String name, required bool isHost, bool isEmpty = false}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isEmpty ? Colors.white.withOpacity(0.5) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: isEmpty ? Border.all(color: Colors.grey.shade300, style: BorderStyle.solid) : null,
+        boxShadow: isEmpty ? [] : [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isEmpty ? Colors.grey.shade100 : Colors.blue.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isEmpty ? Ionicons.person_outline : Ionicons.person,
+              color: isEmpty ? Colors.grey.shade400 : Colors.blue.shade600,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: isEmpty ? FontWeight.normal : FontWeight.w600,
+              color: isEmpty ? Colors.grey.shade500 : Colors.black87,
+              fontStyle: isEmpty ? FontStyle.italic : FontStyle.normal,
+            ),
+          ),
+          if (isHost) ...[
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(8)),
+              child: Text('HOST', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amber.shade800)),
+            )
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(IconData icon, String label) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.grey.shade600, size: 20),
+        const SizedBox(height: 8),
+        Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w500)),
+      ],
     );
   }
 }

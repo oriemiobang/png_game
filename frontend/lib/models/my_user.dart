@@ -1,14 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class MyUser {
   final String? uid;
-  MyUser({this.uid});
+  final String? email;
+  final String? name;
+  MyUser({this.uid, this.email, this.name});
 }
 
 class UserData {
   final String? playerId;
   final String? userName;
-  final Timestamp? createdAt;
+  final DateTime? createdAt;
   final bool? isOnline;
 
   final List<Game>? games;
@@ -27,7 +27,7 @@ class UserData {
     return UserData(
       playerId: json['playerId'],
       userName: json['user_name'],
-      createdAt: json['createdAt'],
+      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
       isOnline: json['isOnline'],
      
       games: (json['games'] as List?)
@@ -40,7 +40,7 @@ class UserData {
     return {
       'playerId': playerId,
       'user_name': userName,
-      'createdAt': createdAt,
+      'createdAt': createdAt?.toIso8601String(),
       'isOnline': isOnline,
      
       'games': games?.map((g) => g.toJson()).toList(),

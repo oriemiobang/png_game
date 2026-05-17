@@ -1,17 +1,12 @@
 import 'dart:async';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:go_router/go_router.dart';
-import 'package:png_game/classes/data.dart';
-import 'package:png_game/classes/play_board_classes.dart';
-import 'package:png_game/firebase_service/auth.dart';
-import 'package:png_game/firebase_service/database_service.dart';
-import 'package:png_game/services/playboard_provider.dart';
-import 'package:png_game/services/socket_service.dart';
-import 'package:png_game/storage/saved_data.dart';
+import 'package:ionicons/ionicons.dart';
 import 'package:provider/provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:png_game/classes/data.dart';
+import 'package:png_game/services/socket_service.dart';
 
 class PlayBoard extends StatefulWidget {
   const PlayBoard({super.key});
@@ -20,1275 +15,669 @@ class PlayBoard extends StatefulWidget {
   State<PlayBoard> createState() => _PlayBoardState();
 }
 
-class _PlayBoardState extends State<PlayBoard> {
-  SocketService socketService = SocketService();
-  SavedData savedData = SavedData();
-  Data myData = Data();
+class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final TextEditingController _guessController = TextEditingController();
+  final TextEditingController _secretController = TextEditingController();
+  
+  bool _showSecret = false;
+  bool _hasSetSecret = false;
+  
+  Set<int> _eliminatedNumbers = {};
 
-  final TextEditingController _controller = TextEditingController();
-  final TextEditingController _chatController = TextEditingController();
-  final AuthService _authService = AuthService();
-  final DatabaseService _databaseService = DatabaseService();
-      bool thereIsNewGame = false;
-  int _remainingTime = 30;
-    double _progressTime = 1.0;
-  late Timer _timer;
-  Offset _fabPosition = const Offset(250, 500);
-  List<int>  eliminationNumbers = List<int>.generate(10, (index) => index);
- final Set<int> disabledNumbers = {};
+  int _player1TimeLeft = 0;
+  int _player2TimeLeft = 0;
+  DateTime? _lastMoveAt;
+  Timer? _timer;
 
-  void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), _updateTimer);
-  }
-
-    void _updateTimer(Timer timer) {
-    setState(() {
-      if (_remainingTime == 0) {
-        _timer.cancel();
-      
-      } else {
-   
-        _remainingTime--;
-        _progressTime = _remainingTime / 30.0;
-      }
-    });
-  }
-
-
-  void refreshGuess() async {
-    // final dataProvider = Provider.of<Data>(context, listen: false);
-    final data = Data().data;
-    // final data = dataProvider.data;
-    // final userId = dataProvider.userId;
-
-    final userId = Data().userId;
-    // print('this is the data: $data');
-    String player = data?['player1'] == userId ? 'player1' : 'player2';
-    String opponent = data?['player1'] == userId ? 'player2' : 'player1';
-
-    Data().updateCurrentPlayer(player);
-    Data().updateCurrentOpponent(opponent);
-    setState(() {
-      currentOpponent = opponent;
-      currentPlayer = player;
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _listenToGameState();
     });
   }
 
   @override
-  void initState() {
-    refreshGuess();
-    listener();
-
-
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-      final size = MediaQuery.of(context).size;
-      setState(() {
-        // slightly inset from bottom-right
-        _fabPosition = Offset(size.width - 80, size.height - 260);
-      });
-    });
-
-    // TODO: implement initState
-    super.initState();
+  void dispose() {
+    _tabController.dispose();
+    _guessController.dispose();
+    _secretController.dispose();
+    _timer?.cancel();
+    super.dispose();
   }
 
-  String myGuess = '';
-  String currentPlayer = '';
-  String currentOpponent = '';
+  void _listenToGameState() {
+    final dataProvider = context.read<Data>();
+    
+    // Timer logic based on whose turn it is
+    dataProvider.addListener(() {
+      if (!mounted) return;
+      final gameData = dataProvider.data;
+      if (gameData == null) return;
 
-  void showCupertionoPopUp (){
- showCupertinoModalPopup<void>(
+      final isMyTurn = gameData['turn'] == dataProvider.userId;
+      final status = gameData['status'];
+
+      // Check if we need to show winner
+      if (dataProvider.winner != null) {
+        _handleGameOver(dataProvider.winner!);
+        dataProvider.updateWinner(null);
+      }
+
+      // Sync timers
+      if (gameData['status'] == 'playing') {
+        _player1TimeLeft = gameData['player1TimeLeft'] ?? 0;
+        _player2TimeLeft = gameData['player2TimeLeft'] ?? 0;
+        _lastMoveAt = gameData['lastMoveAt'] != null ? DateTime.parse(gameData['lastMoveAt']) : null;
+        if (_timer == null || !_timer!.isActive) {
+          _startTimer();
+        }
+      } else {
+        _timer?.cancel();
+      }
+
+      // Check if last chance
+      if (dataProvider.lastChance != null) {
+        _handleLastChance(dataProvider.lastChance!);
+        dataProvider.updateLastChance(null);
+      }
+    });
+  }
+
+  void _handleGameOver(Map winnerData) {
+    final userId = context.read<Data>().userId;
+    String title = "Game Over!";
+    String message = "It's a draw!";
+    
+    if (winnerData['winnerId'] == userId) {
+      title = "Congratulations!";
+      message = "You won the game!";
+    } else if (winnerData['winnerId'] != null) {
+      title = "Game Over!";
+      message = "Sorry! You lost. Better luck next time.";
+    }
+
+    showDialog(
       context: context,
-      builder: (BuildContext ctx) {
-        // use StatefulBuilder so the modal can update when numbers are toggled
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return CupertinoActionSheet(
-              title: const Text('Eliminate numbers'),
-              // grid of numbers 0..9
-              message: SizedBox(
-                width: double.infinity,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: List.generate(10, (index) {
-                    final isDisabled = disabledNumbers.contains(index);
-                    return GestureDetector(
-                     onTap: isDisabled
-                         ? (){
-                           setModalState(() => disabledNumbers.remove(index));
-                              setState(() {}); 
-                         }
-                          : () {
-                              // update modal state and parent state
-                              setModalState(() => disabledNumbers.add(index));
-                              setState(() {}); // keep overall state in sync if needed elsewhere
-                            },
-child: Container(
-                        width: 56,
-                        height: 56,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: isDisabled ? Colors.grey.shade300 : Colors.blue,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.black12),
-                        ),
-                        child: Text(
-                          '$index',
-                          style: TextStyle(
-                            color: isDisabled ? Colors.black38 : Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(message, textAlign: TextAlign.center),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              onPressed: () {
+                context.go('/');
+              },
+              child: const Text('Back to Home', style: TextStyle(color: Colors.white)),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _handleLastChance(Map lastChanceData) {
+    final userId = context.read<Data>().userId;
+    final isMyLastChance = lastChanceData['chanceTo'] == userId;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Last Chance!", textAlign: TextAlign.center, style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+        content: Text(
+          isMyLastChance 
+            ? 'Your opponent guessed correctly! This is your last chance to draw the game.'
+            : 'You guessed correctly! Your opponent has a last chance to draw the game.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))
+        ],
+      ),
+    );
+  }
+
+  void _submitSecret() {
+    final secret = _secretController.text;
+    if (secret.length == 4 && RegExp(r'^\d+$').hasMatch(secret) && secret.split('').toSet().length == 4) {
+      context.read<SocketService>().submitSecret(secret);
+      setState(() => _hasSetSecret = true);
+    } else {
+      Fluttertoast.showToast(msg: "Please enter a valid 4-digit unique number", backgroundColor: Colors.red);
+    }
+  }
+
+  void _submitGuess() {
+    final guess = _guessController.text;
+    final dataProvider = context.read<Data>();
+    
+    if (dataProvider.data?['turn'] != dataProvider.userId) {
+      Fluttertoast.showToast(msg: "Please wait for your turn!", backgroundColor: Colors.orange);
+      return;
+    }
+
+    if (guess.length == 4 && RegExp(r'^\d+$').hasMatch(guess) && guess.split('').toSet().length == 4) {
+      context.read<SocketService>().sendGuess(guess);
+      _guessController.clear();
+    } else {
+      Fluttertoast.showToast(msg: "Invalid guess! Must be 4 unique digits.", backgroundColor: Colors.red);
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      final dataProvider = context.read<Data>();
+      final gameData = dataProvider.data;
+      if (gameData == null || gameData['status'] != 'playing' || (gameData['timeLimit'] ?? 0) <= 0) {
+        timer.cancel();
+        return;
+      }
+
+      final now = DateTime.now().toUtc();
+      final lastMove = _lastMoveAt ?? now;
+      final elapsed = now.difference(lastMove).inMilliseconds;
+
+      setState(() {
+        if (gameData['turn'] == gameData['player1Id']) {
+          _player1TimeLeft = (gameData['player1TimeLeft'] ?? 0) - elapsed;
+          if (_player1TimeLeft <= 0) {
+            _player1TimeLeft = 0;
+            _handleTimeout();
+          }
+        } else {
+          _player2TimeLeft = (gameData['player2TimeLeft'] ?? 0) - elapsed;
+          if (_player2TimeLeft <= 0) {
+            _player2TimeLeft = 0;
+            _handleTimeout();
+          }
+        }
+      });
+    });
+  }
+
+  void _handleTimeout() {
+    _timer?.cancel();
+    context.read<SocketService>().reportTimeout();
+  }
+
+  void _showNumberEliminator() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 24),
+              const Text('Eliminate Numbers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Tap numbers to mark them as eliminated', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: List.generate(10, (index) {
+                  final isEliminated = _eliminatedNumbers.contains(index);
+                  return GestureDetector(
+                    onTap: () {
+                      setModalState(() {
+                        if (isEliminated) {
+                          _eliminatedNumbers.remove(index);
+                        } else {
+                          _eliminatedNumbers.add(index);
+                        }
+                      });
+                      setState(() {});
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: isEliminated ? Colors.grey.shade200 : Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isEliminated ? Colors.grey.shade300 : Colors.blue.shade200,
+                          width: isEliminated ? 1 : 2,
                         ),
                       ),
-                    );
-                  }),
-                ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$index',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isEliminated ? Colors.grey.shade400 : Colors.blue.shade700,
+                          decoration: isEliminated ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
               ),
-             
+              const SizedBox(height: 32),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dataProvider = context.watch<Data>();
+    final gameData = dataProvider.data;
+    final userId = dataProvider.userId;
+
+    if (gameData == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final isMyTurn = gameData['turn'] == userId;
+    final status = gameData['status'];
+    
+    // Check if secrets are submitted by checking the backend state
+    // In our NestJS backend, if player1Id == userId, we check player1Secret
+    final isPlayer1 = gameData['player1Id'] == userId;
+    final mySecretBackend = isPlayer1 ? gameData['player1Secret'] : gameData['player2Secret'];
+    final _backendHasSecret = mySecretBackend != null;
+
+    final opponentId = isPlayer1 ? gameData['player2Id'] : gameData['player1Id'];
+    final bool hasTimer = (gameData['timeLimit'] ?? 0) > 0;
+
+    // Filter Guesses
+    final allGuesses = (gameData['guesses'] as List?) ?? [];
+    final myGuesses = allGuesses.where((g) => g['playerId'] == userId).toList();
+    final opponentGuesses = allGuesses.where((g) => g['playerId'] != userId).toList();
+
+    return Scaffold(
+      backgroundColor: Colors.blueGrey.shade50,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Ionicons.close, color: Colors.black87),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Leave Game?'),
+                content: const Text('Are you sure you want to forfeit this game?'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () => context.go('/'),
+                    child: const Text('Leave', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
             );
           },
+        ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: status == 'playing' 
+                  ? (isMyTurn ? Colors.green.shade50 : Colors.orange.shade50)
+                  : Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: status == 'playing' 
+                    ? (isMyTurn ? Colors.green.shade200 : Colors.orange.shade200)
+                    : Colors.blue.shade200,
+                )
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    status == 'waiting' ? Ionicons.time : (isMyTurn ? Ionicons.play : Ionicons.pause),
+                    size: 14,
+                    color: status == 'playing' 
+                      ? (isMyTurn ? Colors.green.shade700 : Colors.orange.shade700)
+                      : Colors.blue.shade700,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    status == 'waiting' ? 'Setting Secrets' : (isMyTurn ? 'YOUR TURN' : 'OPPONENT\'S TURN'),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: status == 'playing' 
+                        ? (isMyTurn ? Colors.green.shade700 : Colors.orange.shade700)
+                        : Colors.blue.shade700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Ionicons.chatbubble_ellipses_outline, color: Colors.black87),
+            onPressed: () {
+              // Open Chat
+              context.push('/chat');
+            },
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          // Top Info Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            color: Colors.white,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Ionicons.person, size: 16, color: Colors.blue.shade600),
+                    const SizedBox(width: 8),
+                    Text('You', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 8),
+                    if (status == 'playing' && hasTimer) _buildTimerBadge(isPlayer1 ? _player1TimeLeft : _player2TimeLeft, isMyTurn),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+                  child: Text('Round ${myGuesses.length + 1}/${gameData['maxRounds']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
+                ),
+                Row(
+                  children: [
+                    if (status == 'playing' && hasTimer) _buildTimerBadge(!isPlayer1 ? _player1TimeLeft : _player2TimeLeft, !isMyTurn),
+                    const SizedBox(width: 8),
+                    Text('Opponent', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+                    const SizedBox(width: 8),
+                    Icon(Ionicons.person, size: 16, color: Colors.red.shade400),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          if (!_backendHasSecret) ...[
+            // Set Secret Phase
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(color: Colors.blue.shade50, shape: BoxShape.circle),
+                        child: Icon(Ionicons.lock_closed, size: 48, color: Colors.blue.shade600),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text('Set Your Secret Code', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text('Enter a 4-digit number with no repeating digits.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600)),
+                      const SizedBox(height: 32),
+                      TextField(
+                        controller: _secretController,
+                        keyboardType: TextInputType.number,
+                        maxLength: 4,
+                        textAlign: TextAlign.center,
+                        obscureText: !_showSecret,
+                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 8),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          suffixIcon: IconButton(
+                            icon: Icon(_showSecret ? Ionicons.eye_off : Ionicons.eye),
+                            onPressed: () => setState(() => _showSecret = !_showSecret),
+                          )
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _submitSecret,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue.shade600,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          ),
+                          child: const Text('Lock In Secret', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            )
+          ] else if (status == 'waiting') ...[
+            // Waiting for Opponent to set secret
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 24),
+                    const Text('Waiting for opponent...', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Text('They are setting their secret code.', style: TextStyle(color: Colors.grey.shade600)),
+                  ],
+                ),
+              ),
+            )
+          ] else ...[
+            // Playing Phase
+            Container(
+              color: Colors.white,
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: Colors.blue.shade600,
+                labelColor: Colors.blue.shade700,
+                unselectedLabelColor: Colors.grey.shade500,
+                tabs: const [
+                  Tab(text: 'My Guesses'),
+                  Tab(text: 'Opponent\'s Guesses'),
+                ],
+              ),
+            ),
+            
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // My Guesses Tab
+                  _buildGuessesList(myGuesses, true),
+                  // Opponent Guesses Tab
+                  _buildGuessesList(opponentGuesses, false),
+                ],
+              ),
+            ),
+
+            // Input Area
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+              ),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _guessController,
+                            keyboardType: TextInputType.number,
+                            maxLength: 4,
+                            style: const TextStyle(fontSize: 20, letterSpacing: 4, fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              counterText: '',
+                              hintText: 'Enter guess...',
+                              hintStyle: const TextStyle(fontSize: 16, letterSpacing: 0, fontWeight: FontWeight.normal),
+                              filled: true,
+                              fillColor: Colors.grey.shade100,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 60,
+                          height: 60,
+                          child: ElevatedButton(
+                            onPressed: isMyTurn ? _submitGuess : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade600,
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            child: const Icon(Ionicons.send, color: Colors.white),
+                          ),
+                        )
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton.icon(
+                          onPressed: _showNumberEliminator,
+                          icon: Icon(Ionicons.calculator, color: Colors.grey.shade700),
+                          label: Text('Scratchpad', style: TextStyle(color: Colors.grey.shade700)),
+                          style: TextButton.styleFrom(backgroundColor: Colors.grey.shade100, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            )
+          ]
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuessesList(List guesses, bool isMine) {
+    if (guesses.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Ionicons.document_text_outline, size: 48, color: Colors.grey.shade300),
+            const SizedBox(height: 16),
+            Text(isMine ? 'Make your first guess!' : 'Waiting for opponent...', style: TextStyle(color: Colors.grey.shade500)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: guesses.length,
+      itemBuilder: (context, index) {
+        final guess = guesses[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+                alignment: Alignment.center,
+                child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  guess['guess'].toString(),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 4),
+                ),
+              ),
+              Row(
+                children: [
+                  _buildFeedbackBadge('P', guess['position'].toString(), Colors.green),
+                  const SizedBox(width: 8),
+                  _buildFeedbackBadge('N', guess['number'].toString(), Colors.orange),
+                ],
+              )
+            ],
+          ),
         );
       },
     );
   }
 
-  void submitGuess(PlayBoardProvider playBoardProvider) {
-    // bool isNumb = RegExp(r'^[0-9]+$').hasMatch(myGuess);
-    bool isNumb = RegExp(r'^\d+$').hasMatch(myGuess);
-    bool isUnique = myGuess.split('').toSet().length == myGuess.length;
-
-    if (myGuess.length == 4 && isNumb && isUnique) {
-      socketService.sendGuess(myGuess);
-
-      // playBoardProvider.addGuess(mySecret, '5', '3');
-    } else {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text("Invalid Input"),
-            content:
-                const Text("Please enter a 4-digit number with no repetition!"),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
-                },
-                child: const Text("OK"),
-              ),
-            ],
-          );
-        },
-      );
-    }
-  }
-
-  void sendMessage() {
-    final myGameId = Data().gameId;
-    final myPlayerId = Data().userId;
-    socketService.chat(
-        gameId: myGameId!,
-        playerId: myPlayerId!,
-        message: _chatController.text);
-  }
-
-  void submitScret(PlayBoardClasses playBoardClasees) {
-    final mySecret = playBoardClasees.mySecret;
-    bool isNumb = RegExp(r'^[0-9]+$').hasMatch(mySecret);
-      bool isUnique = myGuess.split('').toSet().length == myGuess.length;
-
-    if ((mySecret.length == 4 )&& isNumb && isUnique) {
-      socketService.submitSecret(mySecret);
-    } else {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text("Invalid Input"),
-            content: const Text("Please enter a 4-digit number."),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
-                },
-                child: const Text("OK"),
-              ),
-            ],
-          );
-        },
-      );
-    }
-  }
-
-  final ScrollController _scrollController = ScrollController();
-  final ScrollController _tableScrollCtroller = ScrollController();
-
-  // change listener
-  void listener() {
-    final dataProvider = Provider.of<Data>(context, listen: false);
-
-    //end
-  }
-
-  @override
-  Widget build(BuildContext context) {
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_tableScrollCtroller.hasClients) {
-        _tableScrollCtroller.animateTo(
-          _tableScrollCtroller.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      });
-    });
-    final playBoardProvider = Provider.of<PlayBoardProvider>(context);
-    final dataProvider = Provider.of<Data>(context);
-    final playBoardClasses = Provider.of<PlayBoardClasses>(context);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-// check for new game request
-      if (dataProvider.newGame != null) {
-        final requestData = dataProvider.newGame;
-        final myId = dataProvider.userId;
-        print('here is the request data: $requestData');
-        if (requestData?['isApproved'] == false) {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("New game"),
-                content: const Text('Let\'s play a new game'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text('No'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      final playerId = dataProvider.userId;
-                      final gameId = dataProvider.gameId;
-                      socketService.requestNewGame(playerId, gameId, true);
-                      Navigator.of(context).pop();
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-        } else if (requestData?['isApproved'] == true) {
-          PlayBoardClasses().setGuesses([]);
-          PlayBoardClasses().setIsSubmitted(false);
-          PlayBoardClasses().setMySecret('');
-          PlayBoardClasses().setShowSecret(false);
-          Data().updateGameOver(false);
-          dataProvider.updateChatData({});
-          thereIsNewGame = true;
-          setState(() {
-            
-          });
-
-          Fluttertoast.showToast(
-              msg: "New game started!",
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
-              timeInSecForIosWeb: 1,
-              backgroundColor: const Color.fromARGB(255, 0, 4, 17),
-              textColor: Colors.white,
-              fontSize: 16.0);
-        }
-        Data().updateNewGame(null);
-      }
-    });
-    // check for your turn
-    if (dataProvider.notYourTurn != null) {
-      if (dataProvider.notYourTurn?['player'] == dataProvider.userId) {
-        Fluttertoast.showToast(
-            msg: "Please wait for your turn!",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.BOTTOM,
-            timeInSecForIosWeb: 1,
-            backgroundColor: const Color.fromARGB(255, 0, 4, 17),
-            textColor: Colors.white,
-            fontSize: 16.0);
-
-        Data().updateNotYourTurn(null);
-      }
-    }
-
-// check for last chancce
-    if (dataProvider.lastChance != null) {
-      final lastChanceData = Data().lastChance;
-      final myData = Data().data;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (lastChanceData?['chanceTo'] == myData?[currentPlayer]) {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Last Chance"),
-                content: const Text(
-                    'Your opponent guessed correctly! This is your last chance to draw the game.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); 
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-        } else {
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return AlertDialog(
-                title: const Text("Last Chance"),
-                content: const Text(
-                    'You have guessed correctly! your opponent has a last chance to draw the game.'),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(); 
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
-              );
-            },
-          );
-        }
-      });
-
-      Data().updateLastChance(null);
-    }
-
-    // check for a winner
-    // Show dialog only if winner is set (not null)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (dataProvider.winner != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          final winnerData = Data().winner;
-          final myData = Data().data;
-          if (winnerData?['winnerId'] == null) {
-            Data().updateGameOver(true);
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-
-                
-                return AlertDialog(
-                  title: const Text("Game over!"),
-                  content: const Text("It's a draw"),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); 
-                      },
-                      child: const Text("OK"),
-                    ),
-                  ],
-                );
-              },
-            );
-          } else if (winnerData?['winnerId'] == myData?[currentPlayer]) {
-            Data().updateGameOver(true);
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                
-                return AlertDialog(
-                  title: const Text("Game over!"),
-                  content: const Text("Congratulations! You won the game!"),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); 
-                      },
-                      child: const Text("OK"),
-                    ),
-                  ],
-                );
-              },
-            );
-          } else {
-            Data().updateGameOver(true);
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return AlertDialog(
-                  title: const Text("Game Over!"),
-                  content:
-                      const Text("Sorry! You lost. Better luck next time."),
-                  actions: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text("OK"),
-                    ),
-                  ],
-                );
-              },
-            );
-          }
-
-      
-          dataProvider.updateWinner(
-              null); 
-        });
-      }
-    });
-
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult:(didPop, result) {
-        if(!didPop){
-        
-                if (dataProvider.gameOver) {
-                  PlayBoardClasses().setChatValue('');
-                  PlayBoardClasses().setGuesses([]);
-                  PlayBoardClasses().setIsSubmitted(false);
-                  PlayBoardClasses().setMySecret('');
-                  PlayBoardClasses().setShowSecret(false);
-                  Data().updateGameOver(false);
-                  Data().updateChatData({});
-                
-                  // Navigator.pushNamed(context, '/');
-                  context.go('/');
-                } else {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: const Text("Leave game?"),
-                        content: const Text(
-                            "Are you sure you want to leave the game?"),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: Text('No'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              PlayBoardClasses().setChatValue('');
-                              PlayBoardClasses().setGuesses([]);
-                              PlayBoardClasses().setIsSubmitted(false);
-                              PlayBoardClasses().setMySecret('');
-                              PlayBoardClasses().setShowSecret(false);
-                              Data().updateGameOver(false);
-                                Data().updateChatData({});
-                           
-                              // Navigator.pushNamed(context, '/');
-                              Navigator.of(context).pop(); // Close the dialog
-                              context.go('/');
-                            },
-                            child: const Text("Yes"),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                }
-              
-
-        }
-        
-      },
-      child: Scaffold(
-        backgroundColor: Colors.grey.shade100,
-        appBar: AppBar(
-          // backgroundColor: Colors.white,
-          forceMaterialTransparency: true,
-          automaticallyImplyLeading: false,
-          leading: IconButton(
-              onPressed: () {
-                if (dataProvider.gameOver) {
-                  PlayBoardClasses().setChatValue('');
-                  PlayBoardClasses().setGuesses([]);
-                  PlayBoardClasses().setIsSubmitted(false);
-                  PlayBoardClasses().setMySecret('');
-                  PlayBoardClasses().setShowSecret(false);
-                  Data().updateGameOver(false);
-                  Data().updateChatData({});
-                
-                  // Navigator.pushNamed(context, '/');
-                  context.go('/');
-                } else {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        title: const Text("Leave game?"),
-                        content: const Text(
-                            "Are you sure you want to leave the game?"),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: Text('No'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              PlayBoardClasses().setChatValue('');
-                              PlayBoardClasses().setGuesses([]);
-                              PlayBoardClasses().setIsSubmitted(false);
-                              PlayBoardClasses().setMySecret('');
-                              PlayBoardClasses().setShowSecret(false);
-                              Data().updateGameOver(false);
-                                Data().updateChatData({});
-                           
-                              // Navigator.pushNamed(context, '/');
-                              Navigator.of(context).pop(); // Close the dialog
-                              context.go('/');
-                            },
-                            child: const Text("Yes"),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                }
-              },
-              icon: const Icon(Icons.arrow_back)),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.all(10),
-              child: Container(
-               padding: EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                   color: dataProvider.userId == dataProvider.data?['turn']? Colors.green: Colors.red,
-                ),
-                child: Text(
-                  dataProvider.userId == dataProvider.data?['turn']
-                      ? 'Your turn'
-                      : 'Opponent\'s turn',
-                  style:  TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
-        ),
-        body: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ListView(
-                children: [
-              
-                  playBoardClasses.isSubmitted
-                      ? !playBoardClasses.showSecret
-                          ? GestureDetector(
-                              onTap: () => playBoardClasses
-                                  .setShowSecret(!playBoardClasses.showSecret),
-                              child: const Text(
-                                '****',
-                                style: TextStyle(fontSize: 20),
-                              ),
-                            )
-                          : GestureDetector(
-                              onTap: () => playBoardClasses
-                                  .setShowSecret(!playBoardClasses.showSecret),
-                              child: Text(
-                                playBoardClasses.mySecret,
-                                style: const TextStyle(fontSize: 20),
-                              ),
-                            )
-                      : Padding(
-                        padding: const EdgeInsets.only(right: 20, ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              SizedBox(
-                                height: 35,
-                                width: 150,
-                                child: TextField(
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (value) {
-                                    PlayBoardClasses().setMySecret(value);
-                                  },
-                                  decoration: InputDecoration(
-                                    labelText: playBoardClasses.mySecret.isEmpty
-                                        ? 'Enter secret code'
-                                        : '',
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(
-                                width: 10,
-                              ),
-                              Container(
-                             
-                                decoration: BoxDecoration(
-                                     color: Colors.white,
-                                  borderRadius: BorderRadius.circular(10.0),
-                                ),
-                                height: 35,
-                                width: 120,
-                                child: TextButton(
-                                    onPressed: () {
-                                      if (dataProvider.data?['turn'] ==
-                                          dataProvider.userId) {
-                                        submitScret(playBoardClasses);
-                                        PlayBoardClasses().setIsSubmitted(true);
-                                      } else {
-                                        Fluttertoast.showToast(
-                                            msg: "Please wait for your turn!",
-                                            toastLength: Toast.LENGTH_SHORT,
-                                            gravity: ToastGravity.BOTTOM,
-                                            timeInSecForIosWeb: 1,
-                                            backgroundColor:
-                                                const Color.fromARGB(255, 0, 4, 17),
-                                            textColor: Colors.white,
-                                            fontSize: 16.0);
-                                      }
-                                    },
-                                    child: const Text(
-                                      'Submit',
-                                      style: TextStyle(color: Colors.green),
-                                    )),
-                              )
-                            ],
-                          ),
-                      ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300]
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        GestureDetector(
-                          onTap: () => playBoardProvider.toggleBoard(true),
-                          child: Container(
-                            width: 170,
-                            height: 40,
-                            color: playBoardProvider.showMine
-                                ? Colors.blue
-                                : Colors.grey.shade300,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'My board',
-                                style: TextStyle(color:playBoardProvider.showMine? Colors.white: Colors.black, fontSize: 17.5),
-                              ),
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => playBoardProvider.toggleBoard(false),
-                          child: Container(
-                            width: 170,
-                            height: 40,
-                            color:  !playBoardProvider.showMine
-                                ? Colors.blue
-                                : Colors.grey.shade300,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Text(
-                                'Opponent\'s board',
-                                style: TextStyle(color:!playBoardProvider.showMine? Colors.white: Colors.black, fontSize: 17.5),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  playBoardProvider.showMine
-                      ? Container(
-                          height: 300,
-                          width: double.infinity,
-                         decoration: BoxDecoration(
-                           color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                           border: Border.all(width: 1, color: Colors.grey.shade300)
-                         ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Header row (fixed)
-                              Container(
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.only(topLeft: Radius.circular(10), topRight: Radius.circular(10)),
-                                  border: Border.all(width: 1, color: Colors.grey.shade300)
-                              ),
-            
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 10),
-                                child: const Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 1,
-                                      child: Text(
-                                        'Attempt',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(
-                                        'Guesses',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 1,
-                                      child: Text(
-                                        'P',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 1,
-                                      child: Text(
-                                        'N',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              dataProvider
-                                          .data?['guesses']
-                                              [dataProvider.currentPlayer]
-                                          .length <
-                                      1
-                                  ? const Center(
-                                      child: Text(
-                                        '\n\nyour guesses appear here',
-                                        style: TextStyle(fontStyle: FontStyle.italic),
-                                      ),
-                                    )
-                                  :
-                                  // Scrollable rows
-                                  Expanded(
-                                      child: Scrollbar(
-                                        thumbVisibility: true,
-                                        controller: _tableScrollCtroller,
-                                        child: SingleChildScrollView(
-                                          controller: _tableScrollCtroller,
-                                          child: SingleChildScrollView(
-                                            scrollDirection: Axis.horizontal,
-                                            child: SizedBox(
-                                              width:
-                                                  MediaQuery.of(context).size.width,
-                                              child: Column(
-                                                children: (dataProvider
-                                                                    .data?['guesses']
-                                                                ?[
-                                                                dataProvider
-                                                                    .currentPlayer]
-                                                            as List?)
-                                                        ?.map<Widget>((entry) {
-                                                      final index = (dataProvider
-                                                                          .data?[
-                                                                      'guesses'][
-                                                                  dataProvider
-                                                                      .currentPlayer]
-                                                              as List)
-                                                          .indexOf(entry);
-                                                      final guess = entry
-                                                          as Map<String, dynamic>;
-                  
-                                                      return Padding(
-                                                        padding: const EdgeInsets
-                                                            .symmetric(
-                                                            horizontal: 16,
-                                                            vertical: 8),
-                                                        child: Row(
-                                                          children: [
-                                                            Expanded(
-                                                                flex: 1,
-                                                                child: Text(
-                                                                    '${index + 1}')),
-                                                            Expanded(
-                                                              flex: 2,
-                                                              child: Text(guess[
-                                                                          'guess']
-                                                                      ?.toString() ??
-                                                                  ''),
-                                                            ),
-                                                            Expanded(
-                                                              flex: 1,
-                                                              child: Text(guess[
-                                                                              'feedback']
-                                                                          ?[
-                                                                          'position']
-                                                                      ?.toString() ??
-                                                                  ''),
-                                                            ),
-                                                            Expanded(
-                                                              flex: 1,
-                                                              child: Text(guess[
-                                                                              'feedback']
-                                                                          ?['number']
-                                                                      ?.toString() ??
-                                                                  ''),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      );
-                                                    }).toList() ??
-                                                    [], // Return empty list if null
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                            ],
-                          ),
-                        )
-                      : Container(
-                          height: 300,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(width: 1, color: Colors.grey.shade300)
-                          ),
-                        
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Header row (fixed)
-                              Container(
-                              decoration: BoxDecoration(color: Colors.white,
-                              border: Border.all(width: 1, color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.only(topLeft: Radius.circular(10), 
-                              topRight: Radius.circular(10))
-                              
-                              ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 10),
-                                child: const Row(
-                                  children: [
-                                    Expanded(
-                                      flex: 1,
-                                      child: Text(
-                                        'Attempt',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 2,
-                                      child: Text(
-                                        'Guesses',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 1,
-                                      child: Text(
-                                        'P',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 1,
-                                      child: Text(
-                                        'N',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 17),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              dataProvider
-                                          .data?['guesses']
-                                              [dataProvider.currentOpponent]
-                                          .length <
-                                      1
-                                  ? const Center(
-                                      child: Text(
-                                        '\n\nyour opponent guesses appear here',
-                                        style: TextStyle(fontStyle: FontStyle.italic),
-                                      ),
-                                    )
-                                  :
-                                  // Scrollable rows
-                                  Expanded(
-                                      child: Scrollbar(
-                                        thumbVisibility: true,
-                                        controller: _tableScrollCtroller,
-                                        child: SingleChildScrollView(
-                                          controller: _tableScrollCtroller,
-                                          child: SingleChildScrollView(
-                                            scrollDirection: Axis.horizontal,
-                                            child: SizedBox(
-                                              width:
-                                                  MediaQuery.of(context).size.width,
-                                              child: Column(
-                                                children: (dataProvider
-                                                                    .data?['guesses']
-                                                                ?[
-                                                                dataProvider
-                                                                    .currentOpponent]
-                                                            as List?)
-                                                        ?.map<Widget>((entry) {
-                                                      final index = (dataProvider
-                                                                          .data?[
-                                                                      'guesses'][
-                                                                  dataProvider
-                                                                      .currentOpponent]
-                                                              as List)
-                                                          .indexOf(entry);
-                                                      final guess = entry
-                                                          as Map<String, dynamic>;
-                  
-                                                      return Padding(
-                                                        padding: const EdgeInsets
-                                                            .symmetric(
-                                                            horizontal: 16,
-                                                            vertical: 8),
-                                                        child: Row(
-                                                          children: [
-                                                            Expanded(
-                                                                flex: 1,
-                                                                child: Text(
-                                                                    '${index + 1}')),
-                                                            Expanded(
-                                                              flex: 2,
-                                                              child: Text(guess[
-                                                                          'guess']
-                                                                      ?.toString() ??
-                                                                  ''),
-                                                            ),
-                                                            Expanded(
-                                                              flex: 1,
-                                                              child: Text(guess[
-                                                                              'feedback']
-                                                                          ?[
-                                                                          'position']
-                                                                      ?.toString() ??
-                                                                  ''),
-                                                            ),
-                                                            Expanded(
-                                                              flex: 1,
-                                                              child: Text(guess[
-                                                                              'feedback']
-                                                                          ?['number']
-                                                                      ?.toString() ??
-                                                                  ''),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      );
-                                                    }).toList() ??
-                                                    [], // Return empty list if null
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                            ],
-                          ),
-                        ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-            
-                  GestureDetector(
-                    onTap: () {
-                         playBoardProvider.setWriteText(!playBoardProvider.writeText);
-                    },
-                    child: Center(
-                      child: Container(
-                        width: double.infinity,
-                        // set a max width so the chat area won't take the full screen
-                        // width: MediaQuery.of(context).size.width * 0.75,
-                        height: playBoardProvider.writeText? 170: 200,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(5),
-                          color: Colors.white,
-                          border: Border.all(color: Colors.grey.shade300, width: 1),
-                        ),
-                        child: Padding(
-                          padding: 
-                               const EdgeInsets.all(5)
-           ,
-                          child: dataProvider.chatData!.isEmpty
-                              ? Center(
-                                child: const Text('messages appear here',
-                                    style: TextStyle(fontStyle: FontStyle.italic)),
-                              )
-                              : ListView.builder(
-                                  itemCount: dataProvider.chatData?.length,
-                                  controller: _scrollController,
-                                  itemBuilder: (context, index) {
-                                    final isMe = dataProvider.chatData?[index]
-                                            ['currentSender'] ==
-                                        Data().userId;
-                                    return Align(
-                                      alignment:
-                                          isMe ? Alignment.centerLeft : Alignment.centerRight,
-                                      child: Container(
-                                        // let the bubble grow with content but limit its max width
-                                        constraints: BoxConstraints(
-                                          maxWidth:
-                                              MediaQuery.of(context).size.width * 0.6,
-                                        ),
-                                        padding: const EdgeInsets.all(8),
-                                        margin: const EdgeInsets.symmetric(vertical: 4),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(8),
-                                          color: isMe ? Colors.blue : Colors.grey.shade200,
-                                        ),
-                                        child: Text(
-                                          dataProvider.chatData?[index]['message'] ?? '',
-                                          style: TextStyle(
-                                            color: isMe ? Colors.white : Colors.black87,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-               
-               SizedBox(height: 10,),
-               !playBoardProvider.writeText? SizedBox()  : Row(
-                 children: [
-                    Expanded(
-                        child: Container(
-                          height: 48,
-                          decoration: BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.03),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                           ],
-                          ),
-                          child: TextField(
-                            controller: _chatController,
-                            onChanged: (value) {
-                              PlayBoardClasses().setChatValue(value);
-                            },
-                            decoration: InputDecoration(
-                              hintText: playBoardClasses.chatValue.isEmpty
-                                  ? 'Text your opponent'
-                                  : null,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              filled: true,
-                             fillColor: Colors.white,
-                              enabledBorder: OutlineInputBorder(
-                               borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                             ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                               borderSide: BorderSide(color: Colors.blue, width: 2),
-                              ),
-                              suffixIcon: Padding(
-                                padding: const EdgeInsets.only(right: 6.0),
-                                child: Material(
-                                  color: Colors.blue,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  child: IconButton(
-                                    onPressed: () {
-                                      if (_chatController.text.trim().isEmpty) return;
-                                     sendMessage();
-                                      _chatController.clear();                                  PlayBoardClasses().setChatValue('');
-                                    },
-                                    icon: const Icon(Icons.send_sharp, color: Colors.white),
-                                ),
-                               ),
-                            ),
-                              suffixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-                           ),
-                         ),
-                       ),
-                      ),
-                  ],
-              ),
-           
-                
-            
-              
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  Container(
-                      width: 170,
-                      color:
-                          dataProvider.gameOver ? Colors.black : Colors.grey.shade300,
-                      child: TextButton(
-                          onPressed: dataProvider.gameOver ? () {
-                            final gameId = Data().gameId;
-                            final playerId = Data().userId;
-                            socketService.requestNewGame(playerId, gameId, false);
-                          }: null,
-                          child: const Text(
-                            'New game',
-                            style: TextStyle(fontSize: 17, color: Colors.white),
-                          )))
-                ],
-              ),
-            ),
-            Positioned(
-              left: _fabPosition.dx,
-              top: _fabPosition.dy,
-              child: Builder(builder: (context) {
-                // playBoardProvider is available in build(); using Provider inside tap handler
-                final playBoardProvider = Provider.of<PlayBoardProvider>(context, listen: false);
-                return GestureDetector(
-                  onPanUpdate: (details) {
-                    final size = MediaQuery.of(context).size;
-                    setState(() {
-                      double newX = _fabPosition.dx + details.delta.dx;
-                      double newY = _fabPosition.dy + details.delta.dy;
-                      // keep inside screen bounds (basic clamping)
-                      newX = newX.clamp(0.0, size.width - 56);
-                      newY = newY.clamp(0.0, size.height - 120);
-                      _fabPosition = Offset(newX, newY);
-                    });
-                  },
-                  onTap: () {
-                    showCupertionoPopUp();
-                  
-         },
-                  child: Material(
-                    elevation: 6,
-                    shape: const CircleBorder(),
-                    color: Colors.transparent,
-                    child: Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                           colors: [Color(0xFF2D9CDB), Color(0xFF56CCF2)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 6, offset: const Offset(0, 3)),
-                        ],
-                      ),
-                      child: const Icon(Icons.keyboard_arrow_up, color: Colors.white,size: 45,),
-                    ),
-                  ),
-                );
-              }),
-            ),
-       
-
-          ],
-        ),
-        bottomNavigationBar: Padding(
-          padding:
-              EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-          child: SizedBox(
-            width: double.infinity,
-            // height: 50,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Container(
-                  padding: const EdgeInsetsDirectional.only(start: 20),
-                  width: 250,
-                  // height: 45,
-                  child: TextField(
-                    keyboardType:
-                        TextInputType.number, // Enables multi-line input
-      
-                    maxLines: null, // Expand as needed
-                    textInputAction: TextInputAction.newline,
-      
-                    controller: _controller,
-                    decoration: const InputDecoration(
-                      contentPadding:
-                          EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-                      hintText: 'Write your guess...',
-                      // border: OutlineInputBorder(
-                      //   borderRadius: BorderRadius.circular(25),
-                      //   borderSide: BorderSide(color: Colors.grey.shade200),
-                      // ),
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      myGuess = _controller.text;
-                    });
-                    submitGuess(playBoardProvider);
-                    // checkLastChance(
-                    //     dataProvider, currentPlayer, currentOpponent, context);
-                    // // checkWinner(dataProvider);
-      
-                    _controller.text = '';
-                  },
-                  child: Container(
-                    width: 80,
-                    decoration:  BoxDecoration(color: Colors.black,
-                    borderRadius: BorderRadius.circular(10)
-                    
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text('Submit', style: TextStyle(color: Colors.white, fontSize: 17.9),),
-                    ),
-                  ),
-                )
-              ],
-            ),
-          ),
-        ),
+  Widget _buildFeedbackBadge(String label, String value, MaterialColor color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.shade200),
       ),
+      child: Row(
+        children: [
+          Text(label, style: TextStyle(fontWeight: FontWeight.bold, color: color.shade700, fontSize: 12)),
+          const SizedBox(width: 6),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color.shade900, fontSize: 16)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimerBadge(int timeMs, bool isActive) {
+    int totalSeconds = timeMs ~/ 1000;
+    int m = totalSeconds ~/ 60;
+    int s = totalSeconds % 60;
+    String timeString = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isActive ? Colors.amber.shade100 : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: isActive ? Colors.amber.shade400 : Colors.grey.shade300)
+      ),
+      child: Text(timeString, style: TextStyle(
+        fontWeight: FontWeight.bold,
+        color: isActive ? Colors.amber.shade900 : Colors.grey.shade600
+      )),
     );
   }
 }

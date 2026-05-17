@@ -5,11 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/features/home/widgets/user_drawer_header.dart';
-import 'package:png_game/firebase_service/auth.dart';
+import 'package:png_game/services/auth_api_service.dart';
 import 'package:png_game/models/my_user.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
-
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -43,15 +42,15 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final dataProvider = Provider.of<Data>(context);
-    final user = Provider.of<MyUser?>(context);
+    final authApi = Provider.of<AuthApiService>(context);
+    final user = authApi.user;
     final socketService = Provider.of<SocketService>(context);
-    final authService = Provider.of<AuthService>(context);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       key: _scaffoldKey,
       appBar: _buildAppBar(),
-      drawer: _buildDrawer(user, authService),
+      drawer: _buildDrawer(user, authApi),
       body: Padding(
         padding: const EdgeInsets.all(15.0),
         child: ListView(
@@ -100,7 +99,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDrawer(MyUser? user, AuthService authService) {
+  Widget _buildDrawer(MyUser? user, AuthApiService authApi) {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -139,7 +138,7 @@ class _HomePageState extends State<HomePage> {
               _buildDrawerItem(
                 icon: Icons.logout,
                 title: 'Log out',
-                onTap: () => authService.signOut(),
+                onTap: () => authApi.logout(),
               ),
           ],
         ),
@@ -299,8 +298,7 @@ class _HomePageState extends State<HomePage> {
           icon: Icons.add,
           text: 'Create Room',
           onPressed: () {
-            socketService.createRandomGame();
-            context.push('/random_wait_room');
+            context.push('/create_game');
           },
         ),
       ],
@@ -396,10 +394,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _createAndShareRoom(SocketService socketService) {
-    final gameId = socketService.createGame();
-    context.push(
-      '/create_room',
-      extra: gameId,
-    );
+    context.push('/create_game');
   }
 }

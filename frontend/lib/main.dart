@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/classes/play_board_classes.dart';
 import 'package:png_game/features/home/home_page.dart';
-import 'package:png_game/firebase_options.dart';
-import 'package:png_game/firebase_service/auth.dart';
 import 'package:png_game/models/my_user.dart';
 import 'package:png_game/screens/create_game.dart';
 import 'package:png_game/screens/play_solo.dart';
@@ -11,6 +9,7 @@ import 'package:png_game/screens/randomWaitRoom.dart';
 import 'package:png_game/screens/rooms_page.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:png_game/screens/chat_room.dart';
 import 'package:png_game/screens/create_room.dart';
 import 'package:png_game/screens/join_room.dart';
 import 'package:png_game/screens/play_board.dart';
@@ -19,17 +18,10 @@ import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/screens/sign_in.dart';
 import 'package:png_game/screens/sign_up.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'package:png_game/services/auth_api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } on Exception catch (e) {
-    print('Firebase initialization error: $e');
-  }
   runApp(const MyApp());
 }
 
@@ -40,9 +32,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Add AuthService provider
-        Provider<AuthService>(
-          create: (_) => AuthService(),
+        ChangeNotifierProvider<AuthApiService>(
+          create: (_) => AuthApiService(),
         ),
         ChangeNotifierProvider<SocketService>(
           create: (context) => SocketService(),
@@ -55,11 +46,6 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<PlayBoardClasses>(
           create: (_) => PlayBoardClasses(),
-        ),
-        // StreamProvider for user authentication state
-        StreamProvider<MyUser?>(
-          create: (context) => context.read<AuthService>().user,
-          initialData: null,
         ),
       ],
       child: MaterialApp.router(
@@ -101,6 +87,11 @@ final GoRouter _router = GoRouter(
       path: '/play_board',
       builder: (context, state) => const PlayBoard(),
     ),
+    GoRoute(
+      path: '/chat',
+      builder: (context, state) => const ChatRoom(),
+    ),
+
     GoRoute(
       path: '/scan_qr_code',
       builder: (context, state) => const ScanQrCode(),
