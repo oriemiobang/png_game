@@ -4,9 +4,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:png_game/models/my_user.dart';
 import 'package:flutter/material.dart';
+import 'package:png_game/core/env.dart';
 
 class AuthApiService extends ChangeNotifier {
-  final String baseUrl = 'http://127.0.0.1:3000/auth';
+  final String baseUrl = '${AppEnv.backendBaseUrl}/auth';
   final _storage = const FlutterSecureStorage();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 

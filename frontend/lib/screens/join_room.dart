@@ -19,7 +19,6 @@ class JoinRoom extends StatefulWidget {
 }
 
 class _JoinRoomState extends State<JoinRoom> {
-  SocketService socketService = SocketService();
   String gameCode = '';
 
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
@@ -51,6 +50,18 @@ class _JoinRoomState extends State<JoinRoom> {
       final dataProvider = Provider.of<Data>(context, listen: false);
 
       socketService.addListener(() {
+        if (!mounted) return;
+
+        if (socketService.lastError != null && loading) {
+          setState(() {
+            loading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Join failed: ${socketService.lastError}')),
+          );
+          return;
+        }
+
         if (dataProvider.data != null) {
           if (socketService.gameJoined) {
             context.go('/play_board');
@@ -142,7 +153,9 @@ bool loading = false;
                   ),
                   child: TextButton(
                     onPressed: () {
-                      loading = true;
+                      setState(() {
+                        loading = true;
+                      });
                       socketService.joinGame(gameCode);
                       Data().updateGameId(gameCode);
                     },

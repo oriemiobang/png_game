@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
+import 'package:png_game/core/env.dart';
 import 'package:png_game/storage/saved_data.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'dart:math';
@@ -8,6 +9,7 @@ class SocketService with ChangeNotifier {
   late io.Socket socket;
   bool isConnected = false;
   bool gameJoined = false;
+  String? lastError;
   dynamic gameInfo = {};
   SavedData savedData = SavedData();
 
@@ -19,13 +21,19 @@ class SocketService with ChangeNotifier {
   String game_id = '';
   String player_id = '';
 
+  void resetJoinState() {
+    gameJoined = false;
+    lastError = null;
+    notifyListeners();
+  }
+
   SocketService() {
     connect();
     savedData = SavedData();
   }
 
   void connect() {
-    socket = io.io('http://127.0.0.1:3000', <String, dynamic>{
+    socket = io.io(AppEnv.backendBaseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false
     });
@@ -35,6 +43,7 @@ class SocketService with ChangeNotifier {
 // listen to conects
     socket.onConnect((_) {
       isConnected = true;
+      lastError = null;
       print('connected to server');
       notifyListeners();
     });
@@ -98,11 +107,21 @@ class SocketService with ChangeNotifier {
       notifyListeners();
     });
     socket.onConnectError((data) {
+      lastError = '$data';
       print('Connection Error: $data');
+      notifyListeners();
     });
 
     socket.onError((data) {
+      lastError = '$data';
       print('Socket Error: $data');
+      notifyListeners();
+    });
+
+    socket.on('room_error', (data) {
+      lastError = '$data';
+      print('Room Error: $data');
+      notifyListeners();
     });
 
     // list to random room game
@@ -158,6 +177,8 @@ class SocketService with ChangeNotifier {
   }
 
   String createGame({int maxRounds = 3, int timeLimit = 60, bool isPrivate = false}) {
+    gameJoined = false;
+    lastError = null;
     final random = Random();
     const hexChars = '0123456789abcdef';
 
@@ -188,6 +209,8 @@ class SocketService with ChangeNotifier {
   }
 
   String createRandomGame() {
+    gameJoined = false;
+    lastError = null;
     final random = Random();
     const hexChars = '0123456789abcdef';
 
@@ -210,6 +233,8 @@ class SocketService with ChangeNotifier {
   }
 
   void joinGame(String gameCode) async {
+    gameJoined = false;
+    lastError = null;
     final random = Random();
 
     String playerId =
@@ -230,6 +255,8 @@ class SocketService with ChangeNotifier {
   }
 
   void joinRandomGames(gameCode) {
+    gameJoined = false;
+    lastError = null;
     final random = Random();
 
     String playerId =

@@ -21,6 +21,9 @@ class _CreateRoomState extends State<CreateRoom> with SingleTickerProviderStateM
   late String gameId;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  SocketService? _socketService;
+  VoidCallback? _socketListener;
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -37,27 +40,39 @@ class _CreateRoomState extends State<CreateRoom> with SingleTickerProviderStateM
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _socketService = context.read<SocketService>();
+      _socketService!.resetJoinState();
       _listenForGameJoin();
     });
   }
 
   @override
   void dispose() {
+    final listener = _socketListener;
+    final socketService = _socketService;
+    if (listener != null && socketService != null) {
+      socketService.removeListener(listener);
+    }
     _pulseController.dispose();
     super.dispose();
   }
 
   void _listenForGameJoin() {
-    final socketService = context.read<SocketService>();
-    final dataProvider = context.read<Data>();
+    final socketService = _socketService ?? context.read<SocketService>();
 
     void listener() {
-      if (dataProvider.data != null && socketService.gameJoined) {
+      if (!mounted || _isNavigating) return;
+      if (socketService.gameJoined) {
+        _isNavigating = true;
         socketService.removeListener(listener);
-        if (mounted) context.go('/play_board');
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) context.go('/play_board');
+        });
       }
     }
-    
+
+    _socketListener = listener;
     socketService.addListener(listener);
   }
 

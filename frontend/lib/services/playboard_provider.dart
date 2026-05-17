@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/storage/saved_data.dart';
 
 class PlayBoardProvider with ChangeNotifier {
@@ -7,13 +6,11 @@ class PlayBoardProvider with ChangeNotifier {
   bool _hideText = false;
   bool _showMine = true;
   bool _writeText = false;
-  SocketService socketService = SocketService();
   SavedData savedData = SavedData();
 
   // ======================new stuff
 
   PlayBoardProvider() {
-    socketService = SocketService();
     savedData = SavedData();
   }
   String _gameId = '';
