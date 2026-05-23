@@ -21,6 +21,8 @@ class SocketService with ChangeNotifier {
   String game_id = '';
   String player_id = '';
 
+  String? _currentPlayerId() => Data().userId;
+
   void resetJoinState() {
     gameJoined = false;
     lastError = null;
@@ -186,11 +188,16 @@ class SocketService with ChangeNotifier {
   String createGame({int maxRounds = 3, int timeLimit = 60, bool isPrivate = false}) {
     gameJoined = false;
     lastError = null;
+    Data().resetMatchState();
+    final playerId = _currentPlayerId();
+    if (playerId == null) {
+      lastError = 'Please sign in first';
+      notifyListeners();
+      return '';
+    }
     final random = Random();
     const hexChars = '0123456789abcdef';
 
-    String playerId =
-        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
     String gameId =
         'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
     player_id = playerId;
@@ -198,8 +205,6 @@ class SocketService with ChangeNotifier {
 
     // savedData.setGameId(gameId);
     Data().updateGameId(gameId);
-    // savedData.setUserId(playerId);
-    Data().updateUserId(playerId);
 
     socket.emit('createGame', {
       'playerId': playerId, 
@@ -218,11 +223,16 @@ class SocketService with ChangeNotifier {
   String createRandomGame() {
     gameJoined = false;
     lastError = null;
+    Data().resetMatchState();
+    final playerId = _currentPlayerId();
+    if (playerId == null) {
+      lastError = 'Please sign in first';
+      notifyListeners();
+      return '';
+    }
     final random = Random();
     const hexChars = '0123456789abcdef';
 
-    String playerId =
-        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
     String gameId =
         'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
     player_id = playerId;
@@ -230,8 +240,6 @@ class SocketService with ChangeNotifier {
 
     // savedData.setGameId(gameId);
     Data().updateGameId(gameId);
-    // savedData.setUserId(playerId);
-    Data().updateUserId(playerId);
 
     socket.emit('createRandomGames', {'playerId': playerId, 'gameId': gameId});
     notifyListeners();
@@ -242,18 +250,19 @@ class SocketService with ChangeNotifier {
   void joinGame(String gameCode) async {
     gameJoined = false;
     lastError = null;
-    final random = Random();
-
-    String playerId =
-        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
+    Data().resetMatchState();
+    final playerId = _currentPlayerId();
+    if (playerId == null) {
+      lastError = 'Please sign in first';
+      notifyListeners();
+      return;
+    }
     player_id = playerId;
     game_id = gameCode;
     // await savedData.setUserId(playerId);
     // await savedData.setGameId(gameCode);
 
     Data().updateGameId(gameCode);
-
-    Data().updateUserId(playerId);
     // Data().updateData({});
     // Data().updateWinner({});
 
@@ -264,18 +273,19 @@ class SocketService with ChangeNotifier {
   void joinRandomGames(gameCode) {
     gameJoined = false;
     lastError = null;
-    final random = Random();
-
-    String playerId =
-        'PNG${List.generate(9, (_) => random.nextInt(10)).join()}';
+    Data().resetMatchState();
+    final playerId = _currentPlayerId();
+    if (playerId == null) {
+      lastError = 'Please sign in first';
+      notifyListeners();
+      return;
+    }
     player_id = playerId;
     game_id = gameCode;
     // await savedData.setUserId(playerId);
     // await savedData.setGameId(gameCode);
 
     Data().updateGameId(gameCode);
-
-    Data().updateUserId(playerId);
     // Data().updateData({});
     // Data().updateWinner({});
 

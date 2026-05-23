@@ -83,6 +83,29 @@ let AuthService = class AuthService {
             throw new common_1.HttpException('Google authentication failed: ' + e.message, common_1.HttpStatus.UNAUTHORIZED);
         }
     }
+    async getMyStats(userId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                gamesPlayed: true,
+                wins: true,
+                losses: true,
+                draws: true,
+                lastPlayedAt: true,
+            },
+        });
+        if (!user) {
+            throw new common_1.HttpException('User not found', common_1.HttpStatus.UNAUTHORIZED);
+        }
+        const winRate = user.gamesPlayed > 0 ? Math.round((user.wins / user.gamesPlayed) * 1000) / 10 : 0;
+        return {
+            ...user,
+            winRate,
+        };
+    }
     generateToken(userId, email, name) {
         const payload = { sub: userId, email, name };
         return {

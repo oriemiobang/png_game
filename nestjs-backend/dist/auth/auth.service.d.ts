@@ -29,5 +29,20 @@ export declare class AuthService {
             name: string;
         };
     }>;
+    getMyStats(userId: string): Promise<{
+        winRate: number;
+        id: string;
+        email: string | null;
+        googleId: string | null;
+        password: string | null;
+        name: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        gamesPlayed: number;
+        wins: number;
+        losses: number;
+        draws: number;
+        lastPlayedAt: Date | null;
+    }>;
     private generateToken;
 }

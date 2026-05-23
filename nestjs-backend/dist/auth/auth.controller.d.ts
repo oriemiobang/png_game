@@ -26,4 +26,19 @@ export declare class AuthController {
             name: string;
         };
     }>;
+    myStats(req: any): Promise<{
+        winRate: number;
+        id: string;
+        email: string | null;
+        googleId: string | null;
+        password: string | null;
+        name: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        gamesPlayed: number;
+        wins: number;
+        losses: number;
+        draws: number;
+        lastPlayedAt: Date | null;
+    }>;
 }

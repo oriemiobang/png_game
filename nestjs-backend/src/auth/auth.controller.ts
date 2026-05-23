@@ -1,5 +1,6 @@
-import { Body, Controller, Post, HttpException, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Get, Post, HttpException, HttpStatus, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -27,5 +28,11 @@ export class AuthController {
       throw new HttpException('Google ID token is required', HttpStatus.BAD_REQUEST);
     }
     return this.authService.verifyGoogleToken(body.idToken);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('me/stats')
+  async myStats(@Req() req: any) {
+    return this.authService.getMyStats(req.user.userId);
   }
 }

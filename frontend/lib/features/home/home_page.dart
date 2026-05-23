@@ -45,6 +45,7 @@ class _HomePageState extends State<HomePage> {
     final authApi = Provider.of<AuthApiService>(context);
     final user = authApi.user;
     final socketService = Provider.of<SocketService>(context);
+    final stats = authApi.stats ?? const <String, dynamic>{};
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -56,7 +57,7 @@ class _HomePageState extends State<HomePage> {
         child: ListView(
           children: [
             const Divider(),
-            _buildStatsCard(),
+            _buildStatsCard(stats),
             const SizedBox(height: 18),
             _buildGameRoomsSection(dataProvider, socketService),
             const SizedBox(height: 10),
@@ -159,7 +160,13 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildStatsCard() {
+  Widget _buildStatsCard(Map<String, dynamic> stats) {
+    final gamesPlayed = (stats['gamesPlayed'] ?? 0).toString();
+    final wins = (stats['wins'] ?? 0).toString();
+    final losses = (stats['losses'] ?? 0).toString();
+    final draws = (stats['draws'] ?? 0).toString();
+    final winRate = '${(stats['winRate'] ?? 0).toString()} %';
+
     return Container(
       padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
@@ -177,15 +184,28 @@ class _HomePageState extends State<HomePage> {
               color: Colors.white.withOpacity(0.7),
               border: Border.all(color: Colors.white.withOpacity(0.3)),
             ),
-            child: Row(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _buildStatItem('12', 'Games'),
-                Container(color: Colors.grey.shade300, width: 2),
-                _buildStatItem('12', 'Wins'),
-                Container(color: Colors.grey.shade300, width: 2),
-                _buildStatItem('67.5 %', 'Win Rate'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: _buildStatItem(gamesPlayed, 'Games')),
+                    Container(color: Colors.grey.shade300, width: 2, height: 48),
+                    Expanded(child: _buildStatItem(wins, 'Wins')),
+                    Container(color: Colors.grey.shade300, width: 2, height: 48),
+                    Expanded(child: _buildStatItem(losses, 'Losses')),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Draws: $draws   •   Win Rate: $winRate',
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),

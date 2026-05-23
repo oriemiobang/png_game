@@ -1,9 +1,151 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+type MatchState = {
+  currentRound: number;
+  player1Wins: number;
+  player2Wins: number;
+  maxRounds: number;
+};
+
 @Injectable()
 export class GameService {
+  private readonly matchStates = new Map<string, MatchState>();
+
   constructor(private prisma: PrismaService) {}
+
+  private getMatchState(gameId: string, maxRounds: number): MatchState {
+    const existing = this.matchStates.get(gameId);
+    if (existing) {
+      if (existing.maxRounds !== maxRounds) {
+        existing.maxRounds = maxRounds;
+      }
+      return existing;
+    }
+
+    const created: MatchState = {
+      currentRound: 1,
+      player1Wins: 0,
+      player2Wins: 0,
+      maxRounds,
+    };
+    this.matchStates.set(gameId, created);
+    return created;
+  }
+
+  private attachMatchState<T extends Record<string, any>>(game: T) {
+    const state = this.getMatchState(game.id, game.maxRounds ?? 3);
+    return {
+      ...game,
+      currentRound: state.currentRound,
+      player1Wins: state.player1Wins,
+      player2Wins: state.player2Wins,
+      maxRounds: state.maxRounds,
+    };
+  }
+
+  private recordRoundResult(gameId: string, winnerId: string | null, game: any) {
+    if (!winnerId) {
+      return;
+    }
+
+    const state = this.getMatchState(gameId, game.maxRounds ?? 3);
+    if (winnerId === game.player1Id) {
+      state.player1Wins += 1;
+    } else if (winnerId === game.player2Id) {
+      state.player2Wins += 1;
+    }
+  }
+
+  private async recordUserOutcome(game: any, winnerId: string | null, isDraw: boolean) {
+    if (game.resultRecorded) {
+      return;
+    }
+
+    const player1Id = game.player1Id;
+    const player2Id = game.player2Id;
+    const now = new Date();
+
+    if (player1Id) {
+      await this.prisma.user.update({
+        where: { id: player1Id },
+        data: {
+          gamesPlayed: { increment: 1 },
+          wins: winnerId === player1Id ? { increment: 1 } : undefined,
+          losses: winnerId && winnerId !== player1Id && !isDraw ? { increment: 1 } : undefined,
+          draws: isDraw ? { increment: 1 } : undefined,
+          lastPlayedAt: now,
+        } as any,
+      });
+    }
+
+    if (player2Id) {
+      await this.prisma.user.update({
+        where: { id: player2Id },
+        data: {
+          gamesPlayed: { increment: 1 },
+          wins: winnerId === player2Id ? { increment: 1 } : undefined,
+          losses: winnerId && winnerId !== player2Id && !isDraw ? { increment: 1 } : undefined,
+          draws: isDraw ? { increment: 1 } : undefined,
+          lastPlayedAt: now,
+        } as any,
+      });
+    }
+
+    await this.prisma.game.update({
+      where: { id: game.id },
+      data: { resultRecorded: true } as any,
+    });
+  }
+
+  async resetMatch(gameId: string, resetSeries = false) {
+    const game = await this.prisma.game.findUnique({ where: { id: gameId } });
+    if (!game) {
+      throw new Error('Game not found');
+    }
+
+    const state = this.getMatchState(gameId, game.maxRounds);
+    const nextState: MatchState = resetSeries
+      ? {
+          currentRound: 1,
+          player1Wins: 0,
+          player2Wins: 0,
+          maxRounds: game.maxRounds,
+        }
+      : {
+          currentRound: Math.min(state.currentRound + 1, game.maxRounds),
+          player1Wins: state.player1Wins,
+          player2Wins: state.player2Wins,
+          maxRounds: game.maxRounds,
+        };
+
+    this.matchStates.set(gameId, nextState);
+
+    await this.prisma.guess.deleteMany({ where: { gameId } });
+
+    const updatedGame = await this.prisma.game.update({
+      where: { id: gameId },
+      data: {
+        status: 'waiting',
+        winnerId: null,
+        resultRecorded: false,
+        turn: null,
+        lastChance: false,
+        player1Secret: null,
+        player2Secret: null,
+        player1TimeLeft: null,
+        player2TimeLeft: null,
+        lastMoveAt: null,
+      } as any,
+      include: {
+        player1: { select: { id: true } },
+        player2: { select: { id: true } },
+        guesses: true,
+      },
+    });
+
+    return this.attachMatchState(updatedGame);
+  }
 
   // Helper to ensure user exists before creating game/guess
   async ensureUser(userId: string) {
@@ -26,23 +168,33 @@ export class GameService {
     settings?: { maxRounds?: number; timeLimit?: number; isPrivate?: boolean },
   ) {
     await this.ensureUser(playerId);
-    return this.prisma.game.create({
+    const game = await this.prisma.game.create({
       data: {
         id: gameId,
         player1Id: playerId,
         maxRounds: settings?.maxRounds ?? 3,
         timeLimit: settings?.timeLimit ?? 60,
         isPrivate: settings?.isPrivate ?? false,
-      },
+        resultRecorded: false,
+      } as any,
       include: {
         player1: { select: { id: true } },
         player2: { select: { id: true } },
       },
     });
+
+    this.matchStates.set(gameId, {
+      currentRound: 1,
+      player1Wins: 0,
+      player2Wins: 0,
+      maxRounds: game.maxRounds,
+    });
+
+    return this.attachMatchState(game);
   }
 
   async getPublicRooms() {
-    return this.prisma.game.findMany({
+    const rooms = await this.prisma.game.findMany({
       where: {
         isPrivate: false,
         status: 'waiting',
@@ -51,6 +203,8 @@ export class GameService {
         player1: { select: { id: true } },
       },
     });
+
+    return rooms.map((room) => this.attachMatchState(room));
   }
 
   async joinGame(gameId: string, playerId: string) {
@@ -60,7 +214,7 @@ export class GameService {
     if (!game) throw new Error('Room does not exist!');
     if (game.player2Id) throw new Error('Room is already full!');
 
-    return this.prisma.game.update({
+    const updatedGame = await this.prisma.game.update({
       where: { id: gameId },
       data: {
         player2Id: playerId,
@@ -71,6 +225,8 @@ export class GameService {
         player2: { select: { id: true } },
       },
     });
+
+    return this.attachMatchState(updatedGame);
   }
 
   async submitSecret(gameId: string, playerId: string, secret: string) {
@@ -100,10 +256,10 @@ export class GameService {
           lastMoveAt: new Date()
         },
       });
-      return startedGame;
+      return this.attachMatchState(startedGame);
     }
 
-    return updatedGame;
+    return this.attachMatchState(updatedGame);
   }
 
   generateFeedback(guess: string, secret: string) {
@@ -156,14 +312,18 @@ export class GameService {
           data: { status: 'finished', winnerId: opponentId, turn: null, player1TimeLeft: 0 },
           include: { guesses: true },
         });
-        return { updatedGame, feedback: { position: 0, number: 0 }, isDraw: false, isTimeout: true };
+        this.recordRoundResult(gameId, opponentId, game);
+        await this.recordUserOutcome(updatedGame, opponentId, false);
+        return { updatedGame: this.attachMatchState(updatedGame), feedback: { position: 0, number: 0 }, isDraw: false, isTimeout: true };
       } else if (!isPlayer1 && newP2Time <= 0) {
         const updatedGame = await this.prisma.game.update({
           where: { id: gameId },
           data: { status: 'finished', winnerId: opponentId, turn: null, player2TimeLeft: 0 },
           include: { guesses: true },
         });
-        return { updatedGame, feedback: { position: 0, number: 0 }, isDraw: false, isTimeout: true };
+        this.recordRoundResult(gameId, opponentId, game);
+        await this.recordUserOutcome(updatedGame, opponentId, false);
+        return { updatedGame: this.attachMatchState(updatedGame), feedback: { position: 0, number: 0 }, isDraw: false, isTimeout: true };
       }
     }
 
@@ -234,6 +394,11 @@ export class GameService {
       include: { guesses: true },
     });
 
-    return { updatedGame, feedback, isDraw, isTimeout: false };
+    if (newStatus === 'finished') {
+      this.recordRoundResult(gameId, winnerId, game);
+      await this.recordUserOutcome(updatedGame, winnerId, isDraw);
+    }
+
+    return { updatedGame: this.attachMatchState(updatedGame), feedback, isDraw, isTimeout: false };
   }
 }

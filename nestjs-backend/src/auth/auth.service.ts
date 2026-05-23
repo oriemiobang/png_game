@@ -93,6 +93,33 @@ export class AuthService {
     }
   }
 
+  async getMyStats(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        gamesPlayed: true,
+        wins: true,
+        losses: true,
+        draws: true,
+        lastPlayedAt: true,
+      },
+    } as any);
+
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.UNAUTHORIZED);
+    }
+
+    const winRate = user.gamesPlayed > 0 ? Math.round((user.wins / user.gamesPlayed) * 1000) / 10 : 0;
+
+    return {
+      ...user,
+      winRate,
+    };
+  }
+
   private generateToken(userId: string, email: string, name: string) {
     const payload = { sub: userId, email, name };
     return {

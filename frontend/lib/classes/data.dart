@@ -51,6 +51,18 @@ class Data with ChangeNotifier {
     notifyListeners();
   }
 
+  void resetMatchState() {
+    _data = null;
+    _winner = null;
+    _lastChance = null;
+    _notYourTurn = null;
+    _newGame = null;
+    _gameOver = false;
+    _chatData.clear();
+    _unreadMessages = 0;
+    notifyListeners();
+  }
+
   void updateNewGame(Map? newData) {
     _newGame = newData;
     notifyListeners();

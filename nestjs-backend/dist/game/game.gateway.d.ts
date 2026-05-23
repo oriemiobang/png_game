@@ -21,6 +21,11 @@ export declare class GameGateway implements OnGatewayConnection, OnGatewayDiscon
         playerId: string;
         secretNumber: string;
     }): Promise<void>;
+    handleNewGame(client: Socket, payload: {
+        gameId: string;
+        playerId: string;
+        approved?: boolean;
+    }): Promise<void>;
     handleMakeGuess(client: Socket, payload: {
         gameId: string;
         playerId: string;

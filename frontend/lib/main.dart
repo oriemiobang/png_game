@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/classes/play_board_classes.dart';
 import 'package:png_game/features/home/home_page.dart';
-import 'package:png_game/models/my_user.dart';
 import 'package:png_game/screens/create_game.dart';
+import 'package:png_game/screens/loading.dart';
 import 'package:png_game/screens/play_solo.dart';
 import 'package:png_game/screens/randomWaitRoom.dart';
 import 'package:png_game/screens/rooms_page.dart';
@@ -25,16 +25,110 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final AuthApiService _authApiService;
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    super.initState();
+    _authApiService = AuthApiService();
+    _router = GoRouter(
+      initialLocation: '/loading',
+      refreshListenable: _authApiService,
+      redirect: (context, state) {
+        final isLoggedIn = _authApiService.user != null;
+        final isReady = _authApiService.isReady;
+        final location = state.matchedLocation;
+        final isAuthRoute = location == '/signin' || location == '/signup';
+        final isLoadingRoute = location == '/loading';
+
+        if (!isReady) {
+          return isLoadingRoute ? null : '/loading';
+        }
+
+        if (!isLoggedIn && !isAuthRoute) {
+          return '/signin';
+        }
+
+        if (isLoggedIn && (isAuthRoute || isLoadingRoute)) {
+          return '/';
+        }
+
+        return null;
+      },
+      routes: [
+        GoRoute(
+          path: '/loading',
+          builder: (context, state) => const Loading(),
+        ),
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const HomePage(),
+        ),
+        GoRoute(
+          path: '/join_game',
+          builder: (context, state) => const JoinRoom(),
+        ),
+        GoRoute(
+          path: '/rooms_page',
+          builder: (context, state) => const GameRooms(),
+        ),
+        GoRoute(
+          path: '/create_game',
+          builder: (context, state) => const CreateGames(),
+        ),
+        GoRoute(
+          path: '/create_room',
+          builder: (context, state) {
+            final gameId = state.extra as String?;
+            return CreateRoom(gameId: gameId ?? '');
+          },
+        ),
+        GoRoute(
+          path: '/play_board',
+          builder: (context, state) => const PlayBoard(),
+        ),
+        GoRoute(
+          path: '/chat',
+          builder: (context, state) => const ChatRoom(),
+        ),
+        GoRoute(
+          path: '/scan_qr_code',
+          builder: (context, state) => const ScanQrCode(),
+        ),
+        GoRoute(
+          path: '/random_wait_room',
+          builder: (context, state) => const RandomWaitRoom(),
+        ),
+        GoRoute(
+          path: '/play_solo',
+          builder: (context, state) => const PlaySolo(),
+        ),
+        GoRoute(
+          path: '/signin',
+          builder: (context, state) => const SignIn(),
+        ),
+        GoRoute(
+          path: '/signup',
+          builder: (context, state) => const SignUp(),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<AuthApiService>(
-          create: (_) => AuthApiService(),
-        ),
+        ChangeNotifierProvider<AuthApiService>.value(value: _authApiService),
         ChangeNotifierProvider<SocketService>(
           create: (context) => SocketService(),
         ),
@@ -56,61 +150,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-// GoRouter configuration
-final GoRouter _router = GoRouter(
-  routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const HomePage(),
-    ),
-    GoRoute(
-      path: '/join_game',
-      builder: (context, state) => const JoinRoom(),
-    ),
-    GoRoute(
-      path: '/rooms_page',
-      builder: (context, state) => const GameRooms(),
-    ),
-    GoRoute(
-      path: '/create_game',
-      builder: (context, state) => const CreateGames(),
-    ),
-    GoRoute(
-      path: '/create_room', // Fixed duplicate path
-      builder: (context, state) {
-        final gameId = state.extra as String?;
-        return CreateRoom(gameId: gameId ?? '');
-      },
-    ),
-    GoRoute(
-      path: '/play_board',
-      builder: (context, state) => const PlayBoard(),
-    ),
-    GoRoute(
-      path: '/chat',
-      builder: (context, state) => const ChatRoom(),
-    ),
-
-    GoRoute(
-      path: '/scan_qr_code',
-      builder: (context, state) => const ScanQrCode(),
-    ),
-    GoRoute(
-      path: '/random_wait_room',
-      builder: (context, state) => const RandomWaitRoom(),
-    ),
-    GoRoute(
-      path: '/play_solo',
-      builder: (context, state) => const PlaySolo(),
-    ),
-    GoRoute(
-      path: '/signin',
-      builder: (context, state) => const SignIn(),
-    ),
-    GoRoute(
-      path: '/signup',
-      builder: (context, state) => const SignUp(),
-    ),
-  ],
-);

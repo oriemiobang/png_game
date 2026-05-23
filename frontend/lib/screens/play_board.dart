@@ -24,10 +24,9 @@ class _PlayBoardState extends State<PlayBoard>
   final TextEditingController _secretController = TextEditingController();
 
   bool _showSecret = false;
-  bool _hasSetSecret = false;
+  bool _revealSecretCode = false;
   bool _listenerAttached = false;
-
-  Set<int> _eliminatedNumbers = {};
+  bool _gameOverDialogVisible = false;
 
   int _player1TimeLeft = 0;
   int _player2TimeLeft = 0;
@@ -68,7 +67,7 @@ class _PlayBoardState extends State<PlayBoard>
     if (gameData == null) return;
 
     if (dataProvider.winner != null) {
-      _handleGameOver(dataProvider.winner!);
+      _handleGameOver(gameData, dataProvider.winner!);
       dataProvider.updateWinner(null);
     }
 
@@ -81,6 +80,7 @@ class _PlayBoardState extends State<PlayBoard>
       _startTimer();
     } else {
       _timer?.cancel();
+      _revealSecretCode = false;
     }
 
     if (dataProvider.lastChance != null) {
@@ -89,25 +89,37 @@ class _PlayBoardState extends State<PlayBoard>
     }
   }
 
-  void _handleGameOver(Map winnerData) {
-    if (!mounted) return;
+  void _handleGameOver(Map gameData, Map winnerData) {
+    if (!mounted || _gameOverDialogVisible) return;
 
-    final userId = context.read<Data>().userId;
-    String title = 'Game Over!';
-    String message = 'It\'s a draw!';
+    _gameOverDialogVisible = true;
 
-    if (winnerData['winnerId'] == userId) {
-      title = 'Congratulations!';
-      message = 'You won the game!';
-    } else if (winnerData['winnerId'] != null) {
-      title = 'Game Over!';
-      message = 'Sorry! You lost. Better luck next time.';
+    final dataProvider = context.read<Data>();
+    final userId = dataProvider.userId;
+    final gameId = dataProvider.gameId ?? '';
+    final currentRound = (gameData['currentRound'] ?? 1) as int;
+    final maxRounds = (gameData['maxRounds'] ?? 3) as int;
+    final canPlayNextRound = currentRound < maxRounds;
+    final winnerId = winnerData['winnerId'];
+
+    String title;
+    String message;
+
+    if (winnerId == null) {
+      title = 'Round Complete';
+      message = 'This round ended in a draw.';
+    } else if (winnerId == userId) {
+      title = 'You Won This Round';
+      message = 'You won round $currentRound.';
+    } else {
+      title = 'Round Lost';
+      message = 'You lost round $currentRound.';
     }
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           title,
@@ -116,27 +128,73 @@ class _PlayBoardState extends State<PlayBoard>
         ),
         content: Text(message, textAlign: TextAlign.center),
         actions: [
+          if (canPlayNextRound)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _gameOverDialogVisible = false;
+                  _clearCurrentMatch();
+                  context.read<SocketService>().requestNewGame(userId, gameId, false);
+                },
+                child: const Text(
+                  'Next Round',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  _gameOverDialogVisible = false;
+                  _clearCurrentMatch();
+                  context.read<SocketService>().requestNewGame(userId, gameId, true);
+                },
+                child: const Text(
+                  'New Game',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.grey.shade300),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
               onPressed: () {
+                Navigator.pop(dialogContext);
+                _gameOverDialogVisible = false;
                 context.go('/');
               },
-              child: const Text(
-                'Back to Home',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: Text(canPlayNextRound ? 'Quit' : 'Go Home'),
             ),
-          )
+          ),
         ],
       ),
-    );
+    ).then((_) {
+      _gameOverDialogVisible = false;
+    });
   }
 
   void _handleLastChance(Map lastChanceData) {
@@ -179,7 +237,6 @@ class _PlayBoardState extends State<PlayBoard>
 
     if (isValid) {
       context.read<SocketService>().submitSecret(secret);
-      setState(() => _hasSetSecret = true);
     } else {
       Fluttertoast.showToast(
         msg: 'Please enter a valid 4-digit unique number',
@@ -256,109 +313,22 @@ class _PlayBoardState extends State<PlayBoard>
     context.read<SocketService>().reportTimeout();
   }
 
-  void _showNumberEliminator() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Eliminate Numbers',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tap numbers to mark them as eliminated',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-              ),
-              const SizedBox(height: 24),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                alignment: WrapAlignment.center,
-                children: List.generate(10, (index) {
-                  final isEliminated = _eliminatedNumbers.contains(index);
-                  return GestureDetector(
-                    onTap: () {
-                      setModalState(() {
-                        if (isEliminated) {
-                          _eliminatedNumbers.remove(index);
-                        } else {
-                          _eliminatedNumbers.add(index);
-                        }
-                      });
-                      setState(() {});
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color:
-                            isEliminated ? Colors.grey.shade200 : Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isEliminated
-                              ? Colors.grey.shade300
-                              : Colors.blue.shade200,
-                          width: isEliminated ? 1 : 2,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        '$index',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: isEliminated
-                              ? Colors.grey.shade400
-                              : Colors.blue.shade700,
-                          decoration:
-                              isEliminated ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
+  void _clearCurrentMatch() {
+    _timer?.cancel();
+    if (mounted) {
+      Data().resetMatchState();
+      context.read<SocketService>().resetJoinState();
+    }
   }
 
-  int _scoreFromGuesses(List guesses) {
-    return guesses.where((guess) {
-      final position = guess['position'];
-      final positionValue = position is int
-          ? position
-          : int.tryParse(position?.toString() ?? '0') ?? 0;
-      return positionValue > 0;
-    }).length;
+  int _winsForPlayer(Map<String, dynamic> gameData, bool isPlayer1) {
+    final value = isPlayer1 ? gameData['player1Wins'] : gameData['player2Wins'];
+    return value is int ? value : int.tryParse(value?.toString() ?? '0') ?? 0;
   }
 
-  int _roundNumber(List allGuesses) {
-    if (allGuesses.isEmpty) return 1;
-    return allGuesses.length;
+  int _currentRound(Map<String, dynamic> gameData) {
+    final value = gameData['currentRound'] ?? 1;
+    return value is int ? value : int.tryParse(value.toString()) ?? 1;
   }
 
   String _formatTime(int timeMs) {
@@ -367,11 +337,6 @@ class _PlayBoardState extends State<PlayBoard>
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  DateTime? _parseGameDate(dynamic value) {
-    if (value == null) return null;
-    return DateTime.parse(value.toString()).toUtc();
   }
 
   Widget _buildMetricItem({
@@ -568,29 +533,45 @@ class _PlayBoardState extends State<PlayBoard>
   Widget _buildSecretStrip(String secret, bool hidden) {
     final digits = secret.padRight(4).split('').take(4).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Text(
-            'Secret Code',
-            style: TextStyle(
-              color: Colors.grey.shade700,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: () => setState(() => _revealSecretCode = !_revealSecretCode),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Secret Code',
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  _revealSecretCode ? 'Tap to hide' : 'Tap to reveal',
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: List.generate(4, (index) {
-            final value = hidden ? '*' : digits[index];
-            return _buildSecretBox(value);
-          }),
-        ),
-      ],
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(4, (index) {
+              final value = hidden ? '*' : digits[index];
+              return _buildSecretBox(value);
+            }),
+          ),
+        ],
+      ),
     );
   }
 
@@ -981,10 +962,9 @@ class _PlayBoardState extends State<PlayBoard>
     required List opponentGuesses,
     required String secret,
   }) {
-    final totalGuesses = (gameData['guesses'] as List?) ?? [];
-    final roundNumber = _roundNumber(totalGuesses);
-    final myScore = _scoreFromGuesses(myGuesses);
-    final opponentScore = _scoreFromGuesses(opponentGuesses);
+    final roundNumber = _currentRound(gameData);
+    final myScore = _winsForPlayer(gameData, isPlayer1);
+    final opponentScore = _winsForPlayer(gameData, !isPlayer1);
     final hasTimer = (gameData['timeLimit'] ?? 0) > 0;
     final activeTime = isPlayer1 ? _player1TimeLeft : _player2TimeLeft;
 
@@ -1052,7 +1032,6 @@ class _PlayBoardState extends State<PlayBoard>
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.grey.shade200),
                     boxShadow: const [
                       BoxShadow(
                         color: Color(0x10000000),
@@ -1063,7 +1042,7 @@ class _PlayBoardState extends State<PlayBoard>
                   ),
                   child: _buildSecretStrip(
                     secret,
-                    true,
+                    !_revealSecretCode,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -1095,7 +1074,7 @@ class _PlayBoardState extends State<PlayBoard>
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 14,
                 offset: const Offset(0, -4),
               ),
@@ -1218,7 +1197,10 @@ class _PlayBoardState extends State<PlayBoard>
                               child: const Text('Cancel'),
                             ),
                             TextButton(
-                              onPressed: () => context.go('/'),
+                              onPressed: () {
+                                _clearCurrentMatch();
+                                context.go('/');
+                              },
                               child: const Text(
                                 'Leave',
                                 style: TextStyle(color: Colors.red),
@@ -1265,11 +1247,10 @@ class _PlayBoardState extends State<PlayBoard>
     final status = gameData['status'];
     final isMyTurn = gameData['turn'] == userId;
     final isPlayer1 = gameData['player1Id'] == userId;
-    final opponentId = isPlayer1 ? gameData['player2Id'] : gameData['player1Id'];
     final mySecretBackend = isPlayer1 ? gameData['player1Secret'] : gameData['player2Secret'];
     final hasBackendSecret = mySecretBackend != null;
     final hasTimer = (gameData['timeLimit'] ?? 0) > 0;
-    final showSecretSubmitted = _hasSetSecret || hasBackendSecret;
+    final showSecretSubmitted = hasBackendSecret;
 
     final allGuesses = (gameData['guesses'] as List?) ?? [];
     final myGuesses = allGuesses.where((guess) => guess['playerId'] == userId).toList();

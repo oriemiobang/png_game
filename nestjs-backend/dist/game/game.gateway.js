@@ -62,6 +62,23 @@ let GameGateway = class GameGateway {
             client.emit('room_error', e.message);
         }
     }
+    async handleNewGame(client, payload) {
+        try {
+            const resetSeries = payload.approved === true;
+            const updatedGame = await this.gameService.resetMatch(payload.gameId, resetSeries);
+            this.server.to(payload.gameId).emit('requestNewGame', {
+                gameId: payload.gameId,
+                playerId: payload.playerId,
+                resetSeries,
+                currentRound: updatedGame.currentRound,
+                maxRounds: updatedGame.maxRounds,
+            });
+            this.server.to(payload.gameId).emit('gameInfo', updatedGame);
+        }
+        catch (e) {
+            client.emit('room_error', e.message);
+        }
+    }
     async handleMakeGuess(client, payload) {
         try {
             const { updatedGame, feedback, isDraw, isTimeout } = await this.gameService.makeGuess(payload.gameId, payload.playerId, payload.guess);
@@ -143,6 +160,12 @@ __decorate([
     __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", Promise)
 ], GameGateway.prototype, "handleSubmitSecret", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('newGame'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
+    __metadata("design:returntype", Promise)
+], GameGateway.prototype, "handleNewGame", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('makeGuess'),
     __metadata("design:type", Function),

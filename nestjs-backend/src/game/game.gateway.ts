@@ -89,6 +89,28 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @SubscribeMessage('newGame')
+  async handleNewGame(
+    client: Socket,
+    payload: { gameId: string; playerId: string; approved?: boolean },
+  ) {
+    try {
+      const resetSeries = payload.approved === true;
+      const updatedGame = await this.gameService.resetMatch(payload.gameId, resetSeries);
+
+      this.server.to(payload.gameId).emit('requestNewGame', {
+        gameId: payload.gameId,
+        playerId: payload.playerId,
+        resetSeries,
+        currentRound: updatedGame.currentRound,
+        maxRounds: updatedGame.maxRounds,
+      });
+      this.server.to(payload.gameId).emit('gameInfo', updatedGame);
+    } catch (e) {
+      client.emit('room_error', e.message);
+    }
+  }
+
   @SubscribeMessage('makeGuess')
   async handleMakeGuess(
     client: Socket,
