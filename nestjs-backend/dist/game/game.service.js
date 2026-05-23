@@ -17,9 +17,15 @@ let GameService = class GameService {
         this.prisma = prisma;
     }
     async ensureUser(userId) {
-        let user = await this.prisma.user.findUnique({ where: { id: userId } });
+        let user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true },
+        });
         if (!user) {
-            user = await this.prisma.user.create({ data: { id: userId } });
+            user = await this.prisma.user.create({
+                data: { id: userId },
+                select: { id: true },
+            });
         }
         return user;
     }
@@ -34,8 +40,8 @@ let GameService = class GameService {
                 isPrivate: settings?.isPrivate ?? false,
             },
             include: {
-                player1: true,
-                player2: true,
+                player1: { select: { id: true } },
+                player2: { select: { id: true } },
             },
         });
     }
@@ -46,7 +52,7 @@ let GameService = class GameService {
                 status: 'waiting',
             },
             include: {
-                player1: true,
+                player1: { select: { id: true } },
             },
         });
     }
@@ -64,8 +70,8 @@ let GameService = class GameService {
                 turn: playerId,
             },
             include: {
-                player1: true,
-                player2: true,
+                player1: { select: { id: true } },
+                player2: { select: { id: true } },
             },
         });
     }
@@ -85,7 +91,7 @@ let GameService = class GameService {
             data: updateData,
         });
         if (updatedGame.player1Secret && updatedGame.player2Secret) {
-            await this.prisma.game.update({
+            const startedGame = await this.prisma.game.update({
                 where: { id: gameId },
                 data: {
                     status: 'playing',
@@ -95,6 +101,7 @@ let GameService = class GameService {
                     lastMoveAt: new Date()
                 },
             });
+            return startedGame;
         }
         return updatedGame;
     }

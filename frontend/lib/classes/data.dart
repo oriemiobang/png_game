@@ -13,6 +13,7 @@ class Data with ChangeNotifier {
   Map _randomRoomGame = {};
   Map? _newGame;
   bool _gameOver = false;
+  int _unreadMessages = 0;
 
   //
 
@@ -39,6 +40,7 @@ class Data with ChangeNotifier {
   Map? get randomGames => _randomGames;
   Map? get randomRoomGame => _randomRoomGame;
   Map? get newGame => _newGame;
+  int get unreadMessages => _unreadMessages;
 
   List? get chatData => _chatData;
 
@@ -87,6 +89,16 @@ class Data with ChangeNotifier {
   void updateChatData(Map newData) {
     _chatData.add(newData);
     print('the chat data $chatData');
+    notifyListeners();
+  }
+
+  void incrementUnreadMessages() {
+    _unreadMessages++;
+    notifyListeners();
+  }
+
+  void clearUnreadMessages() {
+    _unreadMessages = 0;
     notifyListeners();
   }
 

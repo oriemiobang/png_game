@@ -86,7 +86,14 @@ class SocketService with ChangeNotifier {
 
     socket.off('sendMessage');
     socket.on('sendMessage', (data) {
-      Data().updateChatData(data);
+      final messageData = Map<String, dynamic>.from(data as Map);
+      Data().updateChatData(messageData);
+
+      final currentUserId = Data().userId;
+      final senderId = messageData['currentSender']?.toString();
+      if (currentUserId != null && senderId != null && senderId != currentUserId) {
+        Data().incrementUnreadMessages();
+      }
     });
     socket.on('gameEnd', (data) {
       if (data != null) {

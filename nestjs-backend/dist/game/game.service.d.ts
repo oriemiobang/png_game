@@ -4,12 +4,6 @@ export declare class GameService {
     constructor(prisma: PrismaService);
     ensureUser(userId: string): Promise<{
         id: string;
-        email: string | null;
-        googleId: string | null;
-        password: string | null;
-        name: string | null;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
     createGame(gameId: string, playerId: string, settings?: {
         maxRounds?: number;
@@ -18,21 +12,9 @@ export declare class GameService {
     }): Promise<{
         player1: {
             id: string;
-            email: string | null;
-            googleId: string | null;
-            password: string | null;
-            name: string | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
         player2: {
             id: string;
-            email: string | null;
-            googleId: string | null;
-            password: string | null;
-            name: string | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
@@ -56,12 +38,6 @@ export declare class GameService {
     getPublicRooms(): Promise<({
         player1: {
             id: string;
-            email: string | null;
-            googleId: string | null;
-            password: string | null;
-            name: string | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;
@@ -85,21 +61,9 @@ export declare class GameService {
     joinGame(gameId: string, playerId: string): Promise<{
         player1: {
             id: string;
-            email: string | null;
-            googleId: string | null;
-            password: string | null;
-            name: string | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
         player2: {
             id: string;
-            email: string | null;
-            googleId: string | null;
-            password: string | null;
-            name: string | null;
-            createdAt: Date;
-            updatedAt: Date;
         };
     } & {
         id: string;

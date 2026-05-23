@@ -15,6 +15,15 @@ class ChatRoom extends StatefulWidget {
 class _ChatRoomState extends State<ChatRoom> {
   final TextEditingController _messageController = TextEditingController();
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<Data>().clearUnreadMessages();
+    });
+  }
+
   void _sendMessage() {
     final message = _messageController.text.trim();
     if (message.isEmpty) return;
