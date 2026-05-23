@@ -30,6 +30,7 @@ let GameService = class GameService {
             player1Wins: 0,
             player2Wins: 0,
             maxRounds,
+            roundHistory: [],
         };
         this.matchStates.set(gameId, created);
         return created;
@@ -42,10 +43,22 @@ let GameService = class GameService {
             player1Wins: state.player1Wins,
             player2Wins: state.player2Wins,
             maxRounds: state.maxRounds,
+            roundHistory: state.roundHistory,
         };
     }
-    recordRoundResult(gameId, winnerId, game) {
+    recordRoundResult(gameId, winnerId, game, roundGuesses = []) {
         if (!winnerId) {
+            const state = this.getMatchState(gameId, game.maxRounds ?? 3);
+            const startedAt = roundGuesses[0]?.createdAt ? new Date(roundGuesses[0].createdAt) : null;
+            const endedAt = roundGuesses.length > 0 ? new Date(roundGuesses[roundGuesses.length - 1].createdAt) : null;
+            state.roundHistory.push({
+                round: state.currentRound,
+                winnerId: null,
+                guesses: roundGuesses.length,
+                timeMs: startedAt && endedAt ? Math.max(0, endedAt.getTime() - startedAt.getTime()) : 0,
+                startedAt: startedAt?.toISOString() ?? null,
+                endedAt: endedAt?.toISOString() ?? null,
+            });
             return;
         }
         const state = this.getMatchState(gameId, game.maxRounds ?? 3);
@@ -55,6 +68,16 @@ let GameService = class GameService {
         else if (winnerId === game.player2Id) {
             state.player2Wins += 1;
         }
+        const startedAt = roundGuesses[0]?.createdAt ? new Date(roundGuesses[0].createdAt) : null;
+        const endedAt = roundGuesses.length > 0 ? new Date(roundGuesses[roundGuesses.length - 1].createdAt) : null;
+        state.roundHistory.push({
+            round: state.currentRound,
+            winnerId,
+            guesses: roundGuesses.length,
+            timeMs: startedAt && endedAt ? Math.max(0, endedAt.getTime() - startedAt.getTime()) : 0,
+            startedAt: startedAt?.toISOString() ?? null,
+            endedAt: endedAt?.toISOString() ?? null,
+        });
     }
     async recordUserOutcome(game, winnerId, isDraw) {
         if (game.resultRecorded) {
@@ -104,12 +127,14 @@ let GameService = class GameService {
                 player1Wins: 0,
                 player2Wins: 0,
                 maxRounds: game.maxRounds,
+                roundHistory: [],
             }
             : {
                 currentRound: Math.min(state.currentRound + 1, game.maxRounds),
                 player1Wins: state.player1Wins,
                 player2Wins: state.player2Wins,
                 maxRounds: game.maxRounds,
+                roundHistory: state.roundHistory,
             };
         this.matchStates.set(gameId, nextState);
         await this.prisma.guess.deleteMany({ where: { gameId } });
@@ -169,6 +194,7 @@ let GameService = class GameService {
             player1Wins: 0,
             player2Wins: 0,
             maxRounds: game.maxRounds,
+            roundHistory: [],
         });
         return this.attachMatchState(game);
     }
@@ -256,6 +282,7 @@ let GameService = class GameService {
             throw new Error('Game not found');
         if (game.turn !== playerId)
             throw new Error('Not your turn');
+        const state = this.getMatchState(gameId, game.maxRounds);
         const isPlayer1 = game.player1Id === playerId;
         const opponentId = isPlayer1 ? game.player2Id : game.player1Id;
         const secret = isPlayer1 ? game.player2Secret : game.player1Secret;
@@ -301,6 +328,7 @@ let GameService = class GameService {
                 guess: guessStr,
                 position: feedback.position,
                 number: feedback.number,
+                round: state.currentRound,
             },
         });
         const allGuesses = await this.prisma.guess.findMany({ where: { gameId } });
@@ -352,8 +380,22 @@ let GameService = class GameService {
             include: { guesses: true },
         });
         if (newStatus === 'finished') {
-            this.recordRoundResult(gameId, winnerId, game);
-            await this.recordUserOutcome(updatedGame, winnerId, isDraw);
+            const roundGuesses = allGuesses
+                .concat([{
+                    id: 'pending',
+                    gameId,
+                    playerId,
+                    guess: guessStr,
+                    position: feedback.position,
+                    number: feedback.number,
+                    round: state.currentRound,
+                    createdAt: now,
+                }])
+                .filter((guess) => guess.round === state.currentRound);
+            this.recordRoundResult(gameId, winnerId, game, roundGuesses);
+            if (state.currentRound >= game.maxRounds) {
+                await this.recordUserOutcome(updatedGame, winnerId, isDraw);
+            }
         }
         return { updatedGame: this.attachMatchState(updatedGame), feedback, isDraw, isTimeout: false };
     }

@@ -6,6 +6,14 @@ type MatchState = {
   player1Wins: number;
   player2Wins: number;
   maxRounds: number;
+  roundHistory: Array<{
+    round: number;
+    winnerId: string | null;
+    guesses: number;
+    timeMs: number;
+    startedAt: string | null;
+    endedAt: string | null;
+  }>;
 };
 
 @Injectable()
@@ -28,6 +36,7 @@ export class GameService {
       player1Wins: 0,
       player2Wins: 0,
       maxRounds,
+      roundHistory: [],
     };
     this.matchStates.set(gameId, created);
     return created;
@@ -41,11 +50,23 @@ export class GameService {
       player1Wins: state.player1Wins,
       player2Wins: state.player2Wins,
       maxRounds: state.maxRounds,
+      roundHistory: state.roundHistory,
     };
   }
 
-  private recordRoundResult(gameId: string, winnerId: string | null, game: any) {
+  private recordRoundResult(gameId: string, winnerId: string | null, game: any, roundGuesses: any[] = []) {
     if (!winnerId) {
+      const state = this.getMatchState(gameId, game.maxRounds ?? 3);
+      const startedAt = roundGuesses[0]?.createdAt ? new Date(roundGuesses[0].createdAt) : null;
+      const endedAt = roundGuesses.length > 0 ? new Date(roundGuesses[roundGuesses.length - 1].createdAt) : null;
+      state.roundHistory.push({
+        round: state.currentRound,
+        winnerId: null,
+        guesses: roundGuesses.length,
+        timeMs: startedAt && endedAt ? Math.max(0, endedAt.getTime() - startedAt.getTime()) : 0,
+        startedAt: startedAt?.toISOString() ?? null,
+        endedAt: endedAt?.toISOString() ?? null,
+      });
       return;
     }
 
@@ -55,6 +76,17 @@ export class GameService {
     } else if (winnerId === game.player2Id) {
       state.player2Wins += 1;
     }
+
+    const startedAt = roundGuesses[0]?.createdAt ? new Date(roundGuesses[0].createdAt) : null;
+    const endedAt = roundGuesses.length > 0 ? new Date(roundGuesses[roundGuesses.length - 1].createdAt) : null;
+    state.roundHistory.push({
+      round: state.currentRound,
+      winnerId,
+      guesses: roundGuesses.length,
+      timeMs: startedAt && endedAt ? Math.max(0, endedAt.getTime() - startedAt.getTime()) : 0,
+      startedAt: startedAt?.toISOString() ?? null,
+      endedAt: endedAt?.toISOString() ?? null,
+    });
   }
 
   private async recordUserOutcome(game: any, winnerId: string | null, isDraw: boolean) {
@@ -111,12 +143,14 @@ export class GameService {
           player1Wins: 0,
           player2Wins: 0,
           maxRounds: game.maxRounds,
+          roundHistory: [],
         }
       : {
           currentRound: Math.min(state.currentRound + 1, game.maxRounds),
           player1Wins: state.player1Wins,
           player2Wins: state.player2Wins,
           maxRounds: game.maxRounds,
+          roundHistory: state.roundHistory,
         };
 
     this.matchStates.set(gameId, nextState);
@@ -188,6 +222,7 @@ export class GameService {
       player1Wins: 0,
       player2Wins: 0,
       maxRounds: game.maxRounds,
+      roundHistory: [],
     });
 
     return this.attachMatchState(game);
@@ -286,6 +321,8 @@ export class GameService {
     if (!game) throw new Error('Game not found');
     if (game.turn !== playerId) throw new Error('Not your turn');
 
+    const state = this.getMatchState(gameId, game.maxRounds);
+
     const isPlayer1 = game.player1Id === playerId;
     const opponentId = isPlayer1 ? game.player2Id : game.player1Id;
     const secret = isPlayer1 ? game.player2Secret : game.player1Secret;
@@ -337,6 +374,7 @@ export class GameService {
         guess: guessStr,
         position: feedback.position,
         number: feedback.number,
+        round: state.currentRound,
       },
     });
 
@@ -395,8 +433,24 @@ export class GameService {
     });
 
     if (newStatus === 'finished') {
-      this.recordRoundResult(gameId, winnerId, game);
-      await this.recordUserOutcome(updatedGame, winnerId, isDraw);
+      const roundGuesses = allGuesses
+        .concat([{ 
+          id: 'pending',
+          gameId,
+          playerId,
+          guess: guessStr,
+          position: feedback.position,
+          number: feedback.number,
+          round: state.currentRound,
+          createdAt: now,
+        } as any])
+        .filter((guess) => guess.round === state.currentRound);
+
+      this.recordRoundResult(gameId, winnerId, game, roundGuesses);
+
+      if (state.currentRound >= game.maxRounds) {
+        await this.recordUserOutcome(updatedGame, winnerId, isDraw);
+      }
     }
 
     return { updatedGame: this.attachMatchState(updatedGame), feedback, isDraw, isTimeout: false };

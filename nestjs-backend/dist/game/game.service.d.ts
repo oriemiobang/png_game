@@ -48,6 +48,14 @@ export declare class GameService {
         player1Wins: number;
         player2Wins: number;
         maxRounds: number;
+        roundHistory: {
+            round: number;
+            winnerId: string | null;
+            guesses: number;
+            timeMs: number;
+            startedAt: string | null;
+            endedAt: string | null;
+        }[];
     }>;
     ensureUser(userId: string): Promise<{
         id: string;
@@ -87,6 +95,14 @@ export declare class GameService {
         player1Wins: number;
         player2Wins: number;
         maxRounds: number;
+        roundHistory: {
+            round: number;
+            winnerId: string | null;
+            guesses: number;
+            timeMs: number;
+            startedAt: string | null;
+            endedAt: string | null;
+        }[];
     }>;
     getPublicRooms(): Promise<({
         player1: {
@@ -116,6 +132,14 @@ export declare class GameService {
         player1Wins: number;
         player2Wins: number;
         maxRounds: number;
+        roundHistory: {
+            round: number;
+            winnerId: string | null;
+            guesses: number;
+            timeMs: number;
+            startedAt: string | null;
+            endedAt: string | null;
+        }[];
     })[]>;
     joinGame(gameId: string, playerId: string): Promise<{
         player1: {
@@ -148,6 +172,14 @@ export declare class GameService {
         player1Wins: number;
         player2Wins: number;
         maxRounds: number;
+        roundHistory: {
+            round: number;
+            winnerId: string | null;
+            guesses: number;
+            timeMs: number;
+            startedAt: string | null;
+            endedAt: string | null;
+        }[];
     }>;
     submitSecret(gameId: string, playerId: string, secret: string): Promise<{
         id: string;
@@ -173,6 +205,14 @@ export declare class GameService {
         player1Wins: number;
         player2Wins: number;
         maxRounds: number;
+        roundHistory: {
+            round: number;
+            winnerId: string | null;
+            guesses: number;
+            timeMs: number;
+            startedAt: string | null;
+            endedAt: string | null;
+        }[];
     }>;
     generateFeedback(guess: string, secret: string): {
         position: number;
@@ -214,6 +254,14 @@ export declare class GameService {
             player1Wins: number;
             player2Wins: number;
             maxRounds: number;
+            roundHistory: {
+                round: number;
+                winnerId: string | null;
+                guesses: number;
+                timeMs: number;
+                startedAt: string | null;
+                endedAt: string | null;
+            }[];
         };
         feedback: {
             position: number;

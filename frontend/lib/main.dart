@@ -4,6 +4,7 @@ import 'package:png_game/classes/play_board_classes.dart';
 import 'package:png_game/features/home/home_page.dart';
 import 'package:png_game/screens/create_game.dart';
 import 'package:png_game/screens/loading.dart';
+import 'package:png_game/screens/game_result_page.dart';
 import 'package:png_game/screens/play_solo.dart';
 import 'package:png_game/screens/randomWaitRoom.dart';
 import 'package:png_game/screens/rooms_page.dart';
@@ -95,6 +96,10 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/play_board',
           builder: (context, state) => const PlayBoard(),
+        ),
+        GoRoute(
+          path: '/game_result',
+          builder: (context, state) => const GameResultPage(),
         ),
         GoRoute(
           path: '/chat',

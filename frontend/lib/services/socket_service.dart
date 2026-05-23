@@ -18,8 +18,8 @@ class SocketService with ChangeNotifier {
   // String? _gameId;
   // Map? _winner;
 
-  String game_id = '';
-  String player_id = '';
+  String gameId = '';
+  String playerId = '';
 
   String? _currentPlayerId() => Data().userId;
 
@@ -46,14 +46,14 @@ class SocketService with ChangeNotifier {
     socket.onConnect((_) {
       isConnected = true;
       lastError = null;
-      print('connected to server');
+      debugPrint('connected to server');
       notifyListeners();
     });
 
     // list to disconects
     socket.onDisconnect((_) {
       isConnected = false;
-      print('disconnected from server');
+      debugPrint('disconnected from server');
       notifyListeners();
     });
 
@@ -66,17 +66,10 @@ class SocketService with ChangeNotifier {
     socket.on('gameJoined', (data) async {
       gameJoined = true;
 
-      game_id = data['gameId'];
-      player_id = data['playerId'];
-      final gameId = Data().gameId;
-      // await savedData.getSaveGameId();
-      final userId = Data().userId;
-      // await savedData.getUserId();
+      gameId = data['gameId'];
+      playerId = data['playerId'];
 
-      // print('$game_id, $player_id');
-      // print('$gameId, $userId');
-
-      print(data);
+      debugPrint('$data');
       notifyListeners();
     });
 
@@ -100,7 +93,7 @@ class SocketService with ChangeNotifier {
     socket.on('gameEnd', (data) {
       if (data != null) {
         Data().updateWinner(data);
-        print('game end data: $data');
+        debugPrint('game end data: $data');
         notifyListeners();
       }
     });
@@ -117,19 +110,19 @@ class SocketService with ChangeNotifier {
     });
     socket.onConnectError((data) {
       lastError = '$data';
-      print('Connection Error: $data');
+      debugPrint('Connection Error: $data');
       notifyListeners();
     });
 
     socket.onError((data) {
       lastError = '$data';
-      print('Socket Error: $data');
+      debugPrint('Socket Error: $data');
       notifyListeners();
     });
 
     socket.on('room_error', (data) {
       lastError = '$data';
-      print('Room Error: $data');
+      debugPrint('Room Error: $data');
       notifyListeners();
     });
 
@@ -142,7 +135,7 @@ class SocketService with ChangeNotifier {
     socket.on('requestNewGame', (data) {
       Data().updateNewGame(data);
       notifyListeners();
-      print('request data $data');
+      debugPrint('request data $data');
     });
 
     // game data
@@ -150,7 +143,7 @@ class SocketService with ChangeNotifier {
       gameInfo = data;
       // savedData.setData(data);
       Data().updateData(data);
-      print('data in the game info: $data');
+      debugPrint('data in the game info: $data');
       notifyListeners();
       // print('this is the game info: $data');
     });
@@ -200,8 +193,8 @@ class SocketService with ChangeNotifier {
 
     String gameId =
         'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
-    player_id = playerId;
-    game_id = gameId;
+    this.playerId = playerId;
+    this.gameId = gameId;
 
     // savedData.setGameId(gameId);
     Data().updateGameId(gameId);
@@ -235,8 +228,8 @@ class SocketService with ChangeNotifier {
 
     String gameId =
         'PNG${List.generate(15, (_) => hexChars[random.nextInt(16)]).join()}';
-    player_id = playerId;
-    game_id = gameId;
+    this.playerId = playerId;
+    this.gameId = gameId;
 
     // savedData.setGameId(gameId);
     Data().updateGameId(gameId);
@@ -257,8 +250,8 @@ class SocketService with ChangeNotifier {
       notifyListeners();
       return;
     }
-    player_id = playerId;
-    game_id = gameCode;
+    this.playerId = playerId;
+    gameId = gameCode;
     // await savedData.setUserId(playerId);
     // await savedData.setGameId(gameCode);
 
@@ -280,8 +273,8 @@ class SocketService with ChangeNotifier {
       notifyListeners();
       return;
     }
-    player_id = playerId;
-    game_id = gameCode;
+    this.playerId = playerId;
+    gameId = gameCode;
     // await savedData.setUserId(playerId);
     // await savedData.setGameId(gameCode);
 

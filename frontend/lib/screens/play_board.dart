@@ -185,9 +185,9 @@ class _PlayBoardState extends State<PlayBoard>
               onPressed: () {
                 Navigator.pop(dialogContext);
                 _gameOverDialogVisible = false;
-                context.go('/');
+                    context.go('/game_result');
               },
-              child: Text(canPlayNextRound ? 'Quit' : 'Go Home'),
+                  child: Text(canPlayNextRound ? 'Quit' : 'Game Result'),
             ),
           ),
         ],

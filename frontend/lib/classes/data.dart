@@ -100,7 +100,7 @@ class Data with ChangeNotifier {
 
   void updateChatData(Map newData) {
     _chatData.add(newData);
-    print('the chat data $chatData');
+    debugPrint('the chat data $chatData');
     notifyListeners();
   }
 

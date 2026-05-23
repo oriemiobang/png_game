@@ -90,13 +90,40 @@ let GameGateway = class GameGateway {
             this.server.to(payload.gameId).emit('updateGuesses', { guesses: updatedGame.guesses });
             if (updatedGame.status === 'finished') {
                 if (isTimeout) {
-                    this.server.to(payload.gameId).emit('gameEnd', { winnerId: updatedGame.winnerId, message: "Timeout! Game Over." });
+                    this.server.to(payload.gameId).emit('gameEnd', {
+                        winnerId: updatedGame.winnerId,
+                        message: 'Timeout! Game Over.',
+                        gameId: payload.gameId,
+                        player1Wins: updatedGame.player1Wins,
+                        player2Wins: updatedGame.player2Wins,
+                        maxRounds: updatedGame.maxRounds,
+                        currentRound: updatedGame.currentRound,
+                        roundHistory: updatedGame.roundHistory ?? [],
+                    });
                 }
                 else if (isDraw) {
-                    this.server.to(payload.gameId).emit('gameEnd', { winnerId: null, message: "It's a draw!" });
+                    this.server.to(payload.gameId).emit('gameEnd', {
+                        winnerId: null,
+                        message: "It's a draw!",
+                        gameId: payload.gameId,
+                        player1Wins: updatedGame.player1Wins,
+                        player2Wins: updatedGame.player2Wins,
+                        maxRounds: updatedGame.maxRounds,
+                        currentRound: updatedGame.currentRound,
+                        roundHistory: updatedGame.roundHistory ?? [],
+                    });
                 }
                 else {
-                    this.server.to(payload.gameId).emit('gameEnd', { winnerId: updatedGame.winnerId, message: "Game Over!" });
+                    this.server.to(payload.gameId).emit('gameEnd', {
+                        winnerId: updatedGame.winnerId,
+                        message: 'Game Over!',
+                        gameId: payload.gameId,
+                        player1Wins: updatedGame.player1Wins,
+                        player2Wins: updatedGame.player2Wins,
+                        maxRounds: updatedGame.maxRounds,
+                        currentRound: updatedGame.currentRound,
+                        roundHistory: updatedGame.roundHistory ?? [],
+                    });
                 }
             }
             else if (updatedGame.lastChance) {
