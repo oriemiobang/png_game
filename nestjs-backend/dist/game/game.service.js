@@ -380,18 +380,7 @@ let GameService = class GameService {
             include: { guesses: true },
         });
         if (newStatus === 'finished') {
-            const roundGuesses = allGuesses
-                .concat([{
-                    id: 'pending',
-                    gameId,
-                    playerId,
-                    guess: guessStr,
-                    position: feedback.position,
-                    number: feedback.number,
-                    round: state.currentRound,
-                    createdAt: now,
-                }])
-                .filter((guess) => guess.round === state.currentRound);
+            const roundGuesses = allGuesses.filter((guess) => guess.round === state.currentRound);
             this.recordRoundResult(gameId, winnerId, game, roundGuesses);
             if (state.currentRound >= game.maxRounds) {
                 await this.recordUserOutcome(updatedGame, winnerId, isDraw);

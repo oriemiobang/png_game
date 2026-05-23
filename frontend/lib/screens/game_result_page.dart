@@ -330,6 +330,7 @@ class GameResultPage extends StatelessWidget {
                                 _metricRow(
                                   icon: Icons.trending_up_outlined,
                                   label: 'Best Round',
+                                  value: '',
                                   valueWidget: _SmallBadge(
                                     text: 'Round $bestRound',
                                     background: const Color(0xFF22C55E),
