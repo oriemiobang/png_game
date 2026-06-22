@@ -14,6 +14,8 @@ const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const game_service_1 = require("./game.service");
 const matchmaking_service_1 = require("./matchmaking.service");
+const firebase_service_1 = require("../firebase/firebase.service");
+const prisma_service_1 = require("../prisma/prisma.service");
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const ws_jwt_guard_1 = require("../auth/ws-jwt.guard");
@@ -26,12 +28,32 @@ function generateGameId() {
     return `PNG${suffix}`;
 }
 let GameGateway = class GameGateway {
-    constructor(gameService, matchmakingService, jwtService) {
+    constructor(gameService, matchmakingService, jwtService, firebaseService, prisma) {
         this.gameService = gameService;
         this.matchmakingService = matchmakingService;
         this.jwtService = jwtService;
+        this.firebaseService = firebaseService;
+        this.prisma = prisma;
         this.activeTimers = new Map();
         this.disconnectTimers = new Map();
+    }
+    attachColorFeedback(game) {
+        if (!game || !game.guesses)
+            return game;
+        const enrichedGuesses = game.guesses.map((g) => {
+            const secret = g.playerId === game.player1Id ? game.player2Secret : game.player1Secret;
+            if (!secret || secret.length !== 4)
+                return g;
+            const colorFeedback = g.guess.split('').map((digit, i) => {
+                if (secret[i] === digit)
+                    return 'P';
+                if (secret.includes(digit))
+                    return 'N';
+                return 'X';
+            });
+            return { ...g, colorFeedback };
+        });
+        return { ...game, guesses: enrichedGuesses };
     }
     async handleRejoinGame(client, payload) {
         try {
@@ -39,7 +61,7 @@ let GameGateway = class GameGateway {
             client.join(payload.gameId);
             const game = await this.gameService.getGameState(payload.gameId);
             if (game) {
-                client.emit('gameInfo', game);
+                client.emit('gameInfo', this.attachColorFeedback(game));
             }
             const timerKey = `${playerId}_${payload.gameId}`;
             if (this.disconnectTimers.has(timerKey)) {
@@ -57,7 +79,18 @@ let GameGateway = class GameGateway {
         try {
             const result = await this.gameService.forfeitGame(payload.gameId, playerId);
             if (result) {
-                this.server.to(payload.gameId).emit('gameEnd', result);
+                const { updatedGame, ratingChanges } = result;
+                this.server.to(payload.gameId).emit('gameEnd', {
+                    gameId: payload.gameId,
+                    player1Wins: updatedGame.player1Wins,
+                    player2Wins: updatedGame.player2Wins,
+                    maxRounds: updatedGame.maxRounds,
+                    currentRound: updatedGame.currentRound,
+                    roundHistory: updatedGame.roundHistory ?? [],
+                    ratingChanges,
+                    winnerId: updatedGame.winnerId,
+                    message: 'Opponent Forfeited! You win.',
+                });
                 client.leave(payload.gameId);
             }
         }
@@ -99,7 +132,18 @@ let GameGateway = class GameGateway {
                         if (currentGameState && currentGameState.status === 'playing') {
                             const result = await this.gameService.forfeitGame(gameId, userId);
                             if (result) {
-                                this.server.to(gameId).emit('gameEnd', result);
+                                const { updatedGame, ratingChanges } = result;
+                                this.server.to(gameId).emit('gameEnd', {
+                                    gameId,
+                                    player1Wins: updatedGame.player1Wins,
+                                    player2Wins: updatedGame.player2Wins,
+                                    maxRounds: updatedGame.maxRounds,
+                                    currentRound: updatedGame.currentRound,
+                                    roundHistory: updatedGame.roundHistory ?? [],
+                                    ratingChanges,
+                                    winnerId: updatedGame.winnerId,
+                                    message: 'Opponent disconnected. You win.',
+                                });
                             }
                         }
                     }
@@ -135,6 +179,20 @@ let GameGateway = class GameGateway {
                 }
                 this.server.to(gameId).emit('matchFound', matchPayload);
                 this.server.to(gameId).emit('gameInfo', game);
+                try {
+                    const players = await this.prisma.user.findMany({
+                        where: { id: { in: [matched.playerId, playerId] } },
+                        select: { fcmToken: true },
+                    });
+                    for (const p of players) {
+                        if (p.fcmToken) {
+                            this.firebaseService.sendPushNotification(p.fcmToken, 'Match Found! 🎮', 'Your opponent is ready. The game is starting!', { gameId });
+                        }
+                    }
+                }
+                catch (err) {
+                    console.error('Failed to send push notification', err);
+                }
                 const publicRooms = await this.gameService.getPublicRooms();
                 this.server.emit('publicRooms', publicRooms);
             }
@@ -179,6 +237,18 @@ let GameGateway = class GameGateway {
             });
             this.server.emit('gameJoined', { gameJoined: true, gameId: payload.gameId, playerId });
             this.server.to(payload.gameId).emit('gameInfo', game);
+            try {
+                const host = await this.prisma.user.findUnique({
+                    where: { id: game.player1Id },
+                    select: { fcmToken: true },
+                });
+                if (host?.fcmToken) {
+                    this.firebaseService.sendPushNotification(host.fcmToken, 'Opponent Joined! ⚔️', `${game.player2?.name ?? 'Someone'} has joined your room.`, { gameId: payload.gameId });
+                }
+            }
+            catch (err) {
+                console.error('Failed to send push notification for player joined', err);
+            }
             const publicRooms = await this.gameService.getPublicRooms();
             this.server.emit('publicRooms', publicRooms);
         }
@@ -281,6 +351,20 @@ let GameGateway = class GameGateway {
             }
             else {
                 this.server.to(payload.gameId).emit('turnChange', { nextPlayer: updatedGame.turn });
+                try {
+                    if (updatedGame.turn) {
+                        const nextP = await this.prisma.user.findUnique({
+                            where: { id: updatedGame.turn },
+                            select: { fcmToken: true },
+                        });
+                        if (nextP?.fcmToken) {
+                            this.firebaseService.sendPushNotification(nextP.fcmToken, 'Your Turn! 🎯', "It's your turn to guess in PNG.", { gameId: payload.gameId });
+                        }
+                    }
+                }
+                catch (err) {
+                    console.error('Failed to send turn push notification', err);
+                }
             }
             if (updatedGame.status === 'playing') {
                 this.scheduleGameTimer(updatedGame);
@@ -288,7 +372,7 @@ let GameGateway = class GameGateway {
             else {
                 this.clearGameTimer(payload.gameId);
             }
-            this.server.to(payload.gameId).emit('gameInfo', updatedGame);
+            this.server.to(payload.gameId).emit('gameInfo', this.attachColorFeedback(updatedGame));
         }
         catch (e) {
             if (e.message === 'Not your turn') {
@@ -465,6 +549,8 @@ exports.GameGateway = GameGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({ cors: { origin: '*' } }),
     __metadata("design:paramtypes", [game_service_1.GameService,
         matchmaking_service_1.MatchmakingService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        firebase_service_1.FirebaseService,
+        prisma_service_1.PrismaService])
 ], GameGateway);
 //# sourceMappingURL=game.gateway.js.map

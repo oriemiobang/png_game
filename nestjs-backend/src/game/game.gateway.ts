@@ -8,6 +8,8 @@ import {
 import { Server, Socket } from 'socket.io';
 import { GameService } from './game.service';
 import { MatchmakingService } from './matchmaking.service';
+import { FirebaseService } from '../firebase/firebase.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { UseGuards, UsePipes, ValidationPipe, UseFilters } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WsJwtGuard } from '../auth/ws-jwt.guard';
@@ -51,6 +53,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly gameService: GameService,
     private readonly matchmakingService: MatchmakingService,
     private readonly jwtService: JwtService,
+    private readonly firebaseService: FirebaseService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
@@ -246,6 +250,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.server.to(gameId).emit('matchFound', matchPayload);
         this.server.to(gameId).emit('gameInfo', game);
 
+        // Send push notifications
+        try {
+          const players = await this.prisma.user.findMany({
+            where: { id: { in: [matched.playerId, playerId] } },
+            select: { fcmToken: true },
+          });
+          for (const p of players) {
+            if (p.fcmToken) {
+              this.firebaseService.sendPushNotification(
+                p.fcmToken,
+                'Match Found! 🎮',
+                'Your opponent is ready. The game is starting!',
+                { gameId }
+              );
+            }
+          }
+        } catch (err) {
+          console.error('Failed to send push notification', err);
+        }
+
         // Remove the paired game from the public rooms list (it won't be listed
         // anyway since isPrivate=false but status will be 'waiting' briefly).
         const publicRooms = await this.gameService.getPublicRooms();
@@ -329,6 +353,24 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.emit('gameJoined', { gameJoined: true, gameId: payload.gameId, playerId });
       this.server.to(payload.gameId).emit('gameInfo', game);
 
+      // Send push notification to the host
+      try {
+        const host = await this.prisma.user.findUnique({
+          where: { id: game.player1Id },
+          select: { fcmToken: true },
+        });
+        if (host?.fcmToken) {
+          this.firebaseService.sendPushNotification(
+            host.fcmToken,
+            'Opponent Joined! ⚔️',
+            `${(game as any).player2?.name ?? 'Someone'} has joined your room.`,
+            { gameId: payload.gameId }
+          );
+        }
+      } catch (err) {
+        console.error('Failed to send push notification for player joined', err);
+      }
+
       // Update public rooms as this one might be full now
       const publicRooms = await this.gameService.getPublicRooms();
       this.server.emit('publicRooms', publicRooms);
@@ -392,16 +434,31 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const playerId = client.data.userId;
     try {
       const resetSeries = payload.approved === true;
-      const updatedGame = await this.gameService.resetMatch(payload.gameId, resetSeries);
+      const result = await this.gameService.resetMatch(payload.gameId, resetSeries);
+
+      if (result.matchOver) {
+        this.server.to(payload.gameId).emit('gameEnd', {
+          gameId: payload.gameId,
+          player1Wins: result.player1RoundWins,
+          player2Wins: result.player2RoundWins,
+          maxRounds: result.maxRounds,
+          currentRound: result.currentRound,
+          roundHistory: result.roundHistory ?? [],
+          winnerId: result.seriesWinnerId,
+          message: 'Series Over!',
+        });
+        this.server.to(payload.gameId).emit('gameInfo', result);
+        return;
+      }
 
       this.server.to(payload.gameId).emit('requestNewGame', {
         gameId: payload.gameId,
         playerId,
         resetSeries,
-        currentRound: updatedGame.currentRound,
-        maxRounds: updatedGame.maxRounds,
+        currentRound: result.currentRound,
+        maxRounds: result.maxRounds,
       });
-      this.server.to(payload.gameId).emit('gameInfo', updatedGame);
+      this.server.to(payload.gameId).emit('gameInfo', result);
     } catch (e) {
       client.emit('room_error', e.message);
     }
@@ -465,6 +522,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.server.to(payload.gameId).emit('lastChance', { chanceTo: opponent, message: 'There is last Chance' });
       } else {
         this.server.to(payload.gameId).emit('turnChange', { nextPlayer: updatedGame.turn });
+
+        // Send push notification to the next player
+        try {
+          if (updatedGame.turn) {
+            const nextP = await this.prisma.user.findUnique({
+              where: { id: updatedGame.turn },
+              select: { fcmToken: true },
+            });
+            if (nextP?.fcmToken) {
+              this.firebaseService.sendPushNotification(
+                nextP.fcmToken,
+                'Your Turn! 🎯',
+                "It's your turn to guess in PNG.",
+                { gameId: payload.gameId }
+              );
+            }
+          }
+        } catch (err) {
+          console.error('Failed to send turn push notification', err);
+        }
       }
 
       if (updatedGame.status === 'playing') {

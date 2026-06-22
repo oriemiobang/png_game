@@ -182,4 +182,20 @@ class AuthApiService extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<void> updateFcmToken(String token) async {
+    if (_token == null) return;
+    try {
+      await http.patch(
+        Uri.parse('$baseUrl/me/fcm-token'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+        body: jsonEncode({'fcmToken': token}),
+      );
+    } catch (e) {
+      debugPrint('Failed to update FCM token: $e');
+    }
+  }
 }

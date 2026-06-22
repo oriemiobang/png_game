@@ -21,9 +21,20 @@ import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/screens/sign_in.dart';
 import 'package:png_game/screens/sign_up.dart';
 import 'package:png_game/services/auth_api_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:png_game/firebase_options.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Request FCM permissions
+  await FirebaseMessaging.instance.requestPermission();
+  
   runApp(const MyApp());
 }
 
@@ -42,6 +53,10 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _authApiService = AuthApiService();
+    
+    // Register FCM token when user logs in
+    _authApiService.addListener(_onAuthChanged);
+    
     _router = GoRouter(
       initialLocation: '/loading',
       refreshListenable: _authApiService,
@@ -80,10 +95,6 @@ class _MyAppState extends State<MyApp> {
           builder: (context, state) => const JoinRoom(),
         ),
         GoRoute(
-          path: '/rooms_page',
-          builder: (context, state) => const GameRooms(),
-        ),
-        GoRoute(
           path: '/create_game',
           builder: (context, state) => const CreateGames(),
         ),
@@ -113,6 +124,7 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/scan_qr_code',
           builder: (context, state) => const ScanQrCode(),
+        ),
         GoRoute(
           path: '/play_solo',
           builder: (context, state) => const PlaySolo(),
@@ -137,6 +149,21 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
+  void _onAuthChanged() async {
+    if (_authApiService.user != null) {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await _authApiService.updateFcmToken(token);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _authApiService.removeListener(_onAuthChanged);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -159,6 +186,43 @@ class _MyAppState extends State<MyApp> {
         routerConfig: _router,
         debugShowCheckedModeBanner: false,
         title: 'PNG Game',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue.shade600,
+            primary: Colors.blue.shade600,
+            secondary: Colors.amber.shade600,
+            surface: const Color(0xFFF4F5F7),
+          ),
+          scaffoldBackgroundColor: const Color(0xFFF4F5F7),
+          textTheme: GoogleFonts.outfitTextTheme(Theme.of(context).textTheme),
+          appBarTheme: AppBarTheme(
+            backgroundColor: const Color(0xFFF4F5F7),
+            elevation: 0,
+            iconTheme: IconThemeData(color: Colors.blueGrey.shade900),
+            titleTextStyle: GoogleFonts.outfit(
+              color: Colors.blueGrey.shade900,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            ),
+          ),
+          cardTheme: CardTheme(
+            color: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+        ),
       ),
     );
   }

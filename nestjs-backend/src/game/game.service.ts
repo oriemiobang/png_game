@@ -161,9 +161,63 @@ export class GameService {
     }
 
     if (resetSeries) {
+      // Full series reset — clear everything
       await this.prisma.roundResult.deleteMany({ where: { gameId } });
+      await this.prisma.guess.deleteMany({ where: { gameId } });
+
+      const updatedGame = await this.prisma.game.update({
+        where: { id: gameId },
+        data: {
+          status: 'waiting',
+          winnerId: null,
+          resultRecorded: false,
+          turn: null,
+          lastChance: false,
+          player1Secret: null,
+          player2Secret: null,
+          player1TimeLeft: null,
+          player2TimeLeft: null,
+          turnStartedAt: null,
+          currentRound: 1,
+          player1RoundWins: 0,
+          player2RoundWins: 0,
+        } as any,
+        include: {
+          player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+          player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+          guesses: true,
+          roundResults: true,
+        },
+      });
+
+      return { ...this.attachMatchState(updatedGame), matchOver: false };
     }
 
+    // ── Advance-round path ──
+    // Re-read fresh win counts (recordRoundResult may have just written them)
+    const freshGame = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      select: { player1RoundWins: true, player2RoundWins: true, maxRounds: true,
+                player1Id: true, player2Id: true },
+    });
+
+    const p1Wins = freshGame?.player1RoundWins ?? 0;
+    const p2Wins = freshGame?.player2RoundWins ?? 0;
+    const maxRounds = freshGame?.maxRounds ?? game.maxRounds;
+    const winsNeeded = Math.ceil(maxRounds / 2);
+
+    // Check if the series is already decided
+    if (p1Wins >= winsNeeded || p2Wins >= winsNeeded) {
+      const seriesWinnerId = p1Wins >= winsNeeded ? freshGame!.player1Id : freshGame!.player2Id;
+      // Return matchOver without touching the DB state
+      return {
+        ...this.attachMatchState({ ...game, player1RoundWins: p1Wins, player2RoundWins: p2Wins, roundResults: [] }),
+        matchOver: true,
+        seriesWinnerId,
+      };
+    }
+
+    // Series not yet decided — advance the round
     await this.prisma.guess.deleteMany({ where: { gameId } });
 
     const updatedGame = await this.prisma.game.update({
@@ -179,9 +233,7 @@ export class GameService {
         player1TimeLeft: null,
         player2TimeLeft: null,
         turnStartedAt: null,
-        ...(resetSeries 
-            ? { currentRound: 1, player1RoundWins: 0, player2RoundWins: 0 } 
-            : { currentRound: Math.min(game.currentRound + 1, game.maxRounds) }),
+        currentRound: { increment: 1 },
       } as any,
       include: {
         player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
@@ -191,7 +243,7 @@ export class GameService {
       },
     });
 
-    return this.attachMatchState(updatedGame);
+    return { ...this.attachMatchState(updatedGame), matchOver: false };
   }
 
   async getGameState(gameId: string) {
@@ -436,34 +488,8 @@ export class GameService {
       }
 
       // Check for timeout BEFORE processing guess
-      if (isPlayer1 && newP1Time <= 0) {
-        await this.recordRoundResult(gameId, opponentId, game);
-        const updatedGame = await this.prisma.game.update({
-          where: { id: gameId },
-          data: { status: 'finished', winnerId: opponentId, turn: null, player1TimeLeft: 0 },
-          include: { 
-            guesses: true,
-            player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
-            player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
-            roundResults: { orderBy: { round: 'asc' } },
-          },
-        });
-        const ratingChanges = await this.recordUserOutcome(updatedGame, opponentId, false);
-        return { updatedGame: this.attachMatchState(updatedGame), feedback: { position: 0, number: 0 }, isDraw: false, isTimeout: true, ratingChanges };
-      } else if (!isPlayer1 && newP2Time <= 0) {
-        await this.recordRoundResult(gameId, opponentId, game);
-        const updatedGame = await this.prisma.game.update({
-          where: { id: gameId },
-          data: { status: 'finished', winnerId: opponentId, turn: null, player2TimeLeft: 0 },
-          include: { 
-            guesses: true,
-            player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
-            player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
-            roundResults: { orderBy: { round: 'asc' } },
-          },
-        });
-        const ratingChanges = await this.recordUserOutcome(updatedGame, opponentId, false);
-        return { updatedGame: this.attachMatchState(updatedGame), feedback: { position: 0, number: 0 }, isDraw: false, isTimeout: true, ratingChanges };
+      if ((isPlayer1 && newP1Time <= 0) || (!isPlayer1 && newP2Time <= 0)) {
+        return this.handleTimeout(gameId, playerId);
       }
     }
 
@@ -513,18 +539,32 @@ export class GameService {
         newStatus = 'finished';
         nextTurn = null;
         winnerId = opponentId;
-      } else if (p1Guesses.length >= game.maxRounds && p2Guesses.length >= game.maxRounds) {
-        // Reached max rounds without winning -> Draw
-        newStatus = 'finished';
-        nextTurn = null;
-        isDraw = true;
       }
     }
 
+    if (newStatus === 'finished') {
+      lastChance = false;
+    }
+
     let ratingChanges = { ratingChangeA: 0, ratingChangeB: 0 };
+    let matchOver = false;
+    
     if (newStatus === 'finished') {
       const roundGuesses = allGuesses.filter((guess) => guess.round === game.currentRound);
       await this.recordRoundResult(gameId, winnerId, game, roundGuesses);
+      
+      // Re-read fresh win counts
+      const freshGame = await this.prisma.game.findUnique({
+        where: { id: gameId },
+        select: { player1RoundWins: true, player2RoundWins: true, maxRounds: true },
+      });
+      const p1Wins = freshGame?.player1RoundWins ?? 0;
+      const p2Wins = freshGame?.player2RoundWins ?? 0;
+      const winsNeeded = Math.ceil((freshGame?.maxRounds ?? game.maxRounds) / 2);
+      
+      if (p1Wins >= winsNeeded || p2Wins >= winsNeeded) {
+        matchOver = true;
+      }
     }
 
     const updatedGame = await this.prisma.game.update({
@@ -546,11 +586,68 @@ export class GameService {
       },
     });
 
-    if (newStatus === 'finished' && game.currentRound >= game.maxRounds) {
-      ratingChanges = await this.recordUserOutcome(updatedGame, winnerId, isDraw);
+    if (matchOver) {
+      // Calculate series winner based on round wins
+      const freshGameForRating = await this.prisma.game.findUnique({ where: { id: gameId } });
+      const seriesWinnerId = freshGameForRating!.player1RoundWins > freshGameForRating!.player2RoundWins 
+        ? game.player1Id 
+        : freshGameForRating!.player1RoundWins < freshGameForRating!.player2RoundWins 
+          ? game.player2Id 
+          : null;
+      ratingChanges = await this.recordUserOutcome(updatedGame, seriesWinnerId, seriesWinnerId === null);
     }
 
-    return { updatedGame: this.attachMatchState(updatedGame), feedback, isDraw, isTimeout: false, ratingChanges };
+    return { updatedGame: this.attachMatchState(updatedGame), feedback, isDraw, isTimeout: false, ratingChanges, matchOver };
+  }
+
+  async handleTimeout(gameId: string, timeoutPlayerId: string) {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: { guesses: true },
+    });
+    if (!game) throw new Error('Game not found');
+
+    const opponentId = timeoutPlayerId === game.player1Id ? game.player2Id : game.player1Id;
+
+    await this.recordRoundResult(gameId, opponentId, game);
+
+    const updatedGame = await this.prisma.game.update({
+      where: { id: gameId },
+      data: { 
+        status: 'finished', 
+        winnerId: opponentId, 
+        turn: null, 
+        lastChance: false,
+        ...(timeoutPlayerId === game.player1Id ? { player1TimeLeft: 0 } : { player2TimeLeft: 0 }),
+      },
+      include: { 
+        guesses: true,
+        player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+        player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+        roundResults: { orderBy: { round: 'asc' } },
+      },
+    });
+
+    const p1Wins = updatedGame.player1RoundWins ?? 0;
+    const p2Wins = updatedGame.player2RoundWins ?? 0;
+    const winsNeeded = Math.ceil((updatedGame.maxRounds ?? 3) / 2);
+    let matchOver = false;
+    let ratingChanges = { ratingChangeA: 0, ratingChangeB: 0 };
+
+    if (p1Wins >= winsNeeded || p2Wins >= winsNeeded) {
+      matchOver = true;
+      const seriesWinnerId = p1Wins >= winsNeeded ? game.player1Id : game.player2Id;
+      ratingChanges = await this.recordUserOutcome(updatedGame, seriesWinnerId, false);
+    }
+
+    return { 
+      updatedGame: this.attachMatchState(updatedGame), 
+      feedback: { position: 0, number: 0 }, 
+      isDraw: false, 
+      isTimeout: true, 
+      ratingChanges,
+      matchOver,
+    };
   }
 
   async forfeitGame(gameId: string, forfeiterId: string) {

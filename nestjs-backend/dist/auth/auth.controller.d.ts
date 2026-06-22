@@ -43,5 +43,32 @@ export declare class AuthController {
         rating: number;
         ratingPeak: number;
         lastPlayedAt: Date | null;
+        fcmToken: string | null;
+    }>;
+    getLeaderboard(): Promise<{
+        winRate: number;
+        tier: string;
+        id: string;
+        name: string;
+        gamesPlayed: number;
+        wins: number;
+        rating: number;
+    }[]>;
+    updateFcmToken(req: any, fcmToken: string): Promise<{
+        id: string;
+        name: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        email: string | null;
+        googleId: string | null;
+        password: string | null;
+        gamesPlayed: number;
+        wins: number;
+        losses: number;
+        draws: number;
+        rating: number;
+        ratingPeak: number;
+        lastPlayedAt: Date | null;
+        fcmToken: string | null;
     }>;
 }

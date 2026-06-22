@@ -302,7 +302,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-029 🟡 No Push Notifications
+### ISSUE-029 ✅ No Push Notifications
 **Tasks:**
 - Integrate Firebase Cloud Messaging (FCM) — Firebase config already exists in the project.
 - Notify a player when: their opponent joins their room, it's their turn, they get a match.
@@ -310,7 +310,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-030 🟡 App Theme & Branding Is Inconsistent
+### ISSUE-030 ✅ App Theme & Branding Is Inconsistent
 **Current state:** Some screens use `Colors.blueGrey.shade50` background, others `Color(0xFFF4F5F7)`. Some use `Colors.blue.shade600`, others `Colors.blueAccent`. No centralized theme.  
 **Tasks:**
 - Define a `ThemeData` in `main.dart` with a consistent primary color, color scheme, text styles, and shape defaults.

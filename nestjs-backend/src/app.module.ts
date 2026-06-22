@@ -6,6 +6,7 @@ import { GameModule } from './game/game.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { RatingModule } from './rating/rating.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { RatingModule } from './rating/rating.module';
     GameModule, 
     PrismaModule, 
     AuthModule, 
-    RatingModule
+    RatingModule,
+    FirebaseModule
   ],
   controllers: [],
   providers: [],

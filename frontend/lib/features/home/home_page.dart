@@ -48,7 +48,7 @@ class _HomePageState extends State<HomePage> {
     final stats = authApi.stats ?? const <String, dynamic>{};
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       key: _scaffoldKey,
       appBar: _buildAppBar(),
       drawer: _buildDrawer(user, authApi),
@@ -72,18 +72,18 @@ class _HomePageState extends State<HomePage> {
     return AppBar(
       forceMaterialTransparency: true,
       leadingWidth: 160,
-      leading: const Padding(
-        padding: EdgeInsets.only(left: 12.0),
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 12.0),
         child: Row(
           children: [
-            Icon(Icons.gamepad_outlined, size: 30, color: Colors.blue),
-            SizedBox(width: 8),
+            Icon(Icons.gamepad_outlined, size: 30, color: Theme.of(context).colorScheme.primary),
+            const SizedBox(width: 8),
             Text(
               'PNG',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue,
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
           ],
@@ -268,30 +268,31 @@ class _HomePageState extends State<HomePage> {
               BoxShadow(
                 color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
                 blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: TextButton(
-            onPressed: () => context.push('/find_match'),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.search, size: 26, color: Colors.white),
-                SizedBox(width: 10),
-                Text(
-                  'Play Now',
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold),
+        GestureDetector(
+          onTap: () => context.push('/find_match'),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
               ],
+            ),
+            child: const Center(
+              child: Text(
+                'Play Now',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
         ),

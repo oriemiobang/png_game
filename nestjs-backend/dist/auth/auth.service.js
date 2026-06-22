@@ -125,6 +125,42 @@ let AuthService = class AuthService {
             user: { id: userId, email, name },
         };
     }
+    async getLeaderboard() {
+        const users = await this.prisma.user.findMany({
+            orderBy: { rating: 'desc' },
+            take: 50,
+            select: {
+                id: true,
+                name: true,
+                rating: true,
+                wins: true,
+                gamesPlayed: true,
+            },
+        });
+        return users.map((u) => {
+            const winRate = u.gamesPlayed > 0 ? Math.round((u.wins / u.gamesPlayed) * 1000) / 10 : 0;
+            let tier = 'Beginner';
+            if (u.rating >= 2200)
+                tier = 'Master';
+            else if (u.rating >= 1800)
+                tier = 'Expert';
+            else if (u.rating >= 1400)
+                tier = 'Advanced';
+            else if (u.rating >= 1000)
+                tier = 'Intermediate';
+            return {
+                ...u,
+                winRate,
+                tier,
+            };
+        });
+    }
+    async updateFcmToken(userId, fcmToken) {
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: { fcmToken },
+        });
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([

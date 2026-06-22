@@ -42,6 +42,12 @@ let AuthController = class AuthController {
     async myStats(req) {
         return this.authService.getMyStats(req.user.userId);
     }
+    async getLeaderboard() {
+        return this.authService.getLeaderboard();
+    }
+    async updateFcmToken(req, fcmToken) {
+        return this.authService.updateFcmToken(req.user.userId, fcmToken);
+    }
 };
 exports.AuthController = AuthController;
 __decorate([
@@ -73,6 +79,21 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "myStats", null);
+__decorate([
+    (0, common_1.Get)('leaderboard'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getLeaderboard", null);
+__decorate([
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    (0, common_1.Patch)('me/fcm-token'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)('fcmToken')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "updateFcmToken", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
     (0, common_1.Controller)('auth'),
