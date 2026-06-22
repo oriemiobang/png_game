@@ -202,14 +202,14 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-017 🟡 Rate Limiting on Auth and Game Events
+<!-- ### ISSUE-017 ✅ Rate Limiting on Auth and Game Events
 **Tasks:**
 - Add `throttler` guard (`@nestjs/throttler`) to `AuthController` endpoints (sign-in, sign-up, Google OAuth).
 - Add per-socket event rate limiting to prevent guess spamming.
 
 ---
 
-### ISSUE-018 🟡 Database Indexing
+### ISSUE-018 ✅ Database Indexing
 **Tasks:**
 - Add index on `Game.status` + `Game.isPrivate` for the `getPublicRooms()` query.
 - Add index on `Guess.gameId` + `Guess.round` for per-round queries.
@@ -217,13 +217,13 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-019 🟡 Environment Variable Validation
+### ISSUE-019 ✅ Environment Variable Validation
 **Current state:** `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_CLIENT_ID` are read from `.env` with no startup validation.  
 **Tasks:**
 - Use `@nestjs/config` with `Joi` schema validation so the server refuses to start if required env vars are missing.
 - Add a `.env.example` file documenting all variables.
 
----
+--- -->
 
 ## SECTION 5 — Frontend Architecture & UX
 
