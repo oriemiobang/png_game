@@ -170,4 +170,16 @@ class AuthApiService extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<List<dynamic>?> getLeaderboard() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/leaderboard'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as List<dynamic>;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 }

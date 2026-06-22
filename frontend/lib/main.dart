@@ -7,8 +7,8 @@ import 'package:png_game/screens/create_game.dart';
 import 'package:png_game/screens/loading.dart';
 import 'package:png_game/screens/game_result_page.dart';
 import 'package:png_game/screens/play_solo.dart';
-import 'package:png_game/screens/randomWaitRoom.dart';
-import 'package:png_game/screens/rooms_page.dart';
+import 'package:png_game/screens/profile_screen.dart';
+import 'package:png_game/screens/leaderboard_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/screens/chat_room.dart';
@@ -113,11 +113,6 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/scan_qr_code',
           builder: (context, state) => const ScanQrCode(),
-        ),
-        GoRoute(
-          path: '/random_wait_room',
-          builder: (context, state) => const RandomWaitRoom(),
-        ),
         GoRoute(
           path: '/play_solo',
           builder: (context, state) => const PlaySolo(),
@@ -129,6 +124,14 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/signup',
           builder: (context, state) => const SignUp(),
+        ),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: '/leaderboard',
+          builder: (context, state) => const LeaderboardScreen(),
         ),
       ],
     );

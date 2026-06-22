@@ -134,6 +134,14 @@ class GameResultPage extends StatelessWidget {
       (sum, round) => sum + _roundGuesses(round),
     );
     final averageGuesses = totalRounds > 0 ? totalGuesses / totalRounds : 0;
+    final ratingChanges = resultData['ratingChanges'] ?? <String, dynamic>{};
+    final ratingDelta = isPlayer1 
+      ? (ratingChanges['ratingChangeA'] as num?)?.toInt() ?? 0
+      : (ratingChanges['ratingChangeB'] as num?)?.toInt() ?? 0;
+    final myPlayerObj = isPlayer1 ? gameData['player1'] : gameData['player2'];
+    final myNewRating = (myPlayerObj?['rating'] as num?)?.toInt() ?? 1200;
+    final myOldRating = myNewRating - ratingDelta;
+
     final bestRound = _bestRound(roundHistory);
     final totalTime = roundHistory.isNotEmpty
         ? Duration(
@@ -646,6 +654,55 @@ class _RoundTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+
+class _RatingChangeAnimation extends StatefulWidget {
+  final int oldRating;
+  final int delta;
+  const _RatingChangeAnimation({required this.oldRating, required this.delta});
+
+  @override
+  State<_RatingChangeAnimation> createState() => _RatingChangeAnimationState();
+}
+
+class _RatingChangeAnimationState extends State<_RatingChangeAnimation> {
+  @override
+  Widget build(BuildContext context) {
+    final newRating = widget.oldRating + widget.delta;
+    final isPositive = widget.delta >= 0;
+    final color = isPositive ? Colors.green : Colors.red;
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 1500),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        final currentRating = widget.oldRating + (widget.delta * value).round();
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '',
+              style: const TextStyle(fontSize: 18, color: Colors.grey, decoration: TextDecoration.lineThrough),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_forward, color: Colors.grey, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              '',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '(\)',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: color.withOpacity(value)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

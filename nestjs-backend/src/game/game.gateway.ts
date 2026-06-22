@@ -53,6 +53,30 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService,
   ) {}
 
+  /**
+   * Enriches each guess in the game state with a `colorFeedback` array.
+   * Each element is 'P' (correct position), 'N' (correct digit, wrong position), or 'X' (not in secret).
+   * This avoids any DB schema changes – it's computed on-the-fly before sending to clients.
+   */
+  private attachColorFeedback(game: any): any {
+    if (!game || !game.guesses) return game;
+
+    const enrichedGuesses = game.guesses.map((g: any) => {
+      const secret = g.playerId === game.player1Id ? game.player2Secret : game.player1Secret;
+      if (!secret || secret.length !== 4) return g;
+
+      const colorFeedback = g.guess.split('').map((digit: string, i: number) => {
+        if (secret[i] === digit) return 'P';
+        if (secret.includes(digit)) return 'N';
+        return 'X';
+      });
+
+      return { ...g, colorFeedback };
+    });
+
+    return { ...game, guesses: enrichedGuesses };
+  }
+
   @SubscribeMessage('rejoinGame')
   async handleRejoinGame(client: Socket, payload: RejoinGameDto) {
     try {
@@ -60,7 +84,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.join(payload.gameId);
       const game = await this.gameService.getGameState(payload.gameId);
       if (game) {
-        client.emit('gameInfo', game);
+        client.emit('gameInfo', this.attachColorFeedback(game));
       }
       
       const timerKey = `${playerId}_${payload.gameId}`;
@@ -83,7 +107,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const result = await this.gameService.forfeitGame(payload.gameId, playerId);
       if (result) {
-        this.server.to(payload.gameId).emit('gameEnd', result);
+        const { updatedGame, ratingChanges } = result;
+        this.server.to(payload.gameId).emit('gameEnd', {
+          gameId: payload.gameId,
+          player1Wins: updatedGame.player1Wins,
+          player2Wins: updatedGame.player2Wins,
+          maxRounds: updatedGame.maxRounds,
+          currentRound: updatedGame.currentRound,
+          roundHistory: updatedGame.roundHistory ?? [],
+          ratingChanges,
+          winnerId: updatedGame.winnerId,
+          message: 'Opponent Forfeited! You win.',
+        });
         // Clean up room
         client.leave(payload.gameId);
       }
@@ -135,7 +170,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (currentGameState && currentGameState.status === 'playing') {
               const result = await this.gameService.forfeitGame(gameId, userId);
               if (result) {
-                this.server.to(gameId).emit('gameEnd', result);
+                const { updatedGame, ratingChanges } = result;
+                this.server.to(gameId).emit('gameEnd', {
+                  gameId,
+                  player1Wins: updatedGame.player1Wins,
+                  player2Wins: updatedGame.player2Wins,
+                  maxRounds: updatedGame.maxRounds,
+                  currentRound: updatedGame.currentRound,
+                  roundHistory: updatedGame.roundHistory ?? [],
+                  ratingChanges,
+                  winnerId: updatedGame.winnerId,
+                  message: 'Opponent disconnected. You win.',
+                });
               }
             }
           } catch (e) {}
@@ -427,7 +473,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.clearGameTimer(payload.gameId);
       }
 
-      this.server.to(payload.gameId).emit('gameInfo', updatedGame);
+      this.server.to(payload.gameId).emit('gameInfo', this.attachColorFeedback(updatedGame));
 
     } catch (e) {
       if (e.message === 'Not your turn') {

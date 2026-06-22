@@ -76,6 +76,24 @@ class _ChatRoomState extends State<ChatRoom> {
       ),
       body: Column(
         children: [
+          // Ephemeral chat disclaimer
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.amber.shade50,
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, size: 14, color: Colors.amber.shade800),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Messages are ephemeral — not saved to the server.',
+                    style: TextStyle(fontSize: 11, color: Colors.amber.shade900),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: messages.isEmpty
                 ? Center(

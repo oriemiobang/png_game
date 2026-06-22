@@ -59,8 +59,6 @@ class _HomePageState extends State<HomePage> {
             const Divider(),
             _buildStatsCard(stats),
             const SizedBox(height: 18),
-            _buildGameRoomsSection(dataProvider, socketService),
-            const SizedBox(height: 10),
             _buildPlayOptionsSection(socketService),
             const SizedBox(height: 15),
             _buildPlayWithFriendSection(socketService),
@@ -119,6 +117,22 @@ class _HomePageState extends State<HomePage> {
               icon: Icons.home,
               title: 'Home',
               onTap: () => Navigator.pop(context),
+            ),
+            _buildDrawerItem(
+              icon: Ionicons.person_outline,
+              title: 'My Profile',
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/profile');
+              },
+            ),
+            _buildDrawerItem(
+              icon: Ionicons.trophy_outline,
+              title: 'Leaderboard',
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/leaderboard');
+              },
             ),
             _buildDrawerItem(
               icon: Icons.settings,
@@ -231,77 +245,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildGameRoomsSection(Data dataProvider, SocketService socketService) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Game Rooms',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(10),
-          height: 250,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(5),
-            color: Colors.white,
-          ),
-          child: ListView.builder(
-            itemCount: dataProvider.randomGames?.length,
-            itemBuilder: (context, index) {
-              final gameId = dataProvider.randomGames?.keys.elementAt(index);
-              final gameData = dataProvider.randomGames?[gameId];
-              
-              return _buildGameRoomItem(gameData, socketService);
-            },
-          ),
-        ),
-        _buildSeeAllButton(),
-      ],
-    );
-  }
-
-  Widget _buildGameRoomItem(Map<String, dynamic>? gameData, SocketService socketService) {
-    return Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color.fromARGB(255, 221, 221, 221)),
-      ),
-      child: GestureDetector(
-        onTap: () => socketService.joinRandomGames(gameData?['gameId']),
-        child: const ListTile(
-          leading: CircleAvatar(child: Icon(Icons.person)),
-          title: Text(
-            "Anonymous",
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
-          ),
-          subtitle: Text('20 min'),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSeeAllButton() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        GestureDetector(
-          onTap: () => context.push('/rooms_page'),
-          child: const Text(
-            'See All',
-            style: TextStyle(
-              fontSize: 17,
-              color: Colors.blue,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildPlayOptionsSection(SocketService socketService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,7 +341,7 @@ class _HomePageState extends State<HomePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Play with a Friend',
+          'Play Private',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),

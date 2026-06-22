@@ -22,6 +22,7 @@ model User {
   rating       Int       @default(1200) // ELO rating, starts at 1200
   ratingPeak   Int       @default(1200) // All-time peak ELO
   lastPlayedAt DateTime?
+  fcmToken     String?
 
   gamesAsPlayer1 Game[]        @relation("Player1")
   gamesAsPlayer2 Game[]        @relation("Player2")

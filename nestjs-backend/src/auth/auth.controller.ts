@@ -37,4 +37,15 @@ export class AuthController {
   async myStats(@Req() req: any) {
     return this.authService.getMyStats(req.user.userId);
   }
+
+  @Get('leaderboard')
+  async getLeaderboard() {
+    return this.authService.getLeaderboard();
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch('me/fcm-token')
+  async updateFcmToken(@Req() req: any, @Body('fcmToken') fcmToken: string) {
+    return this.authService.updateFcmToken(req.user.userId, fcmToken);
+  }
 }

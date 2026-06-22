@@ -16,13 +16,16 @@ class PlayBoard extends StatefulWidget {
   State<PlayBoard> createState() => _PlayBoardState();
 }
 
-class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMixin {
+class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
   late TabController _tabController;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnim;
   final TextEditingController _guessController = TextEditingController();
   final TextEditingController _secretController = TextEditingController();
   
   bool _showSecret = false;
   bool _hasSetSecret = false;
+  bool _wasMyTurn = false;
   
   Set<int> _eliminatedNumbers = {};
 
@@ -35,6 +38,13 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _pulseAnim = Tween<double>(begin: 1.0, end: 1.12).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _listenToGameState();
@@ -44,6 +54,7 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
   @override
   void dispose() {
     _tabController.dispose();
+    _pulseController.dispose();
     _guessController.dispose();
     _secretController.dispose();
     _timer?.cancel();
@@ -79,6 +90,18 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
       } else {
         _timer?.cancel();
       }
+
+      // Show "Your turn!" toast when it becomes your turn
+      if (isMyTurn && !_wasMyTurn && status == 'playing') {
+        Fluttertoast.showToast(
+          msg: '⚡ Your turn!',
+          backgroundColor: const Color(0xFF1E40AF),
+          textColor: Colors.white,
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+        );
+      }
+      _wasMyTurn = isMyTurn;
 
       // Check if last chance
       if (dataProvider.lastChance != null) {
@@ -462,8 +485,12 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
               children: [
                 Row(
                   children: [
-                    Icon(Ionicons.person, size: 16, color: Colors.blue.shade600),
-                    const SizedBox(width: 8),
+                    CircleAvatar(
+                      radius: 10,
+                      backgroundColor: Colors.blue.shade100,
+                      child: Text((myPlayerObj?['name'] as String?)?.substring(0, 1).toUpperCase() ?? 'Y', style: TextStyle(fontSize: 10, color: Colors.blue.shade800, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 6),
                     Text('You', style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(width: 8),
                     RatingUtils.buildRatingBadge(myRating, fontSize: 10),
@@ -482,9 +509,13 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
                     const SizedBox(width: 8),
                     RatingUtils.buildRatingBadge(opponentRating, fontSize: 10),
                     const SizedBox(width: 8),
-                    Text('Opponent', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
-                    const SizedBox(width: 8),
-                    Icon(Ionicons.person, size: 16, color: Colors.red.shade400),
+                    Text(opponentPlayerObj?['name'] ?? 'Opponent', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+                    const SizedBox(width: 6),
+                    CircleAvatar(
+                      radius: 10,
+                      backgroundColor: Colors.red.shade100,
+                      child: Text((opponentPlayerObj?['name'] as String?)?.substring(0, 1).toUpperCase() ?? 'O', style: TextStyle(fontSize: 10, color: Colors.red.shade800, fontWeight: FontWeight.bold)),
+                    ),
                   ],
                 ),
               ],
@@ -603,34 +634,45 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
                     Row(
                       children: [
                         Expanded(
-                          child: TextField(
-                            controller: _guessController,
-                            keyboardType: TextInputType.number,
-                            maxLength: 4,
-                            style: const TextStyle(fontSize: 20, letterSpacing: 4, fontWeight: FontWeight.bold),
-                            decoration: InputDecoration(
-                              counterText: '',
-                              hintText: 'Enter guess...',
-                              hintStyle: const TextStyle(fontSize: 16, letterSpacing: 0, fontWeight: FontWeight.normal),
-                              filled: true,
-                              fillColor: Colors.grey.shade100,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                          child: AnimatedOpacity(
+                            opacity: isMyTurn ? 1.0 : 0.4,
+                            duration: const Duration(milliseconds: 300),
+                            child: AbsorbPointer(
+                              absorbing: !isMyTurn,
+                              child: TextField(
+                                controller: _guessController,
+                                keyboardType: TextInputType.number,
+                                maxLength: 4,
+                                style: const TextStyle(fontSize: 20, letterSpacing: 4, fontWeight: FontWeight.bold),
+                                decoration: InputDecoration(
+                                  counterText: '',
+                                  hintText: isMyTurn ? 'Enter guess...' : 'Waiting for opponent...',
+                                  hintStyle: const TextStyle(fontSize: 16, letterSpacing: 0, fontWeight: FontWeight.normal),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade100,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                                ),
+                              ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
-                        SizedBox(
-                          width: 60,
-                          height: 60,
-                          child: ElevatedButton(
-                            onPressed: isMyTurn ? _submitGuess : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue.shade600,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        AnimatedOpacity(
+                          opacity: isMyTurn ? 1.0 : 0.35,
+                          duration: const Duration(milliseconds: 300),
+                          child: SizedBox(
+                            width: 60,
+                            height: 60,
+                            child: ElevatedButton(
+                              onPressed: isMyTurn ? _submitGuess : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue.shade600,
+                                padding: EdgeInsets.zero,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              ),
+                              child: const Icon(Ionicons.send, color: Colors.white),
                             ),
-                            child: const Icon(Ionicons.send, color: Colors.white),
                           ),
                         )
                       ],
@@ -688,30 +730,70 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
           child: Row(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
                 alignment: Alignment.center,
-                child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
+                child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade600, fontSize: 12)),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  guess['guess'].toString(),
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 4),
-                ),
+                child: _buildWordleRow(guess),
               ),
-              Row(
-                children: [
-                  _buildFeedbackBadge('P', guess['position'].toString(), Colors.green),
-                  const SizedBox(width: 8),
-                  _buildFeedbackBadge('N', guess['number'].toString(), Colors.orange),
-                ],
-              )
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildWordleRow(Map guess) {
+    final digits = guess['guess'].toString().split('');
+    final colorFeedback = guess['colorFeedback'] as List? ?? [];
+    final position = guess['position'] as int? ?? 0;
+    final number = guess['number'] as int? ?? 0;
+
+    return Row(
+      children: [
+        ...List.generate(4, (i) {
+          final digit = i < digits.length ? digits[i] : '?';
+          final status = i < colorFeedback.length ? colorFeedback[i] as String : 'X';
+          Color bg, border, text;
+          if (status == 'P') {
+            bg = Colors.green.shade100;
+            border = Colors.green.shade400;
+            text = Colors.green.shade900;
+          } else if (status == 'N') {
+            bg = Colors.orange.shade100;
+            border = Colors.orange.shade400;
+            text = Colors.orange.shade900;
+          } else {
+            bg = Colors.grey.shade100;
+            border = Colors.grey.shade300;
+            text = Colors.grey.shade600;
+          }
+          return Container(
+            margin: const EdgeInsets.only(right: 6),
+            width: 40,
+            height: 44,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: border, width: 2),
+            ),
+            alignment: Alignment.center,
+            child: Text(digit, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: text)),
+          );
+        }),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('P: $position', style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.bold)),
+            Text('N: $number', style: TextStyle(fontSize: 11, color: Colors.orange.shade700, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ],
     );
   }
 
@@ -754,7 +836,7 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
         ? Colors.red.shade900 
         : (isActive ? Colors.amber.shade900 : Colors.grey.shade600);
 
-    return AnimatedContainer(
+    final badge = AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -767,5 +849,11 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
         color: textColor
       )),
     );
+
+    // Pulse the badge when it's the active player's timer
+    if (isActive) {
+      return ScaleTransition(scale: _pulseAnim, child: badge);
+    }
+    return badge;
   }
 }
