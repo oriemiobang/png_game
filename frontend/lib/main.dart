@@ -11,6 +11,7 @@ import 'package:png_game/screens/profile_screen.dart';
 import 'package:png_game/screens/leaderboard_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:png_game/screens/settings_screen.dart';
 import 'package:png_game/screens/chat_room.dart';
 import 'package:png_game/screens/create_room.dart';
 import 'package:png_game/screens/join_room.dart';
@@ -25,6 +26,14 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:png_game/firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:png_game/providers/theme_provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  debugPrint("Handling a background message: ${message.messageId}");
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +42,13 @@ void main() async {
   );
   
   // Request FCM permissions
-  await FirebaseMessaging.instance.requestPermission();
+  await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+  
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   
   runApp(const MyApp());
 }
@@ -56,6 +71,24 @@ class _MyAppState extends State<MyApp> {
     
     // Register FCM token when user logs in
     _authApiService.addListener(_onAuthChanged);
+    _onAuthChanged();
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('Got a message whilst in the foreground!');
+      debugPrint('Message data: ${message.data}');
+
+      if (message.notification != null) {
+        debugPrint('Message also contained a notification: ${message.notification}');
+        Fluttertoast.showToast(
+          msg: "${message.notification!.title}: ${message.notification!.body}",
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.blue.shade600,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
+    });
     
     _router = GoRouter(
       initialLocation: '/loading',
@@ -145,6 +178,10 @@ class _MyAppState extends State<MyApp> {
           path: '/leaderboard',
           builder: (context, state) => const LeaderboardScreen(),
         ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsScreen(),
+        ),
       ],
     );
   }
@@ -181,8 +218,13 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider<PlayBoardClasses>(
           create: (_) => PlayBoardClasses(),
         ),
+        ChangeNotifierProvider<ThemeProvider>(
+          create: (_) => ThemeProvider(),
+        ),
       ],
-      child: MaterialApp.router(
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp.router(
         routerConfig: _router,
         debugShowCheckedModeBanner: false,
         title: 'PNG Game',
@@ -215,15 +257,43 @@ class _MyAppState extends State<MyApp> {
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             ),
           ),
-          cardTheme: CardTheme(
-            color: Colors.white,
+        ),
+        darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          colorScheme: ColorScheme.fromSeed(
+            brightness: Brightness.dark,
+            seedColor: Colors.blue.shade600,
+            primary: Colors.blue.shade400,
+            secondary: Colors.amber.shade400,
+            surface: const Color(0xFF1E1E1E),
+          ),
+          scaffoldBackgroundColor: const Color(0xFF121212),
+          textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+          appBarTheme: AppBarTheme(
+            backgroundColor: const Color(0xFF1E1E1E),
             elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+            iconTheme: const IconThemeData(color: Colors.white),
+            titleTextStyle: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade600,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             ),
           ),
         ),
-      ),
+        themeMode: themeProvider.themeMode,
+      );
+    },
+  ),
     );
   }
 }

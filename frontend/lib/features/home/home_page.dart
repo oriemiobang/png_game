@@ -137,7 +137,10 @@ class _HomePageState extends State<HomePage> {
             _buildDrawerItem(
               icon: Icons.settings,
               title: 'Settings',
-              onTap: () {},
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/settings');
+              },
             ),
             _buildDrawerItem(
               icon: Icons.question_mark_outlined,
@@ -268,6 +271,10 @@ class _HomePageState extends State<HomePage> {
               BoxShadow(
                 color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
                 blurRadius: 16,
+              ),
+            ],
+          ),
+        ),
         GestureDetector(
           onTap: () => context.push('/find_match'),
           child: Container(

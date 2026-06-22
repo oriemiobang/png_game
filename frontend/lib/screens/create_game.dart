@@ -13,7 +13,6 @@ class CreateGames extends StatefulWidget {
 
 class _CreateGamesState extends State<CreateGames> {
   bool isPrivate = false;
-  String roomName = '';
   int maxRounds = 3;
   int timeLimit = 3;
 
@@ -60,39 +59,6 @@ class _CreateGamesState extends State<CreateGames> {
                 child: ListView(
                   padding: const EdgeInsets.all(20),
                   children: [
-                    // Room Name Card
-                    _buildCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Room Name', style: TextStyle(color: Colors.grey.shade800, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 12),
-                          TextField(
-                            onChanged: (val) => setState(() => roomName = val),
-                            decoration: InputDecoration(
-                              hintText: 'Enter room name...',
-                              filled: true,
-                              fillColor: Colors.grey.shade50,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    
                     // Game Settings Card
                     _buildCard(
                       child: Column(
@@ -237,9 +203,9 @@ class _CreateGamesState extends State<CreateGames> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      roomName.isEmpty ? 'My Game Room' : roomName,
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    const Text(
+                                      'My Game Room',
+                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                     ),
                                     Text(
                                       'Best of $maxRounds rounds',

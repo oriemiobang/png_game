@@ -8,6 +8,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/utils/rating_utils.dart';
+import 'package:flutter/services.dart';
+import 'package:png_game/services/audio_service.dart';
 
 class PlayBoard extends StatefulWidget {
   const PlayBoard({super.key});
@@ -26,6 +28,7 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
   bool _showSecret = false;
   bool _hasSetSecret = false;
   bool _wasMyTurn = false;
+  int _lastOpponentGuessCount = 0;
   
   Set<int> _eliminatedNumbers = {};
 
@@ -77,6 +80,15 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
       if (dataProvider.winner != null) {
         _handleGameOver(dataProvider.winner!);
         dataProvider.updateWinner(null);
+      }
+
+      // Check for opponent guesses
+      final allGuesses = (gameData['guesses'] as List?) ?? [];
+      final opponentGuesses = allGuesses.where((g) => g['playerId'] != dataProvider.userId).toList();
+      if (opponentGuesses.length > _lastOpponentGuessCount) {
+        _lastOpponentGuessCount = opponentGuesses.length;
+        AudioService().playOpponentGuess();
+        HapticFeedback.mediumImpact();
       }
 
       // Sync timers
@@ -234,9 +246,12 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
     }
 
     if (guess.length == 4 && RegExp(r'^\d+$').hasMatch(guess) && guess.split('').toSet().length == 4) {
+      HapticFeedback.lightImpact();
+      AudioService().playSubmit();
       context.read<SocketService>().sendGuess(guess);
       _guessController.clear();
     } else {
+      HapticFeedback.vibrate();
       Fluttertoast.showToast(msg: "Invalid guess! Must be 4 unique digits.", backgroundColor: Colors.red);
     }
   }

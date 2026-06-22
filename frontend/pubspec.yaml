@@ -56,6 +56,9 @@ dependencies:
   firebase_core: ^4.11.0
   firebase_messaging: ^16.4.1
   google_fonts: ^6.3.2
+  audioplayers: ^6.6.0
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -75,6 +78,7 @@ dev_dependencies:
 flutter:
   assets:
   - assets/
+  - assets/audio/
 
   uses-material-design: true
 
