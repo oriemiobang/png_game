@@ -2,95 +2,61 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RatingService } from '../rating/rating.service';
 
-type MatchState = {
-  currentRound: number;
-  player1Wins: number;
-  player2Wins: number;
-  maxRounds: number;
-  roundHistory: Array<{
-    round: number;
-    winnerId: string | null;
-    guesses: number;
-    timeMs: number;
-    startedAt: string | null;
-    endedAt: string | null;
-  }>;
-};
-
 @Injectable()
 export class GameService {
-  private readonly matchStates = new Map<string, MatchState>();
-
   constructor(
     private prisma: PrismaService,
     private ratingService: RatingService,
   ) {}
 
-  private getMatchState(gameId: string, maxRounds: number): MatchState {
-    const existing = this.matchStates.get(gameId);
-    if (existing) {
-      if (existing.maxRounds !== maxRounds) {
-        existing.maxRounds = maxRounds;
-      }
-      return existing;
-    }
-
-    const created: MatchState = {
-      currentRound: 1,
-      player1Wins: 0,
-      player2Wins: 0,
-      maxRounds,
-      roundHistory: [],
-    };
-    this.matchStates.set(gameId, created);
-    return created;
-  }
-
   private attachMatchState<T extends Record<string, any>>(game: T) {
-    const state = this.getMatchState(game.id, game.maxRounds ?? 3);
     return {
       ...game,
-      currentRound: state.currentRound,
-      player1Wins: state.player1Wins,
-      player2Wins: state.player2Wins,
-      maxRounds: state.maxRounds,
-      roundHistory: state.roundHistory,
+      currentRound: game.currentRound ?? 1,
+      player1Wins: game.player1RoundWins ?? 0,
+      player2Wins: game.player2RoundWins ?? 0,
+      maxRounds: game.maxRounds ?? 3,
+      roundHistory: (game.roundResults ?? []).map((r: any) => ({
+        round: r.round,
+        winnerId: r.winnerId,
+        guesses: r.guesses,
+        timeMs: r.timeMs,
+        startedAt: r.startedAt?.toISOString() ?? null,
+        endedAt: r.endedAt?.toISOString() ?? null,
+      })),
     };
   }
 
-  private recordRoundResult(gameId: string, winnerId: string | null, game: any, roundGuesses: any[] = []) {
-    if (!winnerId) {
-      const state = this.getMatchState(gameId, game.maxRounds ?? 3);
-      const startedAt = roundGuesses[0]?.createdAt ? new Date(roundGuesses[0].createdAt) : null;
-      const endedAt = roundGuesses.length > 0 ? new Date(roundGuesses[roundGuesses.length - 1].createdAt) : null;
-      state.roundHistory.push({
-        round: state.currentRound,
-        winnerId: null,
-        guesses: roundGuesses.length,
-        timeMs: startedAt && endedAt ? Math.max(0, endedAt.getTime() - startedAt.getTime()) : 0,
-        startedAt: startedAt?.toISOString() ?? null,
-        endedAt: endedAt?.toISOString() ?? null,
-      });
-      return;
-    }
-
-    const state = this.getMatchState(gameId, game.maxRounds ?? 3);
-    if (winnerId === game.player1Id) {
-      state.player1Wins += 1;
-    } else if (winnerId === game.player2Id) {
-      state.player2Wins += 1;
-    }
-
+  private async recordRoundResult(gameId: string, winnerId: string | null, game: any, roundGuesses: any[] = []) {
     const startedAt = roundGuesses[0]?.createdAt ? new Date(roundGuesses[0].createdAt) : null;
     const endedAt = roundGuesses.length > 0 ? new Date(roundGuesses[roundGuesses.length - 1].createdAt) : null;
-    state.roundHistory.push({
-      round: state.currentRound,
-      winnerId,
-      guesses: roundGuesses.length,
-      timeMs: startedAt && endedAt ? Math.max(0, endedAt.getTime() - startedAt.getTime()) : 0,
-      startedAt: startedAt?.toISOString() ?? null,
-      endedAt: endedAt?.toISOString() ?? null,
+    const timeMs = startedAt && endedAt ? Math.max(0, endedAt.getTime() - startedAt.getTime()) : 0;
+
+    await this.prisma.roundResult.create({
+      data: {
+        gameId,
+        round: game.currentRound,
+        winnerId,
+        guesses: roundGuesses.length,
+        timeMs,
+        startedAt,
+        endedAt,
+      },
     });
+
+    if (winnerId) {
+      if (winnerId === game.player1Id) {
+        await this.prisma.game.update({
+          where: { id: gameId },
+          data: { player1RoundWins: { increment: 1 } },
+        });
+      } else if (winnerId === game.player2Id) {
+        await this.prisma.game.update({
+          where: { id: gameId },
+          data: { player2RoundWins: { increment: 1 } },
+        });
+      }
+    }
   }
 
   private async recordUserOutcome(game: any, winnerId: string | null, isDraw: boolean) {
@@ -194,24 +160,9 @@ export class GameService {
       throw new Error('Game not found');
     }
 
-    const state = this.getMatchState(gameId, game.maxRounds);
-    const nextState: MatchState = resetSeries
-      ? {
-          currentRound: 1,
-          player1Wins: 0,
-          player2Wins: 0,
-          maxRounds: game.maxRounds,
-          roundHistory: [],
-        }
-      : {
-          currentRound: Math.min(state.currentRound + 1, game.maxRounds),
-          player1Wins: state.player1Wins,
-          player2Wins: state.player2Wins,
-          maxRounds: game.maxRounds,
-          roundHistory: state.roundHistory,
-        };
-
-    this.matchStates.set(gameId, nextState);
+    if (resetSeries) {
+      await this.prisma.roundResult.deleteMany({ where: { gameId } });
+    }
 
     await this.prisma.guess.deleteMany({ where: { gameId } });
 
@@ -228,11 +179,15 @@ export class GameService {
         player1TimeLeft: null,
         player2TimeLeft: null,
         turnStartedAt: null,
+        ...(resetSeries 
+            ? { currentRound: 1, player1RoundWins: 0, player2RoundWins: 0 } 
+            : { currentRound: Math.min(game.currentRound + 1, game.maxRounds) }),
       } as any,
       include: {
         player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
         player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
         guesses: true,
+        roundResults: true,
       },
     });
 
@@ -246,6 +201,7 @@ export class GameService {
         player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
         player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
         guesses: true,
+        roundResults: { orderBy: { round: 'asc' } },
       },
     });
 
@@ -299,15 +255,8 @@ export class GameService {
       include: {
         player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
         player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+        roundResults: { orderBy: { round: 'asc' } },
       },
-    });
-
-    this.matchStates.set(gameId, {
-      currentRound: 1,
-      player1Wins: 0,
-      player2Wins: 0,
-      maxRounds: game.maxRounds,
-      roundHistory: [],
     });
 
     return this.attachMatchState(game);
@@ -341,15 +290,8 @@ export class GameService {
       include: {
         player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
         player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+        roundResults: { orderBy: { round: 'asc' } },
       },
-    });
-
-    this.matchStates.set(gameId, {
-      currentRound: 1,
-      player1Wins: 0,
-      player2Wins: 0,
-      maxRounds: game.maxRounds,
-      roundHistory: [],
     });
 
     return this.attachMatchState(game);
@@ -382,9 +324,6 @@ export class GameService {
     // Delete guesses first (FK constraint), then the game
     await this.prisma.guess.deleteMany({ where: { gameId } });
     await this.prisma.game.delete({ where: { id: gameId } });
-
-    // Clean up in-memory state
-    this.matchStates.delete(gameId);
   }
 
   async joinGame(gameId: string, playerId: string) {
@@ -403,6 +342,7 @@ export class GameService {
       include: {
         player1: { select: { id: true, name: true } },
         player2: { select: { id: true, name: true } },
+        roundResults: { orderBy: { round: 'asc' } },
       },
     });
 
@@ -426,6 +366,7 @@ export class GameService {
       include: {
         player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
         player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+        roundResults: { orderBy: { round: 'asc' } },
       },
     });
 
@@ -442,6 +383,7 @@ export class GameService {
         include: {
           player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
           player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+          roundResults: { orderBy: { round: 'asc' } },
         },
       });
       return this.attachMatchState(startedGame);
@@ -474,8 +416,6 @@ export class GameService {
     if (!game) throw new Error('Game not found');
     if (game.turn !== playerId) throw new Error('Not your turn');
 
-    const state = this.getMatchState(gameId, game.maxRounds);
-
     const isPlayer1 = game.player1Id === playerId;
     const opponentId = isPlayer1 ? game.player2Id : game.player1Id;
     const secret = isPlayer1 ? game.player2Secret : game.player1Secret;
@@ -497,6 +437,7 @@ export class GameService {
 
       // Check for timeout BEFORE processing guess
       if (isPlayer1 && newP1Time <= 0) {
+        await this.recordRoundResult(gameId, opponentId, game);
         const updatedGame = await this.prisma.game.update({
           where: { id: gameId },
           data: { status: 'finished', winnerId: opponentId, turn: null, player1TimeLeft: 0 },
@@ -504,12 +445,13 @@ export class GameService {
             guesses: true,
             player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
             player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+            roundResults: { orderBy: { round: 'asc' } },
           },
         });
-        this.recordRoundResult(gameId, opponentId, game);
         const ratingChanges = await this.recordUserOutcome(updatedGame, opponentId, false);
         return { updatedGame: this.attachMatchState(updatedGame), feedback: { position: 0, number: 0 }, isDraw: false, isTimeout: true, ratingChanges };
       } else if (!isPlayer1 && newP2Time <= 0) {
+        await this.recordRoundResult(gameId, opponentId, game);
         const updatedGame = await this.prisma.game.update({
           where: { id: gameId },
           data: { status: 'finished', winnerId: opponentId, turn: null, player2TimeLeft: 0 },
@@ -517,9 +459,9 @@ export class GameService {
             guesses: true,
             player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
             player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+            roundResults: { orderBy: { round: 'asc' } },
           },
         });
-        this.recordRoundResult(gameId, opponentId, game);
         const ratingChanges = await this.recordUserOutcome(updatedGame, opponentId, false);
         return { updatedGame: this.attachMatchState(updatedGame), feedback: { position: 0, number: 0 }, isDraw: false, isTimeout: true, ratingChanges };
       }
@@ -535,7 +477,7 @@ export class GameService {
         guess: guessStr,
         position: feedback.position,
         number: feedback.number,
-        round: state.currentRound,
+        round: game.currentRound,
       },
     });
 
@@ -579,6 +521,12 @@ export class GameService {
       }
     }
 
+    let ratingChanges = { ratingChangeA: 0, ratingChangeB: 0 };
+    if (newStatus === 'finished') {
+      const roundGuesses = allGuesses.filter((guess) => guess.round === game.currentRound);
+      await this.recordRoundResult(gameId, winnerId, game, roundGuesses);
+    }
+
     const updatedGame = await this.prisma.game.update({
       where: { id: gameId },
       data: {
@@ -594,18 +542,12 @@ export class GameService {
         guesses: true,
         player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
         player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+        roundResults: { orderBy: { round: 'asc' } },
       },
     });
 
-    let ratingChanges = { ratingChangeA: 0, ratingChangeB: 0 };
-    if (newStatus === 'finished') {
-      const roundGuesses = allGuesses.filter((guess) => guess.round === state.currentRound);
-
-      this.recordRoundResult(gameId, winnerId, game, roundGuesses);
-
-      if (state.currentRound >= game.maxRounds) {
-        ratingChanges = await this.recordUserOutcome(updatedGame, winnerId, isDraw);
-      }
+    if (newStatus === 'finished' && game.currentRound >= game.maxRounds) {
+      ratingChanges = await this.recordUserOutcome(updatedGame, winnerId, isDraw);
     }
 
     return { updatedGame: this.attachMatchState(updatedGame), feedback, isDraw, isTimeout: false, ratingChanges };

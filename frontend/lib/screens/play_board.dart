@@ -462,7 +462,7 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
                 ),
                 Row(
                   children: [
-                    if (status == 'playing' && hasTimer) _buildTimerBadge(!isPlayer1 ? _player1TimeLeft : _player2TimeLeft, !isMyTurn),
+                    if (status == 'playing' && hasTimer) _buildTimerBadge(isPlayer1 ? _player2TimeLeft : _player1TimeLeft, !isMyTurn),
                     const SizedBox(width: 8),
                     RatingUtils.buildRatingBadge(opponentRating, fontSize: 10),
                     const SizedBox(width: 8),
@@ -722,16 +722,33 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
     int m = totalSeconds ~/ 60;
     int s = totalSeconds % 60;
     String timeString = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-    return Container(
+
+    bool isUrgent = isActive && totalSeconds < 30;
+    bool flashRed = isUrgent && (totalSeconds % 2 == 0);
+
+    Color bgColor = flashRed 
+        ? Colors.red.shade100 
+        : (isActive ? Colors.amber.shade100 : Colors.grey.shade100);
+        
+    Color borderColor = flashRed 
+        ? Colors.red.shade400 
+        : (isActive ? Colors.amber.shade400 : Colors.grey.shade300);
+        
+    Color textColor = flashRed 
+        ? Colors.red.shade900 
+        : (isActive ? Colors.amber.shade900 : Colors.grey.shade600);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive ? Colors.amber.shade100 : Colors.grey.shade100,
+        color: bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: isActive ? Colors.amber.shade400 : Colors.grey.shade300)
+        border: Border.all(color: borderColor)
       ),
       child: Text(timeString, style: TextStyle(
         fontWeight: FontWeight.bold,
-        color: isActive ? Colors.amber.shade900 : Colors.grey.shade600
+        color: textColor
       )),
     );
   }
