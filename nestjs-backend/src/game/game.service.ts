@@ -574,7 +574,6 @@ export class GameService {
       data: {
         status: 'finished',
         winnerId,
-        endedAt: new Date(),
         resultRecorded: true,
       },
       include: {
@@ -586,5 +585,16 @@ export class GameService {
     });
 
     return { updatedGame: this.attachMatchState(updatedGame), ratingChanges };
+  }
+
+  async getActiveGamesForUser(userId: string) {
+    const games = await this.prisma.game.findMany({
+      where: {
+        status: 'playing',
+        OR: [{ player1Id: userId }, { player2Id: userId }],
+      },
+      select: { id: true },
+    });
+    return games.map(g => g.id);
   }
 }

@@ -165,7 +165,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 --- -->
 
-<!-- ### ISSUE-013 🔴 No Input Validation on Socket Events
+<!-- ### ISSUE-013 ✅ No Input Validation on Socket Events
 **Current state:** Payloads are used directly with no validation (no NestJS `ValidationPipe`, no DTOs on the gateway).  
 **Tasks:**
 - Create DTOs (`CreateGameDto`, `MakeGuessDto`, `SubmitSecretDto`, etc.) using `class-validator`.
@@ -174,7 +174,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-014 🟠 Forfeit / Leave Game Logic is Missing
+### ISSUE-014 ✅ Forfeit / Leave Game Logic is Missing
 **Current state:** When a player taps "Leave Game" on the Play Board, the app just navigates to `/` locally. The opponent is never notified, the game stays in `playing` status forever in the DB, and the leaving player suffers no consequences (no rating loss, no loss recorded).  
 **Tasks:**
 - Add a `forfeit` socket event.
@@ -184,7 +184,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-015 🟠 Handle Disconnect Mid-Game (Reconnection Window)
+### ISSUE-015 ✅ Handle Disconnect Mid-Game (Reconnection Window)
 **Current state:** `handleDisconnect` only logs. If a player disconnects mid-game there is no grace period or automatic forfeit.  
 **Tasks:**
 - On disconnect, start a server-side countdown (e.g., 60 seconds grace period).

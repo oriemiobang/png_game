@@ -14,6 +14,7 @@ class Data with ChangeNotifier {
   Map? _newGame;
   bool _gameOver = false;
   int _unreadMessages = 0;
+  bool _opponentDisconnected = false;
 
   // ── Matchmaking state ──
   bool _isSearchingForMatch = false;
@@ -49,6 +50,7 @@ class Data with ChangeNotifier {
   Map? get randomRoomGame => _randomRoomGame;
   Map? get newGame => _newGame;
   int get unreadMessages => _unreadMessages;
+  bool get opponentDisconnected => _opponentDisconnected;
 
   // ── Matchmaking getters ──
   bool get isSearchingForMatch => _isSearchingForMatch;
@@ -77,6 +79,7 @@ class Data with ChangeNotifier {
     _chatData.clear();
     _unreadMessages = 0;
     _opponentJoined = null;
+    _opponentDisconnected = false;
     notifyListeners();
   }
 
@@ -109,6 +112,11 @@ class Data with ChangeNotifier {
 
   void updateOpponentJoined(Map<String, dynamic> data) {
     _opponentJoined = data;
+    notifyListeners();
+  }
+
+  void updateOpponentDisconnected(bool disconnected) {
+    _opponentDisconnected = disconnected;
     notifyListeners();
   }
 

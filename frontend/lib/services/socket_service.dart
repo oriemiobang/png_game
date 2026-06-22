@@ -199,6 +199,22 @@ class SocketService with ChangeNotifier {
 
     // game data
     socket.on('gameInfo', (data) {
+      if (data != null) {
+        Data().updateGameInfo(data);
+        notifyListeners();
+      }
+    });
+
+    socket.on('opponentDisconnected', (data) {
+      Data().updateOpponentDisconnected(true);
+      notifyListeners();
+    });
+
+    socket.on('opponentReconnected', (data) {
+      Data().updateOpponentDisconnected(false);
+      notifyListeners();
+    });
+    socket.on('gameInfo', (data) {
       gameInfo = data;
       // savedData.setData(data);
       Data().updateData(data);
@@ -395,6 +411,18 @@ class SocketService with ChangeNotifier {
     final userId = Data().userId;
     if (gameId != null && userId != null) {
       socket.emit('timeout', {'gameId': gameId, 'playerId': userId});
+    }
+  }
+
+  void timeoutGame(String gameId) {
+    if (socket.connected) {
+      socket.emit('timeout', {'gameId': gameId});
+    }
+  }
+
+  void forfeitGame() {
+    if (socket.connected && gameId.isNotEmpty) {
+      socket.emit('leaveGame', {'gameId': gameId});
     }
   }
 }

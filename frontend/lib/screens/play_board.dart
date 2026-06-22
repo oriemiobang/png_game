@@ -353,6 +353,7 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
     final opponentPlayerObj = isPlayer1 ? gameData['player2'] : gameData['player1'];
     final int myRating = myPlayerObj?['rating'] ?? 1200;
     final int opponentRating = opponentPlayerObj?['rating'] ?? 1200;
+    final bool opponentDisconnected = dataProvider.opponentDisconnected;
 
     // Filter Guesses
     final allGuesses = (gameData['guesses'] as List?) ?? [];
@@ -375,7 +376,11 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                   TextButton(
-                    onPressed: () => context.go('/'),
+                    onPressed: () {
+                      context.read<SocketService>().forfeitGame();
+                      Navigator.pop(context);
+                      context.go('/');
+                    },
                     child: const Text('Leave', style: TextStyle(color: Colors.red)),
                   ),
                 ],
@@ -437,6 +442,17 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
       ),
       body: Column(
         children: [
+          if (opponentDisconnected)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: Colors.red.shade600,
+              child: const Text(
+                'Opponent Disconnected. Waiting for them to rejoin (60s)...',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ),
           // Top Info Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

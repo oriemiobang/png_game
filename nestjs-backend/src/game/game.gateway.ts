@@ -11,6 +11,7 @@ import { MatchmakingService } from './matchmaking.service';
 import { UseGuards, UsePipes, ValidationPipe, UseFilters } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { WsJwtGuard } from '../auth/ws-jwt.guard';
+import { WsThrottlerGuard } from './ws-throttler.guard';
 import { WsAllExceptionsFilter } from './ws-exception.filter';
 import {
   JoinQueueDto,
@@ -23,6 +24,7 @@ import {
   TimeoutDto,
   RejoinGameDto,
   NewGameDto,
+  LeaveGameDto,
 } from './dto/game.dto';
 
 // Utility: generate a random game ID
@@ -37,12 +39,13 @@ function generateGameId(): string {
 
 @UseFilters(new WsAllExceptionsFilter())
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-@UseGuards(WsJwtGuard)
+@UseGuards(WsThrottlerGuard, WsJwtGuard)
 @WebSocketGateway({ cors: { origin: '*' } })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   
   private activeTimers = new Map<string, NodeJS.Timeout>();
+  private disconnectTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
     private readonly gameService: GameService,
@@ -59,34 +62,91 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (game) {
         client.emit('gameInfo', game);
       }
+      
+      const timerKey = `${playerId}_${payload.gameId}`;
+      if (this.disconnectTimers.has(timerKey)) {
+        clearTimeout(this.disconnectTimers.get(timerKey));
+        this.disconnectTimers.delete(timerKey);
+        this.server.to(payload.gameId).emit('opponentReconnected', { gameId: payload.gameId, playerId });
+      }
     } catch (e) {
       console.error('rejoin error', e);
     }
   }
 
-  handleConnection(client: Socket) {
+  @SubscribeMessage('leaveGame')
+  async handleLeaveGame(
+    client: Socket,
+    payload: LeaveGameDto,
+  ) {
+    const playerId = client.data.userId;
     try {
-      const auth = client.handshake.auth;
-      const token = auth?.token || client.handshake.headers.authorization?.split(' ')[1];
+      const result = await this.gameService.forfeitGame(payload.gameId, playerId);
+      if (result) {
+        this.server.to(payload.gameId).emit('gameEnd', result);
+        // Clean up room
+        client.leave(payload.gameId);
+      }
+    } catch (e) {
+      console.error('Error leaving game', e);
+      client.emit('room_error', 'Failed to leave game');
+    }
+  }
+
+  async handleConnection(client: Socket) {
+    try {
+      const token = client.handshake.auth?.token;
       if (!token) {
         client.disconnect();
         return;
       }
-      const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET || 'fallback-secret-for-dev',
-      });
+      
+      const payload = this.jwtService.verify(token);
       client.data.userId = payload.sub;
-      console.log(`Client connected: ${client.id} (User: ${payload.sub})`);
-    } catch (e) {
-      console.log(`Client connection rejected: ${client.id}`);
+
+      const userId = client.data.userId;
+      // We don't know which game they are rejoining until they emit rejoinGame, 
+      // but we will clear timers in rejoinGame.
+
+    } catch (error) {
       client.disconnect();
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
-    // If this socket was in the matchmaking queue, clean it up silently.
+    const userId = client.data?.userId;
+    if (!userId) return;
+    
     this.matchmakingService.removeBySocketId(client.id);
+    this.matchmakingService.removeFromQueue(userId);
+
+    // Find active games
+    try {
+      const activeGameIds = await this.gameService.getActiveGamesForUser(userId);
+      for (const gameId of activeGameIds) {
+        this.server.to(gameId).emit('opponentDisconnected', { gameId, playerId: userId });
+
+        const timerKey = `${userId}_${gameId}`;
+        const timer = setTimeout(async () => {
+          // Time is up. If game is still active, forfeit
+          try {
+            const currentGameState = await this.gameService.getGameState(gameId);
+            if (currentGameState && currentGameState.status === 'playing') {
+              const result = await this.gameService.forfeitGame(gameId, userId);
+              if (result) {
+                this.server.to(gameId).emit('gameEnd', result);
+              }
+            }
+          } catch (e) {}
+          this.disconnectTimers.delete(timerKey);
+        }, 60000); // 60 seconds grace period
+
+        this.disconnectTimers.set(timerKey, timer);
+      }
+    } catch (e) {
+      console.error('Error handling disconnect for', userId, e);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────

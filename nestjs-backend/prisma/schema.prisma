@@ -28,6 +28,8 @@ model User {
   gamesWon       Game[]        @relation("Winner")
   guesses        Guess[]
   roundResults   RoundResult[]
+
+  @@index([rating(sort: Desc)])
 }
 
 model Game {
@@ -68,6 +70,8 @@ model Game {
 
   guesses      Guess[]
   roundResults RoundResult[]
+
+  @@index([status, isPrivate])
 }
 
 model RoundResult {
@@ -99,4 +103,6 @@ model Guess {
 
   // Optional: keep track of round number if needed
   round Int @default(1)
+
+  @@index([gameId, round])
 }
