@@ -40,16 +40,16 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   // Request FCM permissions
   await FirebaseMessaging.instance.requestPermission(
     alert: true,
     badge: true,
     sound: true,
   );
-  
+
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  
+
   runApp(const MyApp());
 }
 
@@ -68,7 +68,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _authApiService = AuthApiService();
-    
+
     // Register FCM token when user logs in
     _authApiService.addListener(_onAuthChanged);
     _onAuthChanged();
@@ -78,7 +78,8 @@ class _MyAppState extends State<MyApp> {
       debugPrint('Message data: ${message.data}');
 
       if (message.notification != null) {
-        debugPrint('Message also contained a notification: ${message.notification}');
+        debugPrint(
+            'Message also contained a notification: ${message.notification}');
         Fluttertoast.showToast(
           msg: "${message.notification!.title}: ${message.notification!.body}",
           toastLength: Toast.LENGTH_LONG,
@@ -89,7 +90,7 @@ class _MyAppState extends State<MyApp> {
         );
       }
     });
-    
+
     _router = GoRouter(
       initialLocation: '/loading',
       refreshListenable: _authApiService,
@@ -225,75 +226,79 @@ class _MyAppState extends State<MyApp> {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp.router(
-        routerConfig: _router,
-        debugShowCheckedModeBanner: false,
-        title: 'PNG Game',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue.shade600,
-            primary: Colors.blue.shade600,
-            secondary: Colors.amber.shade600,
-            surface: const Color(0xFFF4F5F7),
-          ),
-          scaffoldBackgroundColor: const Color(0xFFF4F5F7),
-          textTheme: GoogleFonts.outfitTextTheme(Theme.of(context).textTheme),
-          appBarTheme: AppBarTheme(
-            backgroundColor: const Color(0xFFF4F5F7),
-            elevation: 0,
-            iconTheme: IconThemeData(color: Colors.blueGrey.shade900),
-            titleTextStyle: GoogleFonts.outfit(
-              color: Colors.blueGrey.shade900,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade600,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+            routerConfig: _router,
+            debugShowCheckedModeBanner: false,
+            title: 'PNG Game',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue.shade600,
+                primary: Colors.blue.shade600,
+                secondary: Colors.amber.shade600,
+                surface: const Color(0xFFF4F5F7),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            ),
-          ),
-        ),
-        darkTheme: ThemeData(
-          brightness: Brightness.dark,
-          colorScheme: ColorScheme.fromSeed(
-            brightness: Brightness.dark,
-            seedColor: Colors.blue.shade600,
-            primary: Colors.blue.shade400,
-            secondary: Colors.amber.shade400,
-            surface: const Color(0xFF1E1E1E),
-          ),
-          scaffoldBackgroundColor: const Color(0xFF121212),
-          textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
-          appBarTheme: AppBarTheme(
-            backgroundColor: const Color(0xFF1E1E1E),
-            elevation: 0,
-            iconTheme: const IconThemeData(color: Colors.white),
-            titleTextStyle: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade600,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+              scaffoldBackgroundColor: const Color(0xFFF4F5F7),
+              textTheme:
+                  GoogleFonts.outfitTextTheme(Theme.of(context).textTheme),
+              appBarTheme: AppBarTheme(
+                backgroundColor: const Color(0xFFF4F5F7),
+                elevation: 0,
+                iconTheme: IconThemeData(color: Colors.blueGrey.shade900),
+                titleTextStyle: GoogleFonts.outfit(
+                  color: Colors.blueGrey.shade900,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                ),
+              ),
             ),
-          ),
-        ),
-        themeMode: themeProvider.themeMode,
-      );
-    },
-  ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              colorScheme: ColorScheme.fromSeed(
+                brightness: Brightness.dark,
+                seedColor: Colors.blue.shade600,
+                primary: Colors.blue.shade400,
+                secondary: Colors.amber.shade400,
+                surface: const Color(0xFF1E1E1E),
+              ),
+              scaffoldBackgroundColor: const Color(0xFF121212),
+              textTheme:
+                  GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+              appBarTheme: AppBarTheme(
+                backgroundColor: const Color(0xFF1E1E1E),
+                elevation: 0,
+                iconTheme: const IconThemeData(color: Colors.white),
+                titleTextStyle: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              elevatedButtonTheme: ElevatedButtonThemeData(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                ),
+              ),
+            ),
+            themeMode: themeProvider.themeMode,
+          );
+        },
+      ),
     );
   }
 }

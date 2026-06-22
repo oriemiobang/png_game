@@ -388,14 +388,24 @@ let GameService = class GameService {
     generateFeedback(guess, secret) {
         let position = 0;
         let number = 0;
-        guess.split('').forEach((digit, index) => {
-            if (secret[index] === digit) {
+        const secretArr = secret.split('');
+        const guessArr = guess.split('');
+        for (let i = 0; i < guessArr.length; i++) {
+            if (guessArr[i] === secretArr[i]) {
                 position++;
+                guessArr[i] = null;
+                secretArr[i] = null;
             }
-            if (secret.includes(digit)) {
-                number++;
+        }
+        for (let i = 0; i < guessArr.length; i++) {
+            if (guessArr[i] !== null) {
+                const indexInSecret = secretArr.indexOf(guessArr[i]);
+                if (indexInSecret !== -1) {
+                    number++;
+                    secretArr[indexInSecret] = null;
+                }
             }
-        });
+        }
         return { position, number };
     }
     async makeGuess(gameId, playerId, guessStr) {

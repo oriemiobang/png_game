@@ -16,6 +16,7 @@ const prisma_module_1 = require("./prisma/prisma.module");
 const auth_module_1 = require("./auth/auth.module");
 const rating_module_1 = require("./rating/rating.module");
 const firebase_module_1 = require("./firebase/firebase.module");
+const health_module_1 = require("./health/health.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -38,7 +39,8 @@ exports.AppModule = AppModule = __decorate([
             prisma_module_1.PrismaModule,
             auth_module_1.AuthModule,
             rating_module_1.RatingModule,
-            firebase_module_1.FirebaseModule
+            firebase_module_1.FirebaseModule,
+            health_module_1.HealthModule
         ],
         controllers: [],
         providers: [],
