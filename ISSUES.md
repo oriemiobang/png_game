@@ -138,7 +138,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 --- -->
 
-## SECTION 4 — Backend Architecture & Reliability
+<!-- ## SECTION 4 — Backend Architecture & Reliability
 
 ### ISSUE-011 🔴 MatchState Lives Only in Memory (No Persistence)
 **Current state:** `GameService.matchStates` is a `Map` in the NestJS singleton. If the server restarts (crash, deploy, scale-out), **all active match states are lost** — round wins, round history, current round number.  
@@ -163,9 +163,9 @@ Draw: R_a += K * (0.5 - E_a)
 - Replace all `payload.playerId` usages with `client.data.userId`.
 - Reject connections without a valid token.
 
----
+--- -->
 
-### ISSUE-013 🔴 No Input Validation on Socket Events
+<!-- ### ISSUE-013 🔴 No Input Validation on Socket Events
 **Current state:** Payloads are used directly with no validation (no NestJS `ValidationPipe`, no DTOs on the gateway).  
 **Tasks:**
 - Create DTOs (`CreateGameDto`, `MakeGuessDto`, `SubmitSecretDto`, etc.) using `class-validator`.
@@ -192,13 +192,13 @@ Draw: R_a += K * (0.5 - E_a)
 - If they don't reconnect, trigger forfeit logic (ISSUE-014).
 - Emit `opponentDisconnected` to the other player immediately so they know their opponent dropped.
 
----
+--- -->
 
-### ISSUE-016 🟠 Old Backend (`/backend`) Should Be Removed or Documented
+<!-- ### ISSUE-016 🟠 Old Backend (`/backend`) Should Be Removed or Documented
 **Current state:** There is a plain Node.js/Express + Socket.io backend in `/backend/` alongside the production NestJS backend in `/nestjs-backend/`. This is confusing.  
 **Tasks:**
 - Decide: archive it (move to a `_legacy` folder) or delete it.
-- Update any documentation or `.env` references.
+- Update any documentation or `.env` references. -->
 
 ---
 
@@ -462,7 +462,7 @@ Draw: R_a += K * (0.5 - E_a)
 **Tasks:**
 - Add `flutter_localizations` and `intl`.
 - Externalize all user-visible strings to ARB files.
-- Support at minimum English + Arabic (considering the project owner's locale).
+<!-- - Support at minimum English + Arabic (considering the project owner's locale). -->
 
 ---
 

@@ -83,3 +83,9 @@ export class NewGameDto {
   @IsBoolean()
   approved?: boolean;
 }
+
+export class LeaveGameDto {
+  @IsString()
+  @IsNotEmpty()
+  gameId: string;
+}

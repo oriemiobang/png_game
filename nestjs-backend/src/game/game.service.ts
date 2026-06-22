@@ -552,4 +552,39 @@ export class GameService {
 
     return { updatedGame: this.attachMatchState(updatedGame), feedback, isDraw, isTimeout: false, ratingChanges };
   }
+
+  async forfeitGame(gameId: string, forfeiterId: string) {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        player1: true,
+        player2: true,
+        roundResults: true,
+      },
+    });
+
+    if (!game || game.status === 'finished') return null;
+
+    const winnerId = forfeiterId === game.player1Id ? game.player2Id : game.player1Id;
+
+    const ratingChanges = await this.recordUserOutcome(game, winnerId, false);
+
+    const updatedGame = await this.prisma.game.update({
+      where: { id: gameId },
+      data: {
+        status: 'finished',
+        winnerId,
+        endedAt: new Date(),
+        resultRecorded: true,
+      },
+      include: {
+        guesses: true,
+        player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+        player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+        roundResults: { orderBy: { round: 'asc' } },
+      },
+    });
+
+    return { updatedGame: this.attachMatchState(updatedGame), ratingChanges };
+  }
 }
