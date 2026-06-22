@@ -3,6 +3,7 @@ import 'package:png_game/classes/data.dart';
 import 'package:png_game/core/env.dart';
 import 'package:png_game/storage/saved_data.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:math';
 
 class SocketService with ChangeNotifier {
@@ -34,10 +35,20 @@ class SocketService with ChangeNotifier {
     savedData = SavedData();
   }
 
-  void connect() {
+  Future<void> connect() async {
+    const storage = FlutterSecureStorage();
+    final token = await storage.read(key: 'jwt_token');
+
+    try {
+      socket.disconnect();
+      socket.dispose();
+    } catch (_) {} // ignore error if socket is not initialized yet
+
     socket = io.io(AppEnv.backendBaseUrl, <String, dynamic>{
       'transports': ['websocket'],
-      'autoConnect': false
+      'autoConnect': false,
+      'forceNew': true,
+      if (token != null) 'auth': {'token': token}
     });
 
     socket.connect();

@@ -8,6 +8,22 @@ import {
 import { Server, Socket } from 'socket.io';
 import { GameService } from './game.service';
 import { MatchmakingService } from './matchmaking.service';
+import { UseGuards, UsePipes, ValidationPipe, UseFilters } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { WsJwtGuard } from '../auth/ws-jwt.guard';
+import { WsAllExceptionsFilter } from './ws-exception.filter';
+import {
+  JoinQueueDto,
+  CreateGameDto,
+  JoinGameDto,
+  CancelGameDto,
+  SubmitSecretDto,
+  MakeGuessDto,
+  ChatDto,
+  TimeoutDto,
+  RejoinGameDto,
+  NewGameDto,
+} from './dto/game.dto';
 
 // Utility: generate a random game ID
 function generateGameId(): string {
@@ -19,6 +35,9 @@ function generateGameId(): string {
   return `PNG${suffix}`;
 }
 
+@UseFilters(new WsAllExceptionsFilter())
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+@UseGuards(WsJwtGuard)
 @WebSocketGateway({ cors: { origin: '*' } })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
@@ -28,11 +47,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly gameService: GameService,
     private readonly matchmakingService: MatchmakingService,
+    private readonly jwtService: JwtService,
   ) {}
 
   @SubscribeMessage('rejoinGame')
-  async handleRejoinGame(client: Socket, payload: { gameId: string; playerId: string }) {
+  async handleRejoinGame(client: Socket, payload: RejoinGameDto) {
     try {
+      const playerId = client.data.userId;
       client.join(payload.gameId);
       const game = await this.gameService.getGameState(payload.gameId);
       if (game) {
@@ -44,7 +65,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    try {
+      const auth = client.handshake.auth;
+      const token = auth?.token || client.handshake.headers.authorization?.split(' ')[1];
+      if (!token) {
+        client.disconnect();
+        return;
+      }
+      const payload = this.jwtService.verify(token, {
+        secret: process.env.JWT_SECRET || 'fallback-secret-for-dev',
+      });
+      client.data.userId = payload.sub;
+      console.log(`Client connected: ${client.id} (User: ${payload.sub})`);
+    } catch (e) {
+      console.log(`Client connection rejected: ${client.id}`);
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: Socket) {
@@ -60,9 +96,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('joinQueue')
   async handleJoinQueue(
     client: Socket,
-    payload: { playerId: string; maxRounds: number; timeLimit: number },
+    payload: JoinQueueDto,
   ) {
-    const { playerId, maxRounds, timeLimit } = payload;
+    const { maxRounds, timeLimit } = payload;
+    const playerId = client.data.userId;
 
     try {
       // 1. Try to find a compatible waiting player
@@ -131,9 +168,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('cancelMatchmaking')
   handleCancelMatchmaking(
     client: Socket,
-    payload: { playerId: string },
+    payload: { playerId?: string },
   ) {
-    const removed = this.matchmakingService.removeFromQueue(payload.playerId);
+    const playerId = client.data.userId;
+    const removed = this.matchmakingService.removeFromQueue(playerId);
     client.emit('matchmakingCancelled', { removed });
   }
 
@@ -144,12 +182,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('createGame')
   async handleCreateGame(
     client: Socket,
-    payload: { playerId: string; gameId: string; settings?: any },
+    payload: CreateGameDto,
   ) {
+    const playerId = client.data.userId;
     try {
       const game = await this.gameService.createGame(
         payload.gameId,
-        payload.playerId,
+        playerId,
         payload.settings,
       );
       client.join(payload.gameId);
@@ -169,18 +208,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('joinGame')
   async handleJoinGame(
     client: Socket,
-    payload: { gameId: string; playerId: string },
+    payload: JoinGameDto,
   ) {
+    const playerId = client.data.userId;
     try {
-      const game = await this.gameService.joinGame(payload.gameId, payload.playerId);
+      const game = await this.gameService.joinGame(payload.gameId, playerId);
       client.join(payload.gameId);
 
       // Notify the host that an opponent joined (with their name for the UI)
       this.server.to(payload.gameId).emit('playerJoined', {
-        playerId: payload.playerId,
+        playerId,
         playerName: (game as any).player2?.name ?? 'Opponent',
       });
-      this.server.emit('gameJoined', { gameJoined: true, gameId: payload.gameId, playerId: payload.playerId });
+      this.server.emit('gameJoined', { gameJoined: true, gameId: payload.gameId, playerId });
       this.server.to(payload.gameId).emit('gameInfo', game);
 
       // Update public rooms as this one might be full now
@@ -194,10 +234,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('cancelGame')
   async handleCancelGame(
     client: Socket,
-    payload: { gameId: string; playerId: string },
+    payload: CancelGameDto,
   ) {
+    const playerId = client.data.userId;
     try {
-      await this.gameService.cancelGame(payload.gameId, payload.playerId);
+      await this.gameService.cancelGame(payload.gameId, playerId);
       client.leave(payload.gameId);
       client.emit('gameCancelled', { gameId: payload.gameId });
 
@@ -217,12 +258,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('submitSecret')
   async handleSubmitSecret(
     client: Socket,
-    payload: { gameId: string; playerId: string; secretNumber: string },
+    payload: SubmitSecretDto,
   ) {
+    const playerId = client.data.userId;
     try {
       const updatedGame = await this.gameService.submitSecret(
         payload.gameId,
-        payload.playerId,
+        playerId,
         payload.secretNumber,
       );
 
@@ -239,15 +281,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('newGame')
   async handleNewGame(
     client: Socket,
-    payload: { gameId: string; playerId: string; approved?: boolean },
+    payload: NewGameDto,
   ) {
+    const playerId = client.data.userId;
     try {
       const resetSeries = payload.approved === true;
       const updatedGame = await this.gameService.resetMatch(payload.gameId, resetSeries);
 
       this.server.to(payload.gameId).emit('requestNewGame', {
         gameId: payload.gameId,
-        playerId: payload.playerId,
+        playerId,
         resetSeries,
         currentRound: updatedGame.currentRound,
         maxRounds: updatedGame.maxRounds,
@@ -261,17 +304,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('makeGuess')
   async handleMakeGuess(
     client: Socket,
-    payload: { gameId: string; playerId: string; guess: string },
+    payload: MakeGuessDto,
   ) {
+    const playerId = client.data.userId;
     try {
       const { updatedGame, feedback, isDraw, isTimeout, ratingChanges } = await this.gameService.makeGuess(
         payload.gameId,
-        payload.playerId,
+        playerId,
         payload.guess,
       );
 
       this.server.to(payload.gameId).emit('feedback', {
-        playerId: payload.playerId,
+        playerId,
         guess: payload.guess,
         feedback,
       });
@@ -309,7 +353,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           });
         }
       } else if (updatedGame.lastChance) {
-        const opponent = payload.playerId === updatedGame.player1Id
+        const opponent = playerId === updatedGame.player1Id
           ? updatedGame.player2Id
           : updatedGame.player1Id;
         this.server.to(payload.gameId).emit('lastChance', { chanceTo: opponent, message: 'There is last Chance' });
@@ -327,7 +371,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     } catch (e) {
       if (e.message === 'Not your turn') {
-        client.emit('turnWait', { message: 'Please wait for your turn', player: payload.playerId });
+        client.emit('turnWait', { message: 'Please wait for your turn', player: playerId });
       } else {
         client.emit('room_error', e.message);
       }
@@ -337,11 +381,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('chat')
   handleChat(
     client: Socket,
-    payload: { gameId: string; playerId: string; message: string },
+    payload: ChatDto,
   ) {
+    const playerId = client.data.userId;
     this.server.to(payload.gameId).emit('sendMessage', {
       gameId: payload.gameId,
-      currentSender: payload.playerId,
+      currentSender: playerId,
       message: payload.message,
       timestamp: new Date().toISOString(),
     });
@@ -350,12 +395,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('timeout')
   async handleTimeout(
     client: Socket,
-    payload: { gameId: string; playerId: string },
+    payload: TimeoutDto,
   ) {
+    const playerId = client.data.userId;
     try {
       const { updatedGame, isTimeout, ratingChanges } = await this.gameService.makeGuess(
         payload.gameId,
-        payload.playerId,
+        playerId,
         'TIMEOUT_CHECK',
       );
       if (isTimeout && updatedGame.status === 'finished') {

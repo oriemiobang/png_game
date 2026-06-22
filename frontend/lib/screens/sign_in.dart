@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:png_game/services/auth_api_service.dart';
 import 'package:png_game/screens/loading.dart';
+import 'package:png_game/services/socket_service.dart';
 import 'package:ionicons/ionicons.dart';
 
 class SignIn extends StatefulWidget {
@@ -49,7 +50,10 @@ class _SignInState extends State<SignIn> {
     
     if (result != null && result is! String) {
       Fluttertoast.showToast(msg: "Signed in with Google successfully");
-      if (mounted) context.go('/');
+      if (mounted) {
+        context.read<SocketService>().connect();
+        context.go('/');
+      }
     } else {
       setState(() {
         error = result is String ? result : 'Google Sign In failed.';
@@ -207,7 +211,10 @@ class _SignInState extends State<SignIn> {
                           backgroundColor: Colors.black,
                           textColor: Colors.white,
                         );
-                        if (mounted) context.go('/');
+                        if (mounted) {
+                          context.read<SocketService>().connect();
+                          context.go('/');
+                        }
                       }
                     }
                   },
