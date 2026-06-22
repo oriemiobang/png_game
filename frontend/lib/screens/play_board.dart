@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/services/socket_service.dart';
+import 'package:png_game/utils/rating_utils.dart';
 
 class PlayBoard extends StatefulWidget {
   const PlayBoard({super.key});
@@ -27,7 +28,7 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
 
   int _player1TimeLeft = 0;
   int _player2TimeLeft = 0;
-  DateTime? _lastMoveAt;
+  DateTime? _turnStartedAt;
   Timer? _timer;
 
   @override
@@ -71,7 +72,7 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
       if (gameData['status'] == 'playing') {
         _player1TimeLeft = gameData['player1TimeLeft'] ?? 0;
         _player2TimeLeft = gameData['player2TimeLeft'] ?? 0;
-        _lastMoveAt = gameData['lastMoveAt'] != null ? DateTime.parse(gameData['lastMoveAt']) : null;
+        _turnStartedAt = gameData['turnStartedAt'] != null ? DateTime.parse(gameData['turnStartedAt']) : null;
         if (_timer == null || !_timer!.isActive) {
           _startTimer();
         }
@@ -88,7 +89,18 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
   }
 
   void _handleGameOver(Map winnerData) {
-    final userId = context.read<Data>().userId;
+    final dataProvider = context.read<Data>();
+    final userId = dataProvider.userId;
+    final gameData = dataProvider.data;
+    final isPlayer1 = gameData?['player1Id'] == userId;
+
+    int myRatingChange = 0;
+    if (winnerData['ratingChanges'] != null) {
+      myRatingChange = isPlayer1 
+          ? (winnerData['ratingChanges']['ratingChangeA'] ?? 0)
+          : (winnerData['ratingChanges']['ratingChangeB'] ?? 0);
+    }
+
     String title = "Game Over!";
     String message = "It's a draw!";
     
@@ -106,7 +118,41 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(title, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Text(message, textAlign: TextAlign.center),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message, textAlign: TextAlign.center),
+            if (myRatingChange != 0) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: myRatingChange > 0 ? Colors.green.shade50 : Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: myRatingChange > 0 ? Colors.green.shade200 : Colors.red.shade200),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      myRatingChange > 0 ? '+$myRatingChange' : '$myRatingChange',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: myRatingChange > 0 ? Colors.green.shade700 : Colors.red.shade700,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      myRatingChange > 0 ? Icons.trending_up : Icons.trending_down,
+                      color: myRatingChange > 0 ? Colors.green.shade700 : Colors.red.shade700,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           SizedBox(
             width: double.infinity,
@@ -184,8 +230,8 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
       }
 
       final now = DateTime.now().toUtc();
-      final lastMove = _lastMoveAt ?? now;
-      final elapsed = now.difference(lastMove).inMilliseconds;
+      final turnStart = _turnStartedAt ?? now;
+      final elapsed = now.difference(turnStart).inMilliseconds;
 
       setState(() {
         if (gameData['turn'] == gameData['player1Id']) {
@@ -302,6 +348,11 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
 
     final opponentId = isPlayer1 ? gameData['player2Id'] : gameData['player1Id'];
     final bool hasTimer = (gameData['timeLimit'] ?? 0) > 0;
+    
+    final myPlayerObj = isPlayer1 ? gameData['player1'] : gameData['player2'];
+    final opponentPlayerObj = isPlayer1 ? gameData['player2'] : gameData['player1'];
+    final int myRating = myPlayerObj?['rating'] ?? 1200;
+    final int opponentRating = opponentPlayerObj?['rating'] ?? 1200;
 
     // Filter Guesses
     final allGuesses = (gameData['guesses'] as List?) ?? [];
@@ -399,6 +450,8 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
                     const SizedBox(width: 8),
                     Text('You', style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(width: 8),
+                    RatingUtils.buildRatingBadge(myRating, fontSize: 10),
+                    const SizedBox(width: 8),
                     if (status == 'playing' && hasTimer) _buildTimerBadge(isPlayer1 ? _player1TimeLeft : _player2TimeLeft, isMyTurn),
                   ],
                 ),
@@ -410,6 +463,8 @@ class _PlayBoardState extends State<PlayBoard> with SingleTickerProviderStateMix
                 Row(
                   children: [
                     if (status == 'playing' && hasTimer) _buildTimerBadge(!isPlayer1 ? _player1TimeLeft : _player2TimeLeft, !isMyTurn),
+                    const SizedBox(width: 8),
+                    RatingUtils.buildRatingBadge(opponentRating, fontSize: 10),
                     const SizedBox(width: 8),
                     Text('Opponent', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
                     const SizedBox(width: 8),

@@ -22,11 +22,26 @@ function generateGameId(): string {
 @WebSocketGateway({ cors: { origin: '*' } })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
+  
+  private activeTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
     private readonly gameService: GameService,
     private readonly matchmakingService: MatchmakingService,
   ) {}
+
+  @SubscribeMessage('rejoinGame')
+  async handleRejoinGame(client: Socket, payload: { gameId: string; playerId: string }) {
+    try {
+      client.join(payload.gameId);
+      const game = await this.gameService.getGameState(payload.gameId);
+      if (game) {
+        client.emit('gameInfo', game);
+      }
+    } catch (e) {
+      console.error('rejoin error', e);
+    }
+  }
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
@@ -213,6 +228,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if (updatedGame.status === 'playing') {
         this.server.to(payload.gameId).emit('startGame', { gameId: payload.gameId });
+        this.scheduleGameTimer(updatedGame);
       }
       this.server.to(payload.gameId).emit('gameInfo', updatedGame);
     } catch (e) {
@@ -248,7 +264,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     payload: { gameId: string; playerId: string; guess: string },
   ) {
     try {
-      const { updatedGame, feedback, isDraw, isTimeout } = await this.gameService.makeGuess(
+      const { updatedGame, feedback, isDraw, isTimeout, ratingChanges } = await this.gameService.makeGuess(
         payload.gameId,
         payload.playerId,
         payload.guess,
@@ -263,38 +279,33 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(payload.gameId).emit('updateGuesses', { guesses: updatedGame.guesses });
 
       if (updatedGame.status === 'finished') {
+        const baseGameEndPayload = {
+          gameId: payload.gameId,
+          player1Wins: updatedGame.player1Wins,
+          player2Wins: updatedGame.player2Wins,
+          maxRounds: updatedGame.maxRounds,
+          currentRound: updatedGame.currentRound,
+          roundHistory: updatedGame.roundHistory ?? [],
+          ratingChanges,
+        };
+
         if (isTimeout) {
           this.server.to(payload.gameId).emit('gameEnd', {
+            ...baseGameEndPayload,
             winnerId: updatedGame.winnerId,
             message: 'Timeout! Game Over.',
-            gameId: payload.gameId,
-            player1Wins: updatedGame.player1Wins,
-            player2Wins: updatedGame.player2Wins,
-            maxRounds: updatedGame.maxRounds,
-            currentRound: updatedGame.currentRound,
-            roundHistory: updatedGame.roundHistory ?? [],
           });
         } else if (isDraw) {
           this.server.to(payload.gameId).emit('gameEnd', {
+            ...baseGameEndPayload,
             winnerId: null,
             message: "It's a draw!",
-            gameId: payload.gameId,
-            player1Wins: updatedGame.player1Wins,
-            player2Wins: updatedGame.player2Wins,
-            maxRounds: updatedGame.maxRounds,
-            currentRound: updatedGame.currentRound,
-            roundHistory: updatedGame.roundHistory ?? [],
           });
         } else {
           this.server.to(payload.gameId).emit('gameEnd', {
+            ...baseGameEndPayload,
             winnerId: updatedGame.winnerId,
             message: 'Game Over!',
-            gameId: payload.gameId,
-            player1Wins: updatedGame.player1Wins,
-            player2Wins: updatedGame.player2Wins,
-            maxRounds: updatedGame.maxRounds,
-            currentRound: updatedGame.currentRound,
-            roundHistory: updatedGame.roundHistory ?? [],
           });
         }
       } else if (updatedGame.lastChance) {
@@ -304,6 +315,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.server.to(payload.gameId).emit('lastChance', { chanceTo: opponent, message: 'There is last Chance' });
       } else {
         this.server.to(payload.gameId).emit('turnChange', { nextPlayer: updatedGame.turn });
+      }
+
+      if (updatedGame.status === 'playing') {
+        this.scheduleGameTimer(updatedGame);
+      } else {
+        this.clearGameTimer(payload.gameId);
       }
 
       this.server.to(payload.gameId).emit('gameInfo', updatedGame);
@@ -336,13 +353,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     payload: { gameId: string; playerId: string },
   ) {
     try {
-      const { updatedGame, isTimeout } = await this.gameService.makeGuess(
+      const { updatedGame, isTimeout, ratingChanges } = await this.gameService.makeGuess(
         payload.gameId,
         payload.playerId,
         'TIMEOUT_CHECK',
       );
       if (isTimeout && updatedGame.status === 'finished') {
         this.server.to(payload.gameId).emit('gameEnd', {
+          gameId: payload.gameId,
+          player1Wins: updatedGame.player1Wins,
+          player2Wins: updatedGame.player2Wins,
+          maxRounds: updatedGame.maxRounds,
+          currentRound: updatedGame.currentRound,
+          roundHistory: updatedGame.roundHistory ?? [],
+          ratingChanges,
           winnerId: updatedGame.winnerId,
           message: 'Timeout! Game Over.',
         });
@@ -350,6 +374,60 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     } catch (e) {
       // Ignore — e.g. "Not your turn" when the timeout fires on the wrong player
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SERVER-SIDE TIMEOUTS
+  // ─────────────────────────────────────────────────────────────────────────
+  private clearGameTimer(gameId: string) {
+    if (this.activeTimers.has(gameId)) {
+      clearTimeout(this.activeTimers.get(gameId));
+      this.activeTimers.delete(gameId);
+    }
+  }
+
+  private scheduleGameTimer(game: any) {
+    this.clearGameTimer(game.id);
+
+    if (game.timeLimit <= 0) return; // No timer for this game
+
+    const timeLeftMs = game.turn === game.player1Id ? game.player1TimeLeft : game.player2TimeLeft;
+    
+    // Add a slight buffer (e.g. 500ms) to allow client's last-second network request to arrive
+    const delay = Math.max(0, timeLeftMs) + 500; 
+
+    const timer = setTimeout(() => {
+      this.executeServerTimeout(game.id, game.turn);
+    }, delay);
+
+    this.activeTimers.set(game.id, timer);
+  }
+
+  private async executeServerTimeout(gameId: string, playerId: string) {
+    this.clearGameTimer(gameId);
+    try {
+      const { updatedGame, isTimeout, ratingChanges } = await this.gameService.makeGuess(
+        gameId,
+        playerId,
+        'TIMEOUT_CHECK',
+      );
+      if (isTimeout && updatedGame.status === 'finished') {
+        this.server.to(gameId).emit('gameEnd', {
+          gameId,
+          player1Wins: updatedGame.player1Wins,
+          player2Wins: updatedGame.player2Wins,
+          maxRounds: updatedGame.maxRounds,
+          currentRound: updatedGame.currentRound,
+          roundHistory: updatedGame.roundHistory ?? [],
+          ratingChanges,
+          winnerId: updatedGame.winnerId,
+          message: 'Timeout! Game Over.',
+        });
+        this.server.to(gameId).emit('gameInfo', updatedGame);
+      }
+    } catch (e) {
+      console.error('Server timeout execution failed:', e.message);
     }
   }
 }

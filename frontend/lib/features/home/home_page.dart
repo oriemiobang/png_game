@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            UserDrawerHeader(user: user),
+            UserDrawerHeader(user: user, stats: authApi.stats),
             _buildDrawerItem(
               icon: Icons.home,
               title: 'Home',
@@ -166,6 +166,9 @@ class _HomePageState extends State<HomePage> {
     final losses = (stats['losses'] ?? 0).toString();
     final draws = (stats['draws'] ?? 0).toString();
     final winRate = '${(stats['winRate'] ?? 0).toString()} %';
+    final rating = (stats['rating'] ?? 1200).toString();
+    final peakRating = (stats['ratingPeak'] ?? 1200).toString();
+    final tier = stats['tier'] ?? 'Beginner';
 
     return Container(
       padding: const EdgeInsets.all(17),
@@ -190,19 +193,19 @@ class _HomePageState extends State<HomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Expanded(child: _buildStatItem(rating, 'Rating')),
+                    Container(color: Colors.grey.shade300, width: 2, height: 48),
+                    Expanded(child: _buildStatItem(peakRating, 'Peak')),
+                    Container(color: Colors.grey.shade300, width: 2, height: 48),
                     Expanded(child: _buildStatItem(gamesPlayed, 'Games')),
-                    Container(color: Colors.grey.shade300, width: 2, height: 48),
-                    Expanded(child: _buildStatItem(wins, 'Wins')),
-                    Container(color: Colors.grey.shade300, width: 2, height: 48),
-                    Expanded(child: _buildStatItem(losses, 'Losses')),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Draws: $draws   •   Win Rate: $winRate',
+                  'W/L/D: $wins/$losses/$draws   •   Win Rate: $winRate   •   Tier: $tier',
                   style: TextStyle(
                     color: Colors.grey.shade700,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

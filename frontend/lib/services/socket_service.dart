@@ -47,6 +47,11 @@ class SocketService with ChangeNotifier {
       isConnected = true;
       lastError = null;
       debugPrint('connected to server');
+      
+      if (gameId.isNotEmpty && playerId.isNotEmpty) {
+        socket.emit('rejoinGame', {'gameId': gameId, 'playerId': playerId});
+      }
+      
       notifyListeners();
     });
 
@@ -247,7 +252,7 @@ class SocketService with ChangeNotifier {
       'gameId': gameId,
       'settings': {
         'maxRounds': maxRounds,
-        'timeLimit': timeLimit,
+        'timeLimit': timeLimit * 60,
         'isPrivate': isPrivate
       }
     });
@@ -301,7 +306,7 @@ class SocketService with ChangeNotifier {
     socket.emit('joinQueue', {
       'playerId': pid,
       'maxRounds': maxRounds,
-      'timeLimit': timeLimit,
+      'timeLimit': timeLimit * 60,
     });
     notifyListeners();
   }

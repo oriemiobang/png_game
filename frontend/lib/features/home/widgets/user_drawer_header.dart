@@ -1,26 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:png_game/models/my_user.dart';
+import 'package:png_game/utils/rating_utils.dart';
 
 class UserDrawerHeader extends StatelessWidget {
   final MyUser? user;
+  final Map<String, dynamic>? stats;
 
-  const UserDrawerHeader({super.key, required this.user});
+  const UserDrawerHeader({super.key, required this.user, this.stats});
 
   @override
   Widget build(BuildContext context) {
+    final rating = stats?['rating'] ?? 1200;
+
     return SizedBox(
       height: 150,
       child: user != null
           ? Center(
               child: ListTile(
                 leading: const Icon(Icons.person, size: 40),
-                title: Text(
-                  user!.name ?? 'Player',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                title: Row(
+                  children: [
+                    Text(
+                      user!.name ?? 'Player',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (stats != null) RatingUtils.buildRatingBadge(rating, fontSize: 12),
+                  ],
                 ),
                 subtitle: user!.email != null ? Text(user!.email!) : null,
               ),

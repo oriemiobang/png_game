@@ -64,7 +64,7 @@ model User {
 
 --- -->
 
-### ISSUE-004 🔴 Implement ELO Calculation Engine
+<!-- ### ISSUE-004 🔴 Implement ELO Calculation Engine
 **Current state:** `recordUserOutcome()` only increments `wins/losses/draws`.  
 **Algorithm (standard ELO):**
 ```
@@ -82,9 +82,9 @@ Draw: R_a += K * (0.5 - E_a)
 - Update both players' `rating` and `ratingPeak` in a single Prisma transaction.
 - Include `ratingChange` (+/-) in the `gameEnd` socket event payload so the frontend can show it immediately.
 
----
+--- -->
 
-### ISSUE-005 🟠 Expose Rating on Game & Result Screens
+<!-- ### ISSUE-005 🟠 Expose Rating on Game & Result Screens
 **Frontend tasks:**
 - Show each player's current rating next to their name on the Play Board (e.g., "You — ⭐ 1,204").
 - On the `GameResultPage`, show a rating change card: "+18 🟢" or "-12 🔴" per player.
@@ -98,9 +98,9 @@ Draw: R_a += K * (0.5 - E_a)
 - Show a badge icon/color next to each player's name everywhere ratings appear.
 - Backend: add a computed `tier` field to the `/auth/me` response.
 
----
+--- -->
 
-## SECTION 3 — Chess Timer (Per-Player Clock)
+<!-- ## SECTION 3 — Chess Timer (Per-Player Clock)
 
 ### ISSUE-007 🔴 Fix Timer Initialization Bug
 **Current state:** `timeLimit` is stored in **minutes** in the DB (e.g., `3`). In `submitSecret()` the code does `game.timeLimit * 60 * 1000` which is correct, but `CreateGames` passes `timeLimit` in minutes while the backend `createGame` service stores it as-is. Needs to be explicit and consistent.  
@@ -128,15 +128,15 @@ Draw: R_a += K * (0.5 - E_a)
 - Store the active player's turn start time on the server (`turnStartedAt: DateTime`) to allow precise remaining-time calculation.
 - Add `turnStartedAt` field to the `Game` model.
 
----
+--- -->
 
-### ISSUE-010 🟠 Fix Timer Display — Opponent vs Self
+<!-- ### ISSUE-010 🟠 Fix Timer Display — Opponent vs Self
 **Current state:** In `play_board.dart` line 412, `_buildTimerBadge(!isPlayer1 ? _player1TimeLeft : _player2TimeLeft, !isMyTurn)` — this logic is inverted and shows the wrong timer for the opponent in some configurations.  
 **Tasks:**
 - Audit and fix the timer badge logic so "You" always shows the current player's clock and "Opponent" always shows the opponent's clock, regardless of player1/player2 assignment.
 - Add visual urgency state (e.g., red color, pulsing) when < 30 seconds remain.
 
----
+--- -->
 
 ## SECTION 4 — Backend Architecture & Reliability
 
