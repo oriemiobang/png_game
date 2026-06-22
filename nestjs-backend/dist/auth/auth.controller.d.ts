@@ -28,17 +28,20 @@ export declare class AuthController {
     }>;
     myStats(req: any): Promise<{
         winRate: number;
+        tier: string;
         id: string;
-        email: string | null;
-        googleId: string | null;
-        password: string | null;
         name: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
+        googleId: string | null;
+        password: string | null;
         gamesPlayed: number;
         wins: number;
         losses: number;
         draws: number;
+        rating: number;
+        ratingPeak: number;
         lastPlayedAt: Date | null;
     }>;
 }

@@ -6,20 +6,16 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GameModule = void 0;
+exports.RatingModule = void 0;
 const common_1 = require("@nestjs/common");
-const game_gateway_1 = require("./game.gateway");
-const game_service_1 = require("./game.service");
-const matchmaking_service_1 = require("./matchmaking.service");
-const rating_module_1 = require("../rating/rating.module");
-const auth_module_1 = require("../auth/auth.module");
-let GameModule = class GameModule {
+const rating_service_1 = require("./rating.service");
+let RatingModule = class RatingModule {
 };
-exports.GameModule = GameModule;
-exports.GameModule = GameModule = __decorate([
+exports.RatingModule = RatingModule;
+exports.RatingModule = RatingModule = __decorate([
     (0, common_1.Module)({
-        imports: [rating_module_1.RatingModule, auth_module_1.AuthModule],
-        providers: [game_gateway_1.GameGateway, game_service_1.GameService, matchmaking_service_1.MatchmakingService],
+        providers: [rating_service_1.RatingService],
+        exports: [rating_service_1.RatingService],
     })
-], GameModule);
-//# sourceMappingURL=game.module.js.map
+], RatingModule);
+//# sourceMappingURL=rating.module.js.map

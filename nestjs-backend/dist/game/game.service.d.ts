@@ -1,32 +1,52 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { RatingService } from '../rating/rating.service';
 export declare class GameService {
     private prisma;
-    private readonly matchStates;
-    constructor(prisma: PrismaService);
-    private getMatchState;
+    private ratingService;
+    constructor(prisma: PrismaService, ratingService: RatingService);
     private attachMatchState;
     private recordRoundResult;
     private recordUserOutcome;
     resetMatch(gameId: string, resetSeries?: boolean): Promise<{
+        roundResults: {
+            id: string;
+            round: number;
+            guesses: number;
+            timeMs: number;
+            startedAt: Date | null;
+            endedAt: Date | null;
+            gameId: string;
+            winnerId: string | null;
+        }[];
         guesses: {
             number: number;
             guess: string;
             id: string;
-            createdAt: Date;
+            round: number;
             gameId: string;
+            createdAt: Date;
             playerId: string;
             position: number;
-            round: number;
         }[];
         player1: {
             id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
         };
         player2: {
             id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
         };
     } & {
-        id: string;
+        currentRound: number;
+        player1RoundWins: number;
+        player2RoundWins: number;
         maxRounds: number;
+        id: string;
+        winnerId: string | null;
         createdAt: Date;
         updatedAt: Date;
         player1Id: string;
@@ -34,7 +54,6 @@ export declare class GameService {
         player1Secret: string | null;
         player2Secret: string | null;
         status: string;
-        winnerId: string | null;
         resultRecorded: boolean;
         timeLimit: number;
         isPrivate: boolean;
@@ -42,20 +61,75 @@ export declare class GameService {
         lastChance: boolean;
         player1TimeLeft: number | null;
         player2TimeLeft: number | null;
-        lastMoveAt: Date | null;
+        turnStartedAt: Date | null;
     } & {
-        currentRound: number;
-        player1Wins: number;
-        player2Wins: number;
-        maxRounds: number;
-        roundHistory: {
+        currentRound: any;
+        player1Wins: any;
+        player2Wins: any;
+        maxRounds: any;
+        roundHistory: any;
+    }>;
+    getGameState(gameId: string): Promise<{
+        roundResults: {
+            id: string;
             round: number;
-            winnerId: string | null;
             guesses: number;
             timeMs: number;
-            startedAt: string | null;
-            endedAt: string | null;
+            startedAt: Date | null;
+            endedAt: Date | null;
+            gameId: string;
+            winnerId: string | null;
         }[];
+        guesses: {
+            number: number;
+            guess: string;
+            id: string;
+            round: number;
+            gameId: string;
+            createdAt: Date;
+            playerId: string;
+            position: number;
+        }[];
+        player1: {
+            id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
+        };
+        player2: {
+            id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
+        };
+    } & {
+        currentRound: number;
+        player1RoundWins: number;
+        player2RoundWins: number;
+        maxRounds: number;
+        id: string;
+        winnerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        player1Id: string;
+        player2Id: string | null;
+        player1Secret: string | null;
+        player2Secret: string | null;
+        status: string;
+        resultRecorded: boolean;
+        timeLimit: number;
+        isPrivate: boolean;
+        turn: string | null;
+        lastChance: boolean;
+        player1TimeLeft: number | null;
+        player2TimeLeft: number | null;
+        turnStartedAt: Date | null;
+    } & {
+        currentRound: any;
+        player1Wins: any;
+        player2Wins: any;
+        maxRounds: any;
+        roundHistory: any;
     }>;
     ensureUser(userId: string): Promise<{
         id: string;
@@ -65,15 +139,35 @@ export declare class GameService {
         timeLimit?: number;
         isPrivate?: boolean;
     }): Promise<{
+        roundResults: {
+            id: string;
+            round: number;
+            guesses: number;
+            timeMs: number;
+            startedAt: Date | null;
+            endedAt: Date | null;
+            gameId: string;
+            winnerId: string | null;
+        }[];
         player1: {
             id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
         };
         player2: {
             id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
         };
     } & {
-        id: string;
+        currentRound: number;
+        player1RoundWins: number;
+        player2RoundWins: number;
         maxRounds: number;
+        id: string;
+        winnerId: string | null;
         createdAt: Date;
         updatedAt: Date;
         player1Id: string;
@@ -81,7 +175,6 @@ export declare class GameService {
         player1Secret: string | null;
         player2Secret: string | null;
         status: string;
-        winnerId: string | null;
         resultRecorded: boolean;
         timeLimit: number;
         isPrivate: boolean;
@@ -89,28 +182,83 @@ export declare class GameService {
         lastChance: boolean;
         player1TimeLeft: number | null;
         player2TimeLeft: number | null;
-        lastMoveAt: Date | null;
+        turnStartedAt: Date | null;
     } & {
-        currentRound: number;
-        player1Wins: number;
-        player2Wins: number;
+        currentRound: any;
+        player1Wins: any;
+        player2Wins: any;
+        maxRounds: any;
+        roundHistory: any;
+    }>;
+    createGameForMatch(gameId: string, player1Id: string, player2Id: string, settings: {
         maxRounds: number;
-        roundHistory: {
+        timeLimit: number;
+    }): Promise<{
+        roundResults: {
+            id: string;
             round: number;
-            winnerId: string | null;
             guesses: number;
             timeMs: number;
-            startedAt: string | null;
-            endedAt: string | null;
+            startedAt: Date | null;
+            endedAt: Date | null;
+            gameId: string;
+            winnerId: string | null;
         }[];
+        player1: {
+            id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
+        };
+        player2: {
+            id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
+        };
+    } & {
+        currentRound: number;
+        player1RoundWins: number;
+        player2RoundWins: number;
+        maxRounds: number;
+        id: string;
+        winnerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        player1Id: string;
+        player2Id: string | null;
+        player1Secret: string | null;
+        player2Secret: string | null;
+        status: string;
+        resultRecorded: boolean;
+        timeLimit: number;
+        isPrivate: boolean;
+        turn: string | null;
+        lastChance: boolean;
+        player1TimeLeft: number | null;
+        player2TimeLeft: number | null;
+        turnStartedAt: Date | null;
+    } & {
+        currentRound: any;
+        player1Wins: any;
+        player2Wins: any;
+        maxRounds: any;
+        roundHistory: any;
     }>;
     getPublicRooms(): Promise<({
         player1: {
             id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
         };
     } & {
-        id: string;
+        currentRound: number;
+        player1RoundWins: number;
+        player2RoundWins: number;
         maxRounds: number;
+        id: string;
+        winnerId: string | null;
         createdAt: Date;
         updatedAt: Date;
         player1Id: string;
@@ -118,7 +266,6 @@ export declare class GameService {
         player1Secret: string | null;
         player2Secret: string | null;
         status: string;
-        winnerId: string | null;
         resultRecorded: boolean;
         timeLimit: number;
         isPrivate: boolean;
@@ -126,31 +273,41 @@ export declare class GameService {
         lastChance: boolean;
         player1TimeLeft: number | null;
         player2TimeLeft: number | null;
-        lastMoveAt: Date | null;
+        turnStartedAt: Date | null;
     } & {
-        currentRound: number;
-        player1Wins: number;
-        player2Wins: number;
-        maxRounds: number;
-        roundHistory: {
+        currentRound: any;
+        player1Wins: any;
+        player2Wins: any;
+        maxRounds: any;
+        roundHistory: any;
+    })[]>;
+    cancelGame(gameId: string, playerId: string): Promise<void>;
+    joinGame(gameId: string, playerId: string): Promise<{
+        roundResults: {
+            id: string;
             round: number;
-            winnerId: string | null;
             guesses: number;
             timeMs: number;
-            startedAt: string | null;
-            endedAt: string | null;
+            startedAt: Date | null;
+            endedAt: Date | null;
+            gameId: string;
+            winnerId: string | null;
         }[];
-    })[]>;
-    joinGame(gameId: string, playerId: string): Promise<{
         player1: {
             id: string;
+            name: string;
         };
         player2: {
             id: string;
+            name: string;
         };
     } & {
-        id: string;
+        currentRound: number;
+        player1RoundWins: number;
+        player2RoundWins: number;
         maxRounds: number;
+        id: string;
+        winnerId: string | null;
         createdAt: Date;
         updatedAt: Date;
         player1Id: string;
@@ -158,7 +315,6 @@ export declare class GameService {
         player1Secret: string | null;
         player2Secret: string | null;
         status: string;
-        winnerId: string | null;
         resultRecorded: boolean;
         timeLimit: number;
         isPrivate: boolean;
@@ -166,24 +322,44 @@ export declare class GameService {
         lastChance: boolean;
         player1TimeLeft: number | null;
         player2TimeLeft: number | null;
-        lastMoveAt: Date | null;
+        turnStartedAt: Date | null;
     } & {
-        currentRound: number;
-        player1Wins: number;
-        player2Wins: number;
-        maxRounds: number;
-        roundHistory: {
-            round: number;
-            winnerId: string | null;
-            guesses: number;
-            timeMs: number;
-            startedAt: string | null;
-            endedAt: string | null;
-        }[];
+        currentRound: any;
+        player1Wins: any;
+        player2Wins: any;
+        maxRounds: any;
+        roundHistory: any;
     }>;
     submitSecret(gameId: string, playerId: string, secret: string): Promise<{
-        id: string;
+        roundResults: {
+            id: string;
+            round: number;
+            guesses: number;
+            timeMs: number;
+            startedAt: Date | null;
+            endedAt: Date | null;
+            gameId: string;
+            winnerId: string | null;
+        }[];
+        player1: {
+            id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
+        };
+        player2: {
+            id: string;
+            name: string;
+            rating: number;
+            ratingPeak: number;
+        };
+    } & {
+        currentRound: number;
+        player1RoundWins: number;
+        player2RoundWins: number;
         maxRounds: number;
+        id: string;
+        winnerId: string | null;
         createdAt: Date;
         updatedAt: Date;
         player1Id: string;
@@ -191,7 +367,6 @@ export declare class GameService {
         player1Secret: string | null;
         player2Secret: string | null;
         status: string;
-        winnerId: string | null;
         resultRecorded: boolean;
         timeLimit: number;
         isPrivate: boolean;
@@ -199,20 +374,13 @@ export declare class GameService {
         lastChance: boolean;
         player1TimeLeft: number | null;
         player2TimeLeft: number | null;
-        lastMoveAt: Date | null;
+        turnStartedAt: Date | null;
     } & {
-        currentRound: number;
-        player1Wins: number;
-        player2Wins: number;
-        maxRounds: number;
-        roundHistory: {
-            round: number;
-            winnerId: string | null;
-            guesses: number;
-            timeMs: number;
-            startedAt: string | null;
-            endedAt: string | null;
-        }[];
+        currentRound: any;
+        player1Wins: any;
+        player2Wins: any;
+        maxRounds: any;
+        roundHistory: any;
     }>;
     generateFeedback(guess: string, secret: string): {
         position: number;
@@ -220,19 +388,45 @@ export declare class GameService {
     };
     makeGuess(gameId: string, playerId: string, guessStr: string): Promise<{
         updatedGame: {
+            roundResults: {
+                id: string;
+                round: number;
+                guesses: number;
+                timeMs: number;
+                startedAt: Date | null;
+                endedAt: Date | null;
+                gameId: string;
+                winnerId: string | null;
+            }[];
             guesses: {
                 number: number;
                 guess: string;
                 id: string;
-                createdAt: Date;
+                round: number;
                 gameId: string;
+                createdAt: Date;
                 playerId: string;
                 position: number;
-                round: number;
             }[];
+            player1: {
+                id: string;
+                name: string;
+                rating: number;
+                ratingPeak: number;
+            };
+            player2: {
+                id: string;
+                name: string;
+                rating: number;
+                ratingPeak: number;
+            };
         } & {
-            id: string;
+            currentRound: number;
+            player1RoundWins: number;
+            player2RoundWins: number;
             maxRounds: number;
+            id: string;
+            winnerId: string | null;
             createdAt: Date;
             updatedAt: Date;
             player1Id: string;
@@ -240,7 +434,6 @@ export declare class GameService {
             player1Secret: string | null;
             player2Secret: string | null;
             status: string;
-            winnerId: string | null;
             resultRecorded: boolean;
             timeLimit: number;
             isPrivate: boolean;
@@ -248,20 +441,13 @@ export declare class GameService {
             lastChance: boolean;
             player1TimeLeft: number | null;
             player2TimeLeft: number | null;
-            lastMoveAt: Date | null;
+            turnStartedAt: Date | null;
         } & {
-            currentRound: number;
-            player1Wins: number;
-            player2Wins: number;
-            maxRounds: number;
-            roundHistory: {
-                round: number;
-                winnerId: string | null;
-                guesses: number;
-                timeMs: number;
-                startedAt: string | null;
-                endedAt: string | null;
-            }[];
+            currentRound: any;
+            player1Wins: any;
+            player2Wins: any;
+            maxRounds: any;
+            roundHistory: any;
         };
         feedback: {
             position: number;
@@ -269,5 +455,78 @@ export declare class GameService {
         };
         isDraw: boolean;
         isTimeout: boolean;
+        ratingChanges: {
+            ratingChangeA: number;
+            ratingChangeB: number;
+        };
     }>;
+    forfeitGame(gameId: string, forfeiterId: string): Promise<{
+        updatedGame: {
+            roundResults: {
+                id: string;
+                round: number;
+                guesses: number;
+                timeMs: number;
+                startedAt: Date | null;
+                endedAt: Date | null;
+                gameId: string;
+                winnerId: string | null;
+            }[];
+            guesses: {
+                number: number;
+                guess: string;
+                id: string;
+                round: number;
+                gameId: string;
+                createdAt: Date;
+                playerId: string;
+                position: number;
+            }[];
+            player1: {
+                id: string;
+                name: string;
+                rating: number;
+                ratingPeak: number;
+            };
+            player2: {
+                id: string;
+                name: string;
+                rating: number;
+                ratingPeak: number;
+            };
+        } & {
+            currentRound: number;
+            player1RoundWins: number;
+            player2RoundWins: number;
+            maxRounds: number;
+            id: string;
+            winnerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            player1Id: string;
+            player2Id: string | null;
+            player1Secret: string | null;
+            player2Secret: string | null;
+            status: string;
+            resultRecorded: boolean;
+            timeLimit: number;
+            isPrivate: boolean;
+            turn: string | null;
+            lastChance: boolean;
+            player1TimeLeft: number | null;
+            player2TimeLeft: number | null;
+            turnStartedAt: Date | null;
+        } & {
+            currentRound: any;
+            player1Wins: any;
+            player2Wins: any;
+            maxRounds: any;
+            roundHistory: any;
+        };
+        ratingChanges: {
+            ratingChangeA: number;
+            ratingChangeB: number;
+        };
+    }>;
+    getActiveGamesForUser(userId: string): Promise<string[]>;
 }

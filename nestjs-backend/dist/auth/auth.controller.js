@@ -16,6 +16,7 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const passport_1 = require("@nestjs/passport");
+const throttler_1 = require("@nestjs/throttler");
 let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
@@ -73,6 +74,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "myStats", null);
 exports.AuthController = AuthController = __decorate([
+    (0, common_1.UseGuards)(throttler_1.ThrottlerGuard),
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], AuthController);

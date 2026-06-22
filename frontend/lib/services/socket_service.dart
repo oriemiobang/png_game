@@ -198,12 +198,6 @@ class SocketService with ChangeNotifier {
     });
 
     // game data
-    socket.on('gameInfo', (data) {
-      if (data != null) {
-        Data().updateGameInfo(data);
-        notifyListeners();
-      }
-    });
 
     socket.on('opponentDisconnected', (data) {
       Data().updateOpponentDisconnected(true);

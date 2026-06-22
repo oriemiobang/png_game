@@ -8,15 +8,36 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
+const throttler_1 = require("@nestjs/throttler");
+const Joi = require("joi");
 const game_module_1 = require("./game/game.module");
 const prisma_module_1 = require("./prisma/prisma.module");
 const auth_module_1 = require("./auth/auth.module");
+const rating_module_1 = require("./rating/rating.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [game_module_1.GameModule, prisma_module_1.PrismaModule, auth_module_1.AuthModule],
+        imports: [
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
+                validationSchema: Joi.object({
+                    DATABASE_URL: Joi.string().required(),
+                    JWT_SECRET: Joi.string().required(),
+                    GOOGLE_CLIENT_ID: Joi.string().required(),
+                }),
+            }),
+            throttler_1.ThrottlerModule.forRoot([{
+                    ttl: 60000,
+                    limit: 20,
+                }]),
+            game_module_1.GameModule,
+            prisma_module_1.PrismaModule,
+            auth_module_1.AuthModule,
+            rating_module_1.RatingModule
+        ],
         controllers: [],
         providers: [],
     })

@@ -94,6 +94,8 @@ let AuthService = class AuthService {
                 wins: true,
                 losses: true,
                 draws: true,
+                rating: true,
+                ratingPeak: true,
                 lastPlayedAt: true,
             },
         });
@@ -101,9 +103,19 @@ let AuthService = class AuthService {
             throw new common_1.HttpException('User not found', common_1.HttpStatus.UNAUTHORIZED);
         }
         const winRate = user.gamesPlayed > 0 ? Math.round((user.wins / user.gamesPlayed) * 1000) / 10 : 0;
+        let tier = 'Beginner';
+        if (user.rating >= 2200)
+            tier = 'Master';
+        else if (user.rating >= 1800)
+            tier = 'Expert';
+        else if (user.rating >= 1400)
+            tier = 'Advanced';
+        else if (user.rating >= 1000)
+            tier = 'Intermediate';
         return {
             ...user,
             winRate,
+            tier,
         };
     }
     generateToken(userId, email, name) {
