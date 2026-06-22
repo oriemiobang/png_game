@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/classes/play_board_classes.dart';
 import 'package:png_game/features/home/home_page.dart';
+import 'package:png_game/screens/find_match_screen.dart';
 import 'package:png_game/screens/create_game.dart';
 import 'package:png_game/screens/loading.dart';
 import 'package:png_game/screens/game_result_page.dart';
@@ -85,6 +86,10 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/create_game',
           builder: (context, state) => const CreateGames(),
+        ),
+        GoRoute(
+          path: '/find_match',
+          builder: (context, state) => const FindMatchScreen(),
         ),
         GoRoute(
           path: '/create_room',

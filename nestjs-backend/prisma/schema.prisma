@@ -19,6 +19,8 @@ model User {
   wins        Int    @default(0)
   losses      Int    @default(0)
   draws       Int    @default(0)
+  rating      Int    @default(1200) // ELO rating, starts at 1200
+  ratingPeak  Int    @default(1200) // All-time peak ELO
   lastPlayedAt DateTime?
 
   gamesAsPlayer1 Game[] @relation("Player1")

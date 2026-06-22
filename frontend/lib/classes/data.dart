@@ -15,6 +15,14 @@ class Data with ChangeNotifier {
   bool _gameOver = false;
   int _unreadMessages = 0;
 
+  // ── Matchmaking state ──
+  bool _isSearchingForMatch = false;
+  bool _matchmakingTimedOut = false;
+  Map<String, dynamic>? _matchFoundData;
+
+  // ── Private room state ──
+  Map<String, dynamic>? _opponentJoined; // set when 'playerJoined' fires
+
   //
 
   final List _chatData = [];
@@ -42,6 +50,14 @@ class Data with ChangeNotifier {
   Map? get newGame => _newGame;
   int get unreadMessages => _unreadMessages;
 
+  // ── Matchmaking getters ──
+  bool get isSearchingForMatch => _isSearchingForMatch;
+  bool get matchmakingTimedOut => _matchmakingTimedOut;
+  Map<String, dynamic>? get matchFoundData => _matchFoundData;
+
+  // ── Private room getters ──
+  Map<String, dynamic>? get opponentJoined => _opponentJoined;
+
   List? get chatData => _chatData;
 
   // Setters
@@ -60,6 +76,39 @@ class Data with ChangeNotifier {
     _gameOver = false;
     _chatData.clear();
     _unreadMessages = 0;
+    _opponentJoined = null;
+    notifyListeners();
+  }
+
+  // ── Matchmaking setters ──
+  void setSearchingForMatch(bool value) {
+    _isSearchingForMatch = value;
+    _matchmakingTimedOut = false;
+    notifyListeners();
+  }
+
+  void setMatchmakingTimedOut() {
+    _isSearchingForMatch = false;
+    _matchmakingTimedOut = true;
+    notifyListeners();
+  }
+
+  void setMatchFound(Map<String, dynamic> data) {
+    _isSearchingForMatch = false;
+    _matchmakingTimedOut = false;
+    _matchFoundData = data;
+    notifyListeners();
+  }
+
+  void resetMatchmakingState() {
+    _isSearchingForMatch = false;
+    _matchmakingTimedOut = false;
+    _matchFoundData = null;
+    notifyListeners();
+  }
+
+  void updateOpponentJoined(Map<String, dynamic> data) {
+    _opponentJoined = data;
     notifyListeners();
   }
 

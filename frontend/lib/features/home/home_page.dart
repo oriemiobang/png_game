@@ -308,18 +308,53 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
+        // ── Primary: auto-matchmaking ──────────────────────────────────────
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: TextButton(
+            onPressed: () => context.push('/find_match'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search, size: 26, color: Colors.white),
+                SizedBox(width: 10),
+                Text(
+                  'Play Now',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // ── Secondary: solo ────────────────────────────────────────────────
         _buildPlayButton(
           icon: Icons.play_arrow_outlined,
           text: 'Play Solo',
           onPressed: () => context.push('/play_solo'),
-        ),
-        const SizedBox(height: 12),
-        _buildPlayButton(
-          icon: Icons.add,
-          text: 'Create Room',
-          onPressed: () {
-            context.push('/create_game');
-          },
         ),
       ],
     );

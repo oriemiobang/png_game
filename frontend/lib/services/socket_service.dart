@@ -126,6 +126,49 @@ class SocketService with ChangeNotifier {
       notifyListeners();
     });
 
+    // ── Matchmaking listeners ──
+    socket.on('searchingForMatch', (data) {
+      Data().setSearchingForMatch(true);
+      notifyListeners();
+    });
+
+    socket.on('matchFound', (data) async {
+      final matchData = Map<String, dynamic>.from(data as Map);
+      final mGameId = matchData['gameId']?.toString() ?? '';
+      final mPlayerId = Data().userId ?? '';
+
+      gameId = mGameId;
+      playerId = mPlayerId;
+      Data().updateGameId(mGameId);
+      Data().setMatchFound(matchData);
+
+      // Mark as joined so screens listening to gameJoined also navigate.
+      gameJoined = true;
+      notifyListeners();
+    });
+
+    socket.on('matchmakingTimeout', (_) {
+      Data().setMatchmakingTimedOut();
+      notifyListeners();
+    });
+
+    socket.on('matchmakingCancelled', (_) {
+      Data().resetMatchmakingState();
+      notifyListeners();
+    });
+
+    // ── Private room listeners ──
+    socket.on('playerJoined', (data) {
+      final joined = Map<String, dynamic>.from(data as Map);
+      Data().updateOpponentJoined(joined);
+      notifyListeners();
+    });
+
+    socket.on('gameCancelled', (_) {
+      Data().resetMatchState();
+      notifyListeners();
+    });
+
     // list to random room game
     socket.on('randomRoomGame', (data) {
       Data().updateRandomRoomGame(data);
@@ -240,6 +283,38 @@ class SocketService with ChangeNotifier {
     return gameId;
   }
 
+  /// Emit joinQueue — the server will either match immediately or queue us.
+  void findMatch({int maxRounds = 3, int timeLimit = 3}) {
+    gameJoined = false;
+    lastError = null;
+    Data().resetMatchState();
+    Data().resetMatchmakingState();
+
+    final pid = _currentPlayerId();
+    if (pid == null) {
+      lastError = 'Please sign in first';
+      notifyListeners();
+      return;
+    }
+    playerId = pid;
+
+    socket.emit('joinQueue', {
+      'playerId': pid,
+      'maxRounds': maxRounds,
+      'timeLimit': timeLimit,
+    });
+    notifyListeners();
+  }
+
+  /// Cancel an active matchmaking search.
+  void cancelMatchmaking() {
+    final pid = _currentPlayerId();
+    if (pid == null) return;
+    socket.emit('cancelMatchmaking', {'playerId': pid});
+    Data().resetMatchmakingState();
+    notifyListeners();
+  }
+
   void joinGame(String gameCode) async {
     gameJoined = false;
     lastError = null;
@@ -289,6 +364,14 @@ class SocketService with ChangeNotifier {
   void requestNewGame(playerId, gameId, approved) {
     socket.emit('newGame',
         {'playerId': playerId, 'gameId': gameId, 'approved': approved});
+  }
+
+  /// Cancel a private room the current player created.
+  void cancelGame() {
+    final gId = Data().gameId;
+    final pId = _currentPlayerId();
+    if (gId == null || pId == null) return;
+    socket.emit('cancelGame', {'gameId': gId, 'playerId': pId});
   }
 
   void reportTimeout() {

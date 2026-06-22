@@ -228,6 +228,48 @@ export class GameService {
     return this.attachMatchState(game);
   }
 
+  /**
+   * Creates a game that already has both players assigned — used exclusively
+   * by the matchmaking flow so neither player has to click "Join".
+   */
+  async createGameForMatch(
+    gameId: string,
+    player1Id: string,
+    player2Id: string,
+    settings: { maxRounds: number; timeLimit: number },
+  ) {
+    await this.ensureUser(player1Id);
+    await this.ensureUser(player2Id);
+
+    const game = await this.prisma.game.create({
+      data: {
+        id: gameId,
+        player1Id,
+        player2Id,
+        maxRounds: settings.maxRounds,
+        timeLimit: settings.timeLimit,
+        isPrivate: false,
+        resultRecorded: false,
+        // Set initial turn to player2 (joiner) — consistent with joinGame()
+        turn: player2Id,
+      } as any,
+      include: {
+        player1: { select: { id: true } },
+        player2: { select: { id: true } },
+      },
+    });
+
+    this.matchStates.set(gameId, {
+      currentRound: 1,
+      player1Wins: 0,
+      player2Wins: 0,
+      maxRounds: game.maxRounds,
+      roundHistory: [],
+    });
+
+    return this.attachMatchState(game);
+  }
+
   async getPublicRooms() {
     const rooms = await this.prisma.game.findMany({
       where: {
@@ -240,6 +282,24 @@ export class GameService {
     });
 
     return rooms.map((room) => this.attachMatchState(room));
+  }
+
+  /**
+   * Cancel (delete) a waiting room created by the given player.
+   * Only works while the game is still in 'waiting' status.
+   */
+  async cancelGame(gameId: string, playerId: string) {
+    const game = await this.prisma.game.findUnique({ where: { id: gameId } });
+    if (!game) throw new Error('Room not found');
+    if (game.player1Id !== playerId) throw new Error('Only the host can cancel the room');
+    if (game.status !== 'waiting') throw new Error('Cannot cancel a game that has already started');
+
+    // Delete guesses first (FK constraint), then the game
+    await this.prisma.guess.deleteMany({ where: { gameId } });
+    await this.prisma.game.delete({ where: { id: gameId } });
+
+    // Clean up in-memory state
+    this.matchStates.delete(gameId);
   }
 
   async joinGame(gameId: string, playerId: string) {
@@ -256,8 +316,8 @@ export class GameService {
         turn: playerId, // Usually the joined player starts or we can randomize
       },
       include: {
-        player1: { select: { id: true } },
-        player2: { select: { id: true } },
+        player1: { select: { id: true, name: true } },
+        player2: { select: { id: true, name: true } },
       },
     });
 
