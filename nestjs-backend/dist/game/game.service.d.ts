@@ -8,6 +8,7 @@ export declare class GameService {
     private recordRoundResult;
     private recordUserOutcome;
     resetMatch(gameId: string, resetSeries?: boolean): Promise<{
+        matchOver: boolean;
         roundResults: {
             id: string;
             round: number;
@@ -40,11 +41,10 @@ export declare class GameService {
             rating: number;
             ratingPeak: number;
         };
-    } & {
-        currentRound: number;
+        currentRound: any;
         player1RoundWins: number;
         player2RoundWins: number;
-        maxRounds: number;
+        maxRounds: any;
         id: string;
         winnerId: string | null;
         createdAt: Date;
@@ -62,11 +62,36 @@ export declare class GameService {
         player1TimeLeft: number | null;
         player2TimeLeft: number | null;
         turnStartedAt: Date | null;
-    } & {
-        currentRound: any;
         player1Wins: any;
         player2Wins: any;
+        roundHistory: any;
+    } | {
+        matchOver: boolean;
+        seriesWinnerId: string;
+        player1RoundWins: number;
+        player2RoundWins: number;
+        roundResults: any[];
+        currentRound: any;
         maxRounds: any;
+        id: string;
+        winnerId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        player1Id: string;
+        player2Id: string | null;
+        player1Secret: string | null;
+        player2Secret: string | null;
+        status: string;
+        resultRecorded: boolean;
+        timeLimit: number;
+        isPrivate: boolean;
+        turn: string | null;
+        lastChance: boolean;
+        player1TimeLeft: number | null;
+        player2TimeLeft: number | null;
+        turnStartedAt: Date | null;
+        player1Wins: any;
+        player2Wins: any;
         roundHistory: any;
     }>;
     getGameState(gameId: string): Promise<{
@@ -459,6 +484,82 @@ export declare class GameService {
             ratingChangeA: number;
             ratingChangeB: number;
         };
+        matchOver: boolean;
+    }>;
+    handleTimeout(gameId: string, timeoutPlayerId: string): Promise<{
+        updatedGame: {
+            roundResults: {
+                id: string;
+                round: number;
+                guesses: number;
+                timeMs: number;
+                startedAt: Date | null;
+                endedAt: Date | null;
+                gameId: string;
+                winnerId: string | null;
+            }[];
+            guesses: {
+                number: number;
+                guess: string;
+                id: string;
+                round: number;
+                gameId: string;
+                createdAt: Date;
+                playerId: string;
+                position: number;
+            }[];
+            player1: {
+                id: string;
+                name: string;
+                rating: number;
+                ratingPeak: number;
+            };
+            player2: {
+                id: string;
+                name: string;
+                rating: number;
+                ratingPeak: number;
+            };
+        } & {
+            currentRound: number;
+            player1RoundWins: number;
+            player2RoundWins: number;
+            maxRounds: number;
+            id: string;
+            winnerId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            player1Id: string;
+            player2Id: string | null;
+            player1Secret: string | null;
+            player2Secret: string | null;
+            status: string;
+            resultRecorded: boolean;
+            timeLimit: number;
+            isPrivate: boolean;
+            turn: string | null;
+            lastChance: boolean;
+            player1TimeLeft: number | null;
+            player2TimeLeft: number | null;
+            turnStartedAt: Date | null;
+        } & {
+            currentRound: any;
+            player1Wins: any;
+            player2Wins: any;
+            maxRounds: any;
+            roundHistory: any;
+        };
+        feedback: {
+            position: number;
+            number: number;
+        };
+        isDraw: boolean;
+        isTimeout: boolean;
+        ratingChanges: {
+            ratingChangeA: number;
+            ratingChangeB: number;
+        };
+        matchOver: boolean;
     }>;
     forfeitGame(gameId: string, forfeiterId: string): Promise<{
         updatedGame: {

@@ -39,10 +39,14 @@ function generateGameId(): string {
   return `PNG${suffix}`;
 }
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : '*';
+
 @UseFilters(new WsAllExceptionsFilter())
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 @UseGuards(WsThrottlerGuard, WsJwtGuard)
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({ cors: { origin: allowedOrigins } })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   
@@ -444,7 +448,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           maxRounds: result.maxRounds,
           currentRound: result.currentRound,
           roundHistory: result.roundHistory ?? [],
-          winnerId: result.seriesWinnerId,
+          winnerId: (result as any).seriesWinnerId,
           message: 'Series Over!',
         });
         this.server.to(payload.gameId).emit('gameInfo', result);
@@ -471,7 +475,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const playerId = client.data.userId;
     try {
-      const { updatedGame, feedback, isDraw, isTimeout, ratingChanges } = await this.gameService.makeGuess(
+      const { updatedGame, feedback, isDraw, isTimeout, ratingChanges, matchOver } = await this.gameService.makeGuess(
         payload.gameId,
         playerId,
         payload.guess,
@@ -496,23 +500,23 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           ratingChanges,
         };
 
-        if (isTimeout) {
+        if (matchOver) {
+          const seriesWinnerId = updatedGame.player1RoundWins > updatedGame.player2RoundWins 
+            ? updatedGame.player1Id 
+            : updatedGame.player1RoundWins < updatedGame.player2RoundWins 
+              ? updatedGame.player2Id 
+              : null;
+              
           this.server.to(payload.gameId).emit('gameEnd', {
             ...baseGameEndPayload,
-            winnerId: updatedGame.winnerId,
-            message: 'Timeout! Game Over.',
-          });
-        } else if (isDraw) {
-          this.server.to(payload.gameId).emit('gameEnd', {
-            ...baseGameEndPayload,
-            winnerId: null,
-            message: "It's a draw!",
+            winnerId: seriesWinnerId,
+            message: 'Series Over!',
           });
         } else {
-          this.server.to(payload.gameId).emit('gameEnd', {
+          this.server.to(payload.gameId).emit('roundOver', {
             ...baseGameEndPayload,
             winnerId: updatedGame.winnerId,
-            message: 'Game Over!',
+            message: isDraw ? "It's a draw!" : 'Round Over!',
           });
         }
       } else if (updatedGame.lastChance) {
@@ -582,23 +586,35 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const playerId = client.data.userId;
     try {
-      const { updatedGame, isTimeout, ratingChanges } = await this.gameService.makeGuess(
+      const { updatedGame, isTimeout, ratingChanges, matchOver } = await this.gameService.handleTimeout(
         payload.gameId,
         playerId,
-        'TIMEOUT_CHECK',
       );
       if (isTimeout && updatedGame.status === 'finished') {
-        this.server.to(payload.gameId).emit('gameEnd', {
-          gameId: payload.gameId,
-          player1Wins: updatedGame.player1Wins,
-          player2Wins: updatedGame.player2Wins,
-          maxRounds: updatedGame.maxRounds,
-          currentRound: updatedGame.currentRound,
-          roundHistory: updatedGame.roundHistory ?? [],
-          ratingChanges,
-          winnerId: updatedGame.winnerId,
-          message: 'Timeout! Game Over.',
-        });
+        if (matchOver) {
+          const seriesWinnerId = updatedGame.player1RoundWins > updatedGame.player2RoundWins 
+            ? updatedGame.player1Id 
+            : updatedGame.player1RoundWins < updatedGame.player2RoundWins 
+              ? updatedGame.player2Id 
+              : null;
+              
+          this.server.to(payload.gameId).emit('gameEnd', {
+            gameId: payload.gameId,
+            player1Wins: updatedGame.player1Wins,
+            player2Wins: updatedGame.player2Wins,
+            maxRounds: updatedGame.maxRounds,
+            currentRound: updatedGame.currentRound,
+            roundHistory: updatedGame.roundHistory ?? [],
+            ratingChanges,
+            winnerId: seriesWinnerId,
+            message: 'Timeout! Series Over.',
+          });
+        } else {
+          this.server.to(payload.gameId).emit('roundOver', {
+            winnerId: updatedGame.winnerId,
+            message: 'Timeout! Round Over.',
+          });
+        }
         this.server.to(payload.gameId).emit('gameInfo', updatedGame);
       }
     } catch (e) {
@@ -636,23 +652,35 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private async executeServerTimeout(gameId: string, playerId: string) {
     this.clearGameTimer(gameId);
     try {
-      const { updatedGame, isTimeout, ratingChanges } = await this.gameService.makeGuess(
+      const { updatedGame, isTimeout, ratingChanges, matchOver } = await this.gameService.handleTimeout(
         gameId,
         playerId,
-        'TIMEOUT_CHECK',
       );
       if (isTimeout && updatedGame.status === 'finished') {
-        this.server.to(gameId).emit('gameEnd', {
-          gameId,
-          player1Wins: updatedGame.player1Wins,
-          player2Wins: updatedGame.player2Wins,
-          maxRounds: updatedGame.maxRounds,
-          currentRound: updatedGame.currentRound,
-          roundHistory: updatedGame.roundHistory ?? [],
-          ratingChanges,
-          winnerId: updatedGame.winnerId,
-          message: 'Timeout! Game Over.',
-        });
+        if (matchOver) {
+          const seriesWinnerId = updatedGame.player1RoundWins > updatedGame.player2RoundWins 
+            ? updatedGame.player1Id 
+            : updatedGame.player1RoundWins < updatedGame.player2RoundWins 
+              ? updatedGame.player2Id 
+              : null;
+              
+          this.server.to(gameId).emit('gameEnd', {
+            gameId,
+            player1Wins: updatedGame.player1Wins,
+            player2Wins: updatedGame.player2Wins,
+            maxRounds: updatedGame.maxRounds,
+            currentRound: updatedGame.currentRound,
+            roundHistory: updatedGame.roundHistory ?? [],
+            ratingChanges,
+            winnerId: seriesWinnerId,
+            message: 'Timeout! Series Over.',
+          });
+        } else {
+          this.server.to(gameId).emit('roundOver', {
+            winnerId: updatedGame.winnerId,
+            message: 'Timeout! Round Over.',
+          });
+        }
         this.server.to(gameId).emit('gameInfo', updatedGame);
       }
     } catch (e) {

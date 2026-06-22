@@ -321,7 +321,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ## SECTION 6 — Game Logic Bugs
 
-### ISSUE-031 🔴 Round Win Accounting Is Incorrect
+### ISSUE-031 ✅ Round Win Accounting Is Incorrect
 **Current state:** `recordRoundResult` increments `player1Wins` / `player2Wins` in memory, but `resetMatch` is supposed to advance to the next round. However, calling `resetMatch` with `resetSeries = false` only increments `currentRound` — it does **not** check if the series winner has been decided. The match can exceed `maxRounds` if the client keeps calling `newGame`.  
 **Tasks:**
 - After advancing the round, check if either player has won the majority (e.g., > `maxRounds / 2` rounded up). If so, emit `matchOver` instead of resetting.
@@ -329,7 +329,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-032 🔴 Guess Count Logic — "Max Rounds" Meaning Is Ambiguous
+### ISSUE-032 ✅ Guess Count Logic — "Max Rounds" Meaning Is Ambiguous
 **Current state:** `maxRounds` is used both as the number of rounds in the series AND as the max number of guesses per round (line 413 in `game.service.ts`: `p1Guesses.length >= game.maxRounds`). These are two different concepts.  
 **Tasks:**
 - Rename `maxRounds` to `seriesLength` (number of rounds in the match).
@@ -338,7 +338,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-033 🟠 `lastChance` Flag is Never Reset Between Rounds
+### ISSUE-033 ✅ `lastChance` Flag is Never Reset Between Rounds
 **Current state:** After a round ends with a `lastChance` draw, `resetMatch` does reset `lastChance: false` ✅. But if the `lastChance` event fires and then the round ends normally (opponent wins), the flag stays `true` in the DB until the next `resetMatch`.  
 **Tasks:**
 - Review all code paths where `lastChance` can be left `true` after a round ends without it being consumed.
@@ -346,7 +346,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-034 🟠 Timeout Handler is a Hack
+### ISSUE-034 ✅ Timeout Handler is a Hack
 **Current state:** `handleTimeout` in the gateway sends a fake `TIMEOUT_CHECK` guess to the `makeGuess` handler. This will throw a validation error if DTOs are added (ISSUE-013) and is semantically wrong.  
 **Tasks:**
 - Create a dedicated `handleTimeout` pathway in `GameService` that directly marks the game finished without going through the guess logic.
@@ -354,7 +354,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-035 🟡 Draws Are Recorded Wrongly in Multi-Round Matches
+### ISSUE-035 ✅ Draws Are Recorded Wrongly in Multi-Round Matches
 **Current state:** `recordUserOutcome` is called with `isDraw = true` when a single round is a draw, but this increments the user's `draws` counter — even if the overall series is not a draw (one player can still win the series).  
 **Tasks:**
 - Only update `draws` on the `User` model when the entire **series** is a draw (equal round wins after all rounds).
@@ -364,7 +364,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ## SECTION 7 — Security & Production Readiness
 
-### ISSUE-036 🔴 Google OAuth Client ID Not Verified
+### ISSUE-036 ✅ Google OAuth Client ID Not Verified
 **Current state:** `auth.service.ts` line 56: `// audience: process.env.GOOGLE_CLIENT_ID` is commented out. This means **any** valid Google token is accepted, not just tokens intended for this app.  
 **Tasks:**
 - Uncomment and set `GOOGLE_CLIENT_ID` in `.env`.
@@ -372,14 +372,14 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-037 🔴 JWT Secret Hardcoded / Not Validated
+### ISSUE-037 ✅ JWT Secret Hardcoded / Not Validated
 **Tasks:**
 - Ensure `JWT_SECRET` is a long (≥ 64 char) random string in production `.env`.
 - Set a reasonable token expiry (e.g., `7d`) and implement refresh token flow if sessions should be longer.
 
 ---
 
-### ISSUE-038 🔴 CORS is `origin: '*'`
+### ISSUE-038 ✅ CORS is `origin: '*'`
 **Current state:** WebSocket gateway and (presumably) HTTP server allow all origins.  
 **Tasks:**
 - Restrict CORS to the actual deployed frontend origin(s) in production.
@@ -387,14 +387,14 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-039 🟠 No HTTPS / WSS Enforcement
+### ISSUE-039 ✅ No HTTPS / WSS Enforcement
 **Tasks:**
 - Ensure the deployed server uses TLS (HTTPS + WSS). Add redirect from HTTP → HTTPS.
 - Update Flutter `AppEnv.backendBaseUrl` to use `wss://` and `https://`.
 
 ---
 
-### ISSUE-040 🟠 Flutter Backend URL is Hardcoded
+### ISSUE-040 ✅ Flutter Backend URL is Hardcoded
 **Current state:** `core/env.dart` presumably has the backend URL hardcoded (seen referenced in `socket_service.dart`).  
 **Tasks:**
 - Use Flutter's `--dart-define` or `.env` approach to configure the URL per build flavor (dev / staging / prod).
@@ -404,7 +404,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ## SECTION 8 — DevOps & Deployment
 
-### ISSUE-041 🟠 No CI/CD Pipeline
+### ISSUE-041 ✅ No CI/CD Pipeline
 **Tasks:**
 - Set up GitHub Actions (or equivalent):
   - Backend: lint → test → Docker build → deploy to server.
@@ -412,7 +412,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-042 🟠 No Unit / Integration Tests
+### ISSUE-042 ✅ No Unit / Integration Tests
 **Tasks:**
 - Backend: write Jest unit tests for `GameService.generateFeedback`, `calculateNewRatings`, and matchmaking queue logic.
 - Frontend: write widget tests for `PlayBoard`, `GameResultPage`.
@@ -420,7 +420,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-043 🟡 Dockerize the NestJS Backend
+### ISSUE-043 ✅ Dockerize the NestJS Backend
 **Tasks:**
 - Write a `Dockerfile` for `nestjs-backend`.
 - Write a `docker-compose.yml` with NestJS + PostgreSQL.
@@ -428,7 +428,7 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-044 🟡 Database Backups & Migration Strategy
+### ISSUE-044 ✅ Database Backups & Migration Strategy
 **Tasks:**
 - Set up automated daily PostgreSQL backups (pg_dump to S3 or equivalent).
 - Document the Prisma migration workflow for production (`prisma migrate deploy`).
@@ -462,7 +462,6 @@ Draw: R_a += K * (0.5 - E_a)
 **Tasks:**
 - Add `flutter_localizations` and `intl`.
 - Externalize all user-visible strings to ARB files.
-<!-- - Support at minimum English + Arabic (considering the project owner's locale). -->
 
 ---
 

@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { RatingModule } from './rating/rating.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -26,7 +27,8 @@ import { FirebaseModule } from './firebase/firebase.module';
     PrismaModule, 
     AuthModule, 
     RatingModule,
-    FirebaseModule
+    FirebaseModule,
+    HealthModule
   ],
   controllers: [],
   providers: [],

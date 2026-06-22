@@ -448,14 +448,28 @@ export class GameService {
     let position = 0;
     let number = 0;
 
-    guess.split('').forEach((digit, index) => {
-      if (secret[index] === digit) {
+    const secretArr = secret.split('');
+    const guessArr = guess.split('');
+
+    // Step 1: Find exact matches
+    for (let i = 0; i < guessArr.length; i++) {
+      if (guessArr[i] === secretArr[i]) {
         position++;
+        guessArr[i] = null;
+        secretArr[i] = null;
       }
-      if (secret.includes(digit)) {
-        number++;
+    }
+
+    // Step 2: Find number matches (right digit, wrong position)
+    for (let i = 0; i < guessArr.length; i++) {
+      if (guessArr[i] !== null) {
+        const indexInSecret = secretArr.indexOf(guessArr[i]);
+        if (indexInSecret !== -1) {
+          number++;
+          secretArr[indexInSecret] = null;
+        }
       }
-    });
+    }
 
     return { position, number };
   }
@@ -562,7 +576,7 @@ export class GameService {
       const p2Wins = freshGame?.player2RoundWins ?? 0;
       const winsNeeded = Math.ceil((freshGame?.maxRounds ?? game.maxRounds) / 2);
       
-      if (p1Wins >= winsNeeded || p2Wins >= winsNeeded) {
+      if (p1Wins >= winsNeeded || p2Wins >= winsNeeded || game.currentRound >= game.maxRounds) {
         matchOver = true;
       }
     }
@@ -634,10 +648,14 @@ export class GameService {
     let matchOver = false;
     let ratingChanges = { ratingChangeA: 0, ratingChangeB: 0 };
 
-    if (p1Wins >= winsNeeded || p2Wins >= winsNeeded) {
+    if (p1Wins >= winsNeeded || p2Wins >= winsNeeded || game.currentRound >= (updatedGame.maxRounds ?? 3)) {
       matchOver = true;
-      const seriesWinnerId = p1Wins >= winsNeeded ? game.player1Id : game.player2Id;
-      ratingChanges = await this.recordUserOutcome(updatedGame, seriesWinnerId, false);
+      const seriesWinnerId = p1Wins > p2Wins 
+        ? game.player1Id 
+        : p1Wins < p2Wins 
+          ? game.player2Id 
+          : null;
+      ratingChanges = await this.recordUserOutcome(updatedGame, seriesWinnerId, seriesWinnerId === null);
     }
 
     return { 

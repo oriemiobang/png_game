@@ -27,6 +27,9 @@ function generateGameId() {
     const suffix = Array.from({ length: 15 }, () => hexChars[Math.floor(Math.random() * 16)]).join('');
     return `PNG${suffix}`;
 }
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : '*';
 let GameGateway = class GameGateway {
     constructor(gameService, matchmakingService, jwtService, firebaseService, prisma) {
         this.gameService = gameService;
@@ -287,15 +290,29 @@ let GameGateway = class GameGateway {
         const playerId = client.data.userId;
         try {
             const resetSeries = payload.approved === true;
-            const updatedGame = await this.gameService.resetMatch(payload.gameId, resetSeries);
+            const result = await this.gameService.resetMatch(payload.gameId, resetSeries);
+            if (result.matchOver) {
+                this.server.to(payload.gameId).emit('gameEnd', {
+                    gameId: payload.gameId,
+                    player1Wins: result.player1RoundWins,
+                    player2Wins: result.player2RoundWins,
+                    maxRounds: result.maxRounds,
+                    currentRound: result.currentRound,
+                    roundHistory: result.roundHistory ?? [],
+                    winnerId: result.seriesWinnerId,
+                    message: 'Series Over!',
+                });
+                this.server.to(payload.gameId).emit('gameInfo', result);
+                return;
+            }
             this.server.to(payload.gameId).emit('requestNewGame', {
                 gameId: payload.gameId,
                 playerId,
                 resetSeries,
-                currentRound: updatedGame.currentRound,
-                maxRounds: updatedGame.maxRounds,
+                currentRound: result.currentRound,
+                maxRounds: result.maxRounds,
             });
-            this.server.to(payload.gameId).emit('gameInfo', updatedGame);
+            this.server.to(payload.gameId).emit('gameInfo', result);
         }
         catch (e) {
             client.emit('room_error', e.message);
@@ -304,7 +321,7 @@ let GameGateway = class GameGateway {
     async handleMakeGuess(client, payload) {
         const playerId = client.data.userId;
         try {
-            const { updatedGame, feedback, isDraw, isTimeout, ratingChanges } = await this.gameService.makeGuess(payload.gameId, playerId, payload.guess);
+            const { updatedGame, feedback, isDraw, isTimeout, ratingChanges, matchOver } = await this.gameService.makeGuess(payload.gameId, playerId, payload.guess);
             this.server.to(payload.gameId).emit('feedback', {
                 playerId,
                 guess: payload.guess,
@@ -321,25 +338,23 @@ let GameGateway = class GameGateway {
                     roundHistory: updatedGame.roundHistory ?? [],
                     ratingChanges,
                 };
-                if (isTimeout) {
+                if (matchOver) {
+                    const seriesWinnerId = updatedGame.player1RoundWins > updatedGame.player2RoundWins
+                        ? updatedGame.player1Id
+                        : updatedGame.player1RoundWins < updatedGame.player2RoundWins
+                            ? updatedGame.player2Id
+                            : null;
                     this.server.to(payload.gameId).emit('gameEnd', {
                         ...baseGameEndPayload,
-                        winnerId: updatedGame.winnerId,
-                        message: 'Timeout! Game Over.',
-                    });
-                }
-                else if (isDraw) {
-                    this.server.to(payload.gameId).emit('gameEnd', {
-                        ...baseGameEndPayload,
-                        winnerId: null,
-                        message: "It's a draw!",
+                        winnerId: seriesWinnerId,
+                        message: 'Series Over!',
                     });
                 }
                 else {
-                    this.server.to(payload.gameId).emit('gameEnd', {
+                    this.server.to(payload.gameId).emit('roundOver', {
                         ...baseGameEndPayload,
                         winnerId: updatedGame.winnerId,
-                        message: 'Game Over!',
+                        message: isDraw ? "It's a draw!" : 'Round Over!',
                     });
                 }
             }
@@ -395,19 +410,32 @@ let GameGateway = class GameGateway {
     async handleTimeout(client, payload) {
         const playerId = client.data.userId;
         try {
-            const { updatedGame, isTimeout, ratingChanges } = await this.gameService.makeGuess(payload.gameId, playerId, 'TIMEOUT_CHECK');
+            const { updatedGame, isTimeout, ratingChanges, matchOver } = await this.gameService.handleTimeout(payload.gameId, playerId);
             if (isTimeout && updatedGame.status === 'finished') {
-                this.server.to(payload.gameId).emit('gameEnd', {
-                    gameId: payload.gameId,
-                    player1Wins: updatedGame.player1Wins,
-                    player2Wins: updatedGame.player2Wins,
-                    maxRounds: updatedGame.maxRounds,
-                    currentRound: updatedGame.currentRound,
-                    roundHistory: updatedGame.roundHistory ?? [],
-                    ratingChanges,
-                    winnerId: updatedGame.winnerId,
-                    message: 'Timeout! Game Over.',
-                });
+                if (matchOver) {
+                    const seriesWinnerId = updatedGame.player1RoundWins > updatedGame.player2RoundWins
+                        ? updatedGame.player1Id
+                        : updatedGame.player1RoundWins < updatedGame.player2RoundWins
+                            ? updatedGame.player2Id
+                            : null;
+                    this.server.to(payload.gameId).emit('gameEnd', {
+                        gameId: payload.gameId,
+                        player1Wins: updatedGame.player1Wins,
+                        player2Wins: updatedGame.player2Wins,
+                        maxRounds: updatedGame.maxRounds,
+                        currentRound: updatedGame.currentRound,
+                        roundHistory: updatedGame.roundHistory ?? [],
+                        ratingChanges,
+                        winnerId: seriesWinnerId,
+                        message: 'Timeout! Series Over.',
+                    });
+                }
+                else {
+                    this.server.to(payload.gameId).emit('roundOver', {
+                        winnerId: updatedGame.winnerId,
+                        message: 'Timeout! Round Over.',
+                    });
+                }
                 this.server.to(payload.gameId).emit('gameInfo', updatedGame);
             }
         }
@@ -434,19 +462,32 @@ let GameGateway = class GameGateway {
     async executeServerTimeout(gameId, playerId) {
         this.clearGameTimer(gameId);
         try {
-            const { updatedGame, isTimeout, ratingChanges } = await this.gameService.makeGuess(gameId, playerId, 'TIMEOUT_CHECK');
+            const { updatedGame, isTimeout, ratingChanges, matchOver } = await this.gameService.handleTimeout(gameId, playerId);
             if (isTimeout && updatedGame.status === 'finished') {
-                this.server.to(gameId).emit('gameEnd', {
-                    gameId,
-                    player1Wins: updatedGame.player1Wins,
-                    player2Wins: updatedGame.player2Wins,
-                    maxRounds: updatedGame.maxRounds,
-                    currentRound: updatedGame.currentRound,
-                    roundHistory: updatedGame.roundHistory ?? [],
-                    ratingChanges,
-                    winnerId: updatedGame.winnerId,
-                    message: 'Timeout! Game Over.',
-                });
+                if (matchOver) {
+                    const seriesWinnerId = updatedGame.player1RoundWins > updatedGame.player2RoundWins
+                        ? updatedGame.player1Id
+                        : updatedGame.player1RoundWins < updatedGame.player2RoundWins
+                            ? updatedGame.player2Id
+                            : null;
+                    this.server.to(gameId).emit('gameEnd', {
+                        gameId,
+                        player1Wins: updatedGame.player1Wins,
+                        player2Wins: updatedGame.player2Wins,
+                        maxRounds: updatedGame.maxRounds,
+                        currentRound: updatedGame.currentRound,
+                        roundHistory: updatedGame.roundHistory ?? [],
+                        ratingChanges,
+                        winnerId: seriesWinnerId,
+                        message: 'Timeout! Series Over.',
+                    });
+                }
+                else {
+                    this.server.to(gameId).emit('roundOver', {
+                        winnerId: updatedGame.winnerId,
+                        message: 'Timeout! Round Over.',
+                    });
+                }
                 this.server.to(gameId).emit('gameInfo', updatedGame);
             }
         }
@@ -546,7 +587,7 @@ exports.GameGateway = GameGateway = __decorate([
     (0, common_1.UseFilters)(new ws_exception_filter_1.WsAllExceptionsFilter()),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ transform: true, whitelist: true })),
     (0, common_1.UseGuards)(ws_throttler_guard_1.WsThrottlerGuard, ws_jwt_guard_1.WsJwtGuard),
-    (0, websockets_1.WebSocketGateway)({ cors: { origin: '*' } }),
+    (0, websockets_1.WebSocketGateway)({ cors: { origin: allowedOrigins } }),
     __metadata("design:paramtypes", [game_service_1.GameService,
         matchmaking_service_1.MatchmakingService,
         jwt_1.JwtService,

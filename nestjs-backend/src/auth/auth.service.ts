@@ -51,9 +51,10 @@ export class AuthService {
 
   async verifyGoogleToken(idToken: string) {
     try {
+      const audience = process.env.GOOGLE_CLIENT_ID?.split(',').map(id => id.trim());
       const ticket = await this.googleClient.verifyIdToken({
         idToken,
-        // audience: process.env.GOOGLE_CLIENT_ID, // Add your client ID to .env to verify properly in production
+        audience, // Verifies the token was intended for this app
       });
       const payload = ticket.getPayload();
       

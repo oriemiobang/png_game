@@ -49,8 +49,10 @@ let AuthService = class AuthService {
     }
     async verifyGoogleToken(idToken) {
         try {
+            const audience = process.env.GOOGLE_CLIENT_ID?.split(',').map(id => id.trim());
             const ticket = await this.googleClient.verifyIdToken({
                 idToken,
+                audience,
             });
             const payload = ticket.getPayload();
             if (!payload || !payload.email) {
