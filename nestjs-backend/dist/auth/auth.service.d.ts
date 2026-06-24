@@ -40,12 +40,12 @@ export declare class AuthService {
             date: Date;
         }[];
         id: string;
-        email: string | null;
-        password: string | null;
         name: string | null;
-        googleId: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
+        googleId: string | null;
+        password: string | null;
         gamesPlayed: number;
         wins: number;
         losses: number;
@@ -67,12 +67,12 @@ export declare class AuthService {
     }[]>;
     updateFcmToken(userId: string, fcmToken: string): Promise<{
         id: string;
-        email: string | null;
-        password: string | null;
         name: string | null;
-        googleId: string | null;
         createdAt: Date;
         updatedAt: Date;
+        email: string | null;
+        googleId: string | null;
+        password: string | null;
         gamesPlayed: number;
         wins: number;
         losses: number;

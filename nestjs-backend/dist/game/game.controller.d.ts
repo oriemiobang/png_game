@@ -19,9 +19,9 @@ export declare class GameController {
             number: number;
             id: string;
             createdAt: Date;
-            guess: string;
             gameId: string;
             playerId: string;
+            guess: string;
             position: number;
             round: number;
         }[];
@@ -29,9 +29,9 @@ export declare class GameController {
             number: number;
             id: string;
             createdAt: Date;
-            guess: string;
             gameId: string;
             playerId: string;
+            guess: string;
             position: number;
             round: number;
         }[];

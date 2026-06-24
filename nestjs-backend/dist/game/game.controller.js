@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GameController = void 0;
 const common_1 = require("@nestjs/common");
 const game_service_1 = require("./game.service");
-const auth_guard_1 = require("../auth/auth.guard");
+const passport_1 = require("@nestjs/passport");
 let GameController = class GameController {
     constructor(gameService) {
         this.gameService = gameService;
@@ -53,7 +53,7 @@ __decorate([
 ], GameController.prototype, "analyzeGuess", null);
 exports.GameController = GameController = __decorate([
     (0, common_1.Controller)('game'),
-    (0, common_1.UseGuards)(auth_guard_1.AuthGuard),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
     __metadata("design:paramtypes", [game_service_1.GameService])
 ], GameController);
 //# sourceMappingURL=game.controller.js.map
