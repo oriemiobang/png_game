@@ -525,40 +525,40 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 10,
-                      backgroundColor: Colors.blue.shade100,
-                      child: Text((myPlayerObj?['name'] as String?)?.substring(0, 1).toUpperCase() ?? 'Y', style: TextStyle(fontSize: 10, color: Colors.blue.shade800, fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 6),
-                    Text('You', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    RatingUtils.buildRatingBadge(myRating, fontSize: 10),
-                    const SizedBox(width: 8),
-                    if (status == 'playing' && hasTimer) _buildTimerBadge(isPlayer1 ? _player1TimeLeft : _player2TimeLeft, isMyTurn),
-                  ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 10,
+                        backgroundColor: Colors.blue.shade100,
+                        child: Text((myPlayerObj?['name'] as String?)?.substring(0, 1).toUpperCase() ?? 'Y', style: TextStyle(fontSize: 10, color: Colors.blue.shade800, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(child: Text('You', overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold))),
+                      if (status == 'playing' && hasTimer) _buildTimerBadge(isPlayer1 ? _player1TimeLeft : _player2TimeLeft, isMyTurn),
+                    ],
+                  ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
                   child: Text('Round ${myGuesses.length + 1}/${gameData['maxRounds']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
                 ),
-                Row(
-                  children: [
-                    if (status == 'playing' && hasTimer) _buildTimerBadge(isPlayer1 ? _player2TimeLeft : _player1TimeLeft, !isMyTurn),
-                    const SizedBox(width: 8),
-                    RatingUtils.buildRatingBadge(opponentRating, fontSize: 10),
-                    const SizedBox(width: 8),
-                    Text(opponentPlayerObj?['name'] ?? 'Opponent', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
-                    const SizedBox(width: 6),
-                    CircleAvatar(
-                      radius: 10,
-                      backgroundColor: Colors.red.shade100,
-                      child: Text((opponentPlayerObj?['name'] as String?)?.substring(0, 1).toUpperCase() ?? 'O', style: TextStyle(fontSize: 10, color: Colors.red.shade800, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (status == 'playing' && hasTimer) _buildTimerBadge(isPlayer1 ? _player2TimeLeft : _player1TimeLeft, !isMyTurn),
+                      const SizedBox(width: 4),
+                      Expanded(child: Text(opponentPlayerObj?['name'] ?? 'Opponent', textAlign: TextAlign.right, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700))),
+                      const SizedBox(width: 4),
+                      CircleAvatar(
+                        radius: 10,
+                        backgroundColor: Colors.red.shade100,
+                        child: Text((opponentPlayerObj?['name'] as String?)?.substring(0, 1).toUpperCase() ?? 'O', style: TextStyle(fontSize: 10, color: Colors.red.shade800, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

@@ -129,8 +129,12 @@ class _FindMatchScreenState extends State<FindMatchScreen>
     final data = context.watch<Data>();
     final isSearching = data.isSearchingForMatch;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = theme.textTheme.bodyLarge?.color ?? (isDark ? Colors.white : Colors.black87);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // ── Decorative background blobs ───────────────────────────────────
@@ -159,18 +163,18 @@ class _FindMatchScreenState extends State<FindMatchScreen>
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Ionicons.arrow_back,
-                            color: Colors.white70),
+                        icon: Icon(Ionicons.arrow_back,
+                            color: theme.appBarTheme.iconTheme?.color ?? textColor.withValues(alpha: 0.7)),
                         onPressed: () {
                           if (isSearching) _cancelSearch();
                           context.go('/');
                         },
                       ),
                       const SizedBox(width: 4),
-                      const Text(
+                      Text(
                         'Find Match',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: textColor,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -243,10 +247,10 @@ class _FindMatchScreenState extends State<FindMatchScreen>
                               ? Column(
                                   key: const ValueKey('searching'),
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Searching for opponent…',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: textColor,
                                         fontSize: 22,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -255,29 +259,29 @@ class _FindMatchScreenState extends State<FindMatchScreen>
                                     const SizedBox(height: 8),
                                     Text(
                                       '$_maxRounds rounds  •  ${_timeLimitLabel(_timeLimit)}',
-                                      style: const TextStyle(
-                                        color: Colors.white54,
+                                      style: TextStyle(
+                                        color: textColor.withValues(alpha: 0.6),
                                         fontSize: 14,
                                       ),
                                     ),
                                   ],
                                 )
-                              : const Column(
-                                  key: ValueKey('idle'),
+                              : Column(
+                                  key: const ValueKey('idle'),
                                   children: [
                                     Text(
                                       'Play Now',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: textColor,
                                         fontSize: 28,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    SizedBox(height: 8),
+                                    const SizedBox(height: 8),
                                     Text(
                                       'Pick your settings and we\'ll find you\nan opponent instantly.',
                                       style: TextStyle(
-                                          color: Colors.white54, fontSize: 14),
+                                          color: textColor.withValues(alpha: 0.6), fontSize: 14),
                                       textAlign: TextAlign.center,
                                     ),
                                   ],
@@ -327,7 +331,7 @@ class _FindMatchScreenState extends State<FindMatchScreen>
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: Colors.white.withValues(alpha: 0.12),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.1),
                                 ),
                               ),
                               Padding(
@@ -336,14 +340,14 @@ class _FindMatchScreenState extends State<FindMatchScreen>
                                 child: Text(
                                   'or',
                                   style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.4),
+                                    color: isDark ? Colors.white.withValues(alpha: 0.4) : Colors.black.withValues(alpha: 0.4),
                                     fontSize: 12,
                                   ),
                                 ),
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: Colors.white.withValues(alpha: 0.12),
+                                  color: isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.1),
                                 ),
                               ),
                             ],
@@ -404,12 +408,23 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.white;
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05);
+
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
+        color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: borderColor),
+        boxShadow: isDark ? [] : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,14 +482,17 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isDark ? Colors.white60 : Colors.black54;
+
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.white60),
+        Icon(icon, size: 16, color: color),
         const SizedBox(width: 8),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white60,
+          style: TextStyle(
+            color: color,
             fontSize: 13,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.5,
@@ -500,6 +518,11 @@ class _OptionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unselectedBg = isDark ? Colors.white.withValues(alpha: 0.07) : Colors.black.withValues(alpha: 0.03);
+    final unselectedBorder = isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08);
+    final unselectedText = isDark ? Colors.white54 : Colors.black54;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -508,12 +531,12 @@ class _OptionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? selectedColor
-              : Colors.white.withValues(alpha: 0.07),
+              : unselectedBg,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: selected
                 ? selectedColor
-                : Colors.white.withValues(alpha: 0.12),
+                : unselectedBorder,
             width: selected ? 2 : 1,
           ),
           boxShadow: selected
@@ -530,7 +553,7 @@ class _OptionChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.white54,
+            color: selected ? Colors.white : unselectedText,
             fontWeight: selected ? FontWeight.bold : FontWeight.normal,
             fontSize: 13,
           ),
@@ -601,23 +624,27 @@ class _CancelButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = isDark ? Colors.white70 : Colors.black87;
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.25) : Colors.black.withValues(alpha: 0.15);
+
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon: const Icon(Ionicons.close_circle_outline,
-            color: Colors.white70, size: 20),
-        label: const Text(
+        icon: Icon(Ionicons.close_circle_outline,
+            color: color, size: 20),
+        label: Text(
           'Cancel Search',
           style: TextStyle(
-              color: Colors.white70,
+              color: color,
               fontSize: 16,
               fontWeight: FontWeight.w600),
         ),
         style: OutlinedButton.styleFrom(
           side:
-              BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+              BorderSide(color: borderColor),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16)),
         ),
@@ -632,6 +659,13 @@ class _PrivateRoomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03);
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05);
+    final primaryColor = isDark ? Colors.white : Colors.black87;
+    final secondaryColor = isDark ? Colors.white60 : Colors.black54;
+    final mutedColor = isDark ? Colors.white38 : Colors.black38;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -639,16 +673,16 @@ class _PrivateRoomButton extends StatelessWidget {
         padding:
             const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
+          color: bgColor,
           borderRadius: BorderRadius.circular(16),
           border:
-              Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              Border.all(color: borderColor),
         ),
-        child: const Row(
+        child: Row(
           children: [
             Icon(Ionicons.lock_closed_outline,
-                color: Colors.white60, size: 20),
-            SizedBox(width: 14),
+                color: secondaryColor, size: 20),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -656,20 +690,20 @@ class _PrivateRoomButton extends StatelessWidget {
                   Text(
                     'Play with a friend',
                     style: TextStyle(
-                        color: Colors.white,
+                        color: primaryColor,
                         fontWeight: FontWeight.w600,
                         fontSize: 15),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
                     'Create a private room and share the code or QR',
-                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                    style: TextStyle(color: mutedColor, fontSize: 12),
                   ),
                 ],
               ),
             ),
             Icon(Ionicons.chevron_forward,
-                color: Colors.white30, size: 18),
+                color: mutedColor, size: 18),
           ],
         ),
       ),

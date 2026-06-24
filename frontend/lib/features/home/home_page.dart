@@ -62,6 +62,8 @@ class _HomePageState extends State<HomePage> {
             _buildPlayOptionsSection(socketService),
             const SizedBox(height: 15),
             _buildPlayWithFriendSection(socketService),
+            const SizedBox(height: 20),
+            _buildGameHistories(stats),
           ],
         ),
       ),
@@ -404,5 +406,56 @@ class _HomePageState extends State<HomePage> {
 
   void _createAndShareRoom(SocketService socketService) {
     context.push('/create_game');
+  }
+
+  Widget _buildGameHistories(Map<String, dynamic> stats) {
+    final historyList = stats['matchHistory'] as List<dynamic>? ?? [];
+    if (historyList.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Game History',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        ...historyList.map((item) {
+          final history = item as Map<String, dynamic>;
+          final opponentName = history['opponentName'] ?? 'Unknown';
+          final opponentRating = history['opponentRating'] ?? 0;
+          final outcome = history['outcome'] as String? ?? 'draw';
+
+          Color iconColor;
+          IconData iconData;
+          if (outcome == 'win') {
+            iconColor = Colors.green;
+            iconData = Ionicons.arrow_up_circle;
+          } else if (outcome == 'loss') {
+            iconColor = Colors.red;
+            iconData = Ionicons.arrow_down_circle;
+          } else {
+            iconColor = Colors.grey;
+            iconData = Ionicons.remove_circle;
+          }
+
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade300),
+            ),
+            child: ListTile(
+              title: Text(opponentName, style: const TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: Text('Rating: $opponentRating'),
+              trailing: Icon(iconData, color: iconColor, size: 28),
+            ),
+          );
+        }).toList(),
+      ],
+    );
   }
 }

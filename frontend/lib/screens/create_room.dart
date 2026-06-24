@@ -169,7 +169,7 @@ class _CreateRoomState extends State<CreateRoom>
     // Format settings labels
     final roundsLabel = 'Best of $maxRounds';
     final timeLabel =
-        timeLimit == 0 ? 'No Timer' : '${timeLimit}m / turn';
+        timeLimit == 0 ? 'No Timer' : '${timeLimit}m / player';
     final privacyLabel = isPrivate ? 'Private' : 'Public';
     final privacyIcon =
         isPrivate ? Ionicons.lock_closed_outline : Ionicons.lock_open_outline;

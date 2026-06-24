@@ -12,7 +12,7 @@ class CreateGames extends StatefulWidget {
 }
 
 class _CreateGamesState extends State<CreateGames> {
-  bool isPrivate = false;
+  final bool isPrivate = true; // Always private when creating from "Play with a friend"
   int maxRounds = 3;
   int timeLimit = 3;
 
@@ -146,8 +146,8 @@ class _CreateGamesState extends State<CreateGames> {
                           Row(
                             children: [
                               Icon(
-                                isPrivate ? Ionicons.lock_closed : Ionicons.lock_open,
-                                color: isPrivate ? Colors.amber.shade700 : Colors.green.shade600,
+                                Ionicons.lock_closed,
+                                color: Colors.amber.shade700,
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
@@ -156,17 +156,12 @@ class _CreateGamesState extends State<CreateGames> {
                                 children: [
                                   Text('Private Room', style: TextStyle(color: Colors.grey.shade800, fontWeight: FontWeight.w500)),
                                   Text(
-                                    isPrivate ? 'Only invited players can join' : 'Anyone can join',
+                                    'Only invited players can join',
                                     style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                                   ),
                                 ],
                               ),
                             ],
-                          ),
-                          Switch(
-                            value: isPrivate,
-                            onChanged: (val) => setState(() => isPrivate = val),
-                            activeColor: Colors.blueAccent,
                           ),
                         ],
                       ),

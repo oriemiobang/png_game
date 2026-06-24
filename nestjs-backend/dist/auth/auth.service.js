@@ -114,10 +114,39 @@ let AuthService = class AuthService {
             tier = 'Advanced';
         else if (user.rating >= 1000)
             tier = 'Intermediate';
+        const recentGames = await this.prisma.game.findMany({
+            where: {
+                OR: [{ player1Id: userId }, { player2Id: userId }],
+                status: 'finished',
+            },
+            orderBy: { updatedAt: 'desc' },
+            take: 10,
+            include: {
+                player1: { select: { id: true, name: true, rating: true } },
+                player2: { select: { id: true, name: true, rating: true } },
+            },
+        });
+        const matchHistory = recentGames.map(game => {
+            const isPlayer1 = game.player1Id === userId;
+            const opponent = isPlayer1 ? game.player2 : game.player1;
+            let outcome = 'draw';
+            if (game.winnerId === userId)
+                outcome = 'win';
+            else if (game.winnerId && game.winnerId !== userId)
+                outcome = 'loss';
+            return {
+                id: game.id,
+                opponentName: opponent ? opponent.name : 'Unknown',
+                opponentRating: opponent ? opponent.rating : 0,
+                outcome,
+                date: game.updatedAt,
+            };
+        });
         return {
             ...user,
             winRate,
             tier,
+            matchHistory,
         };
     }
     generateToken(userId, email, name) {
