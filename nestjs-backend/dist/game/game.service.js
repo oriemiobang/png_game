@@ -370,7 +370,7 @@ let GameService = class GameService {
                 where: { id: gameId },
                 data: {
                     status: 'playing',
-                    turn: game.player2Id,
+                    turn: updatedGame.player2Id ?? updatedGame.player1Id,
                     player1TimeLeft: game.timeLimit * 1000,
                     player2TimeLeft: game.timeLimit * 1000,
                     turnStartedAt: new Date()
@@ -406,7 +406,7 @@ let GameService = class GameService {
                 }
             }
         }
-        return { position, number };
+        return { position, number: position + number };
     }
     async makeGuess(gameId, playerId, guessStr) {
         const game = await this.prisma.game.findUnique({
@@ -515,14 +515,8 @@ let GameService = class GameService {
                 roundResults: { orderBy: { round: 'asc' } },
             },
         });
-        if (matchOver) {
-            const freshGameForRating = await this.prisma.game.findUnique({ where: { id: gameId } });
-            const seriesWinnerId = freshGameForRating.player1RoundWins > freshGameForRating.player2RoundWins
-                ? game.player1Id
-                : freshGameForRating.player1RoundWins < freshGameForRating.player2RoundWins
-                    ? game.player2Id
-                    : null;
-            ratingChanges = await this.recordUserOutcome(updatedGame, seriesWinnerId, seriesWinnerId === null);
+        if (newStatus === 'finished') {
+            ratingChanges = await this.recordUserOutcome(updatedGame, winnerId, isDraw);
         }
         return { updatedGame: this.attachMatchState(updatedGame), feedback, isDraw, isTimeout: false, ratingChanges, matchOver };
     }
@@ -556,14 +550,9 @@ let GameService = class GameService {
         const winsNeeded = Math.ceil((updatedGame.maxRounds ?? 3) / 2);
         let matchOver = false;
         let ratingChanges = { ratingChangeA: 0, ratingChangeB: 0 };
+        ratingChanges = await this.recordUserOutcome(updatedGame, opponentId, false);
         if (p1Wins >= winsNeeded || p2Wins >= winsNeeded || game.currentRound >= (updatedGame.maxRounds ?? 3)) {
             matchOver = true;
-            const seriesWinnerId = p1Wins > p2Wins
-                ? game.player1Id
-                : p1Wins < p2Wins
-                    ? game.player2Id
-                    : null;
-            ratingChanges = await this.recordUserOutcome(updatedGame, seriesWinnerId, seriesWinnerId === null);
         }
         return {
             updatedGame: this.attachMatchState(updatedGame),

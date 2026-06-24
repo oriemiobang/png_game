@@ -126,6 +126,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           ratingChanges,
           winnerId: updatedGame.winnerId,
           message: 'Opponent Forfeited! You win.',
+          isMatchOver: true,
         });
         // Clean up room
         client.leave(payload.gameId);
@@ -450,6 +451,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           roundHistory: result.roundHistory ?? [],
           winnerId: (result as any).seriesWinnerId,
           message: 'Series Over!',
+          isMatchOver: true,
         });
         this.server.to(payload.gameId).emit('gameInfo', result);
         return;
@@ -511,12 +513,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             ...baseGameEndPayload,
             winnerId: seriesWinnerId,
             message: 'Series Over!',
+            isMatchOver: true,
           });
         } else {
           this.server.to(payload.gameId).emit('roundOver', {
             ...baseGameEndPayload,
             winnerId: updatedGame.winnerId,
             message: isDraw ? "It's a draw!" : 'Round Over!',
+            isMatchOver: false,
           });
         }
       } else if (updatedGame.lastChance) {

@@ -229,16 +229,17 @@ class _MyAppState extends State<MyApp> {
             routerConfig: _router,
             debugShowCheckedModeBanner: false,
             title: 'PNG Game',
+            themeMode: themeProvider.themeMode,
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
                 seedColor: Colors.blue.shade600,
                 primary: Colors.blue.shade600,
                 secondary: Colors.amber.shade600,
                 surface: const Color(0xFFF4F5F7),
+                brightness: Brightness.light,
               ),
               scaffoldBackgroundColor: const Color(0xFFF4F5F7),
-              textTheme:
-                  GoogleFonts.outfitTextTheme(Theme.of(context).textTheme),
+              textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
               appBarTheme: AppBarTheme(
                 backgroundColor: const Color(0xFFF4F5F7),
                 elevation: 0,
@@ -256,8 +257,7 @@ class _MyAppState extends State<MyApp> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
             ),
@@ -271,8 +271,7 @@ class _MyAppState extends State<MyApp> {
                 surface: const Color(0xFF1E1E1E),
               ),
               scaffoldBackgroundColor: const Color(0xFF121212),
-              textTheme:
-                  GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
+              textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
               appBarTheme: AppBarTheme(
                 backgroundColor: const Color(0xFF1E1E1E),
                 elevation: 0,
@@ -290,12 +289,10 @@ class _MyAppState extends State<MyApp> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
               ),
             ),
-            themeMode: themeProvider.themeMode,
           );
         },
       ),

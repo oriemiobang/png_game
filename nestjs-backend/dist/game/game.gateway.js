@@ -93,6 +93,7 @@ let GameGateway = class GameGateway {
                     ratingChanges,
                     winnerId: updatedGame.winnerId,
                     message: 'Opponent Forfeited! You win.',
+                    isMatchOver: true,
                 });
                 client.leave(payload.gameId);
             }
@@ -301,6 +302,7 @@ let GameGateway = class GameGateway {
                     roundHistory: result.roundHistory ?? [],
                     winnerId: result.seriesWinnerId,
                     message: 'Series Over!',
+                    isMatchOver: true,
                 });
                 this.server.to(payload.gameId).emit('gameInfo', result);
                 return;
@@ -348,6 +350,7 @@ let GameGateway = class GameGateway {
                         ...baseGameEndPayload,
                         winnerId: seriesWinnerId,
                         message: 'Series Over!',
+                        isMatchOver: true,
                     });
                 }
                 else {
@@ -355,6 +358,7 @@ let GameGateway = class GameGateway {
                         ...baseGameEndPayload,
                         winnerId: updatedGame.winnerId,
                         message: isDraw ? "It's a draw!" : 'Round Over!',
+                        isMatchOver: false,
                     });
                 }
             }

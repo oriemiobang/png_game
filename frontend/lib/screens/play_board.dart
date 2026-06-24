@@ -136,15 +136,19 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
           : (winnerData['ratingChanges']['ratingChangeB'] ?? 0);
     }
 
-    String title = "Game Over!";
-    String message = "It's a draw!";
+    final isMatchOver = winnerData['isMatchOver'] == true;
+    String title = isMatchOver ? "Series Over!" : "Round Over!";
+    String message = winnerData['message'] ?? "It's a draw!";
     
     if (winnerData['winnerId'] == userId) {
       title = "Congratulations!";
-      message = "You won the game!";
+      message = isMatchOver ? "You won the series!" : "You won the round!";
     } else if (winnerData['winnerId'] != null) {
-      title = "Game Over!";
+      title = isMatchOver ? "Series Over!" : "Round Over!";
       message = "Sorry! You lost. Better luck next time.";
+    } else {
+      title = "Draw!";
+      message = "It's a draw!";
     }
 
     showDialog(
@@ -189,16 +193,30 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
           ],
         ),
         actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              onPressed: () {
-                context.go('/');
-              },
-              child: const Text('Back to Home', style: TextStyle(color: Colors.white)),
-            ),
-          )
+          if (isMatchOver)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                onPressed: () {
+                  context.go('/');
+                },
+                child: const Text('Back to Home', style: TextStyle(color: Colors.white)),
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                onPressed: () {
+                  // Request next round
+                  context.read<SocketService>().requestNewGame(userId, gameData?['id'], false);
+                  Navigator.pop(context);
+                },
+                child: const Text('Next Round', style: TextStyle(color: Colors.white)),
+              ),
+            )
         ],
       ),
     );
@@ -469,11 +487,20 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Ionicons.chatbubble_ellipses_outline, color: Colors.black87),
-            onPressed: () {
-              // Open Chat
-              context.push('/chat');
+          Consumer<Data>(
+            builder: (context, data, child) {
+              return IconButton(
+                icon: Badge(
+                  isLabelVisible: data.unreadMessages > 0,
+                  label: Text('${data.unreadMessages}', style: const TextStyle(color: Colors.white, fontSize: 10)),
+                  backgroundColor: Colors.red,
+                  child: const Icon(Ionicons.chatbubble_ellipses_outline),
+                ),
+                onPressed: () {
+                  // Open Chat
+                  context.push('/chat');
+                },
+              );
             },
           )
         ],
@@ -772,21 +799,11 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
       children: [
         ...List.generate(4, (i) {
           final digit = i < digits.length ? digits[i] : '?';
-          final status = i < colorFeedback.length ? colorFeedback[i] as String : 'X';
-          Color bg, border, text;
-          if (status == 'P') {
-            bg = Colors.green.shade100;
-            border = Colors.green.shade400;
-            text = Colors.green.shade900;
-          } else if (status == 'N') {
-            bg = Colors.orange.shade100;
-            border = Colors.orange.shade400;
-            text = Colors.orange.shade900;
-          } else {
-            bg = Colors.grey.shade100;
-            border = Colors.grey.shade300;
-            text = Colors.grey.shade600;
-          }
+          
+          Color bg = Colors.grey.shade100;
+          Color border = Colors.grey.shade300;
+          Color text = Colors.grey.shade600;
+          
           return Container(
             margin: const EdgeInsets.only(right: 6),
             width: 40,

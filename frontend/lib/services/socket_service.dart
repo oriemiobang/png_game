@@ -114,6 +114,14 @@ class SocketService with ChangeNotifier {
       }
     });
 
+    socket.on('roundOver', (data) {
+      if (data != null) {
+        Data().updateWinner(data);
+        debugPrint('round over data: $data');
+        notifyListeners();
+      }
+    });
+
     // listen to random game info
     socket.on('randomGameInfo', (data) {
       Data().updateRandomGames(data);
