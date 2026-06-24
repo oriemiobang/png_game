@@ -448,10 +448,15 @@ class _HomePageState extends State<HomePage> {
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade300),
             ),
-            child: ListTile(
-              title: Text(opponentName, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('Rating: $opponentRating'),
-              trailing: Icon(iconData, color: iconColor, size: 28),
+            child: InkWell(
+              onTap: () {
+                context.push('/analysis', extra: history['id']);
+              },
+              child: ListTile(
+                title: Text(opponentName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: Text('Rating: $opponentRating'),
+                trailing: Icon(iconData, color: iconColor, size: 28),
+              ),
             ),
           );
         }).toList(),

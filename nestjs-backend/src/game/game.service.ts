@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RatingService } from '../rating/rating.service';
+import { AiService } from '../ai/ai.service';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 @Injectable()
 export class GameService {
   constructor(
     private prisma: PrismaService,
     private ratingService: RatingService,
+    private aiService: AiService,
   ) {}
 
   private attachMatchState<T extends Record<string, any>>(game: T) {
@@ -474,6 +477,7 @@ export class GameService {
     return { position, number: position + number };
   }
 
+
   async makeGuess(gameId: string, playerId: string, guessStr: string) {
     const game = await this.prisma.game.findUnique({
       where: { id: gameId },
@@ -700,5 +704,86 @@ export class GameService {
       select: { id: true },
     });
     return games.map(g => g.id);
+  }
+
+  async getGameDetails(gameId: string, userId: string) {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        guesses: { orderBy: { createdAt: 'asc' } },
+        player1: { select: { id: true, name: true, rating: true } },
+        player2: { select: { id: true, name: true, rating: true } },
+      },
+    });
+
+    if (!game) {
+      throw new HttpException('Game not found', HttpStatus.NOT_FOUND);
+    }
+
+    const isPlayer1 = game.player1Id === userId;
+    const isPlayer2 = game.player2Id === userId;
+
+    if (!isPlayer1 && !isPlayer2) {
+      throw new HttpException('Not authorized to view this game', HttpStatus.FORBIDDEN);
+    }
+
+    return {
+      id: game.id,
+      status: game.status,
+      player1: game.player1,
+      player2: game.player2,
+      myGuesses: game.guesses.filter(g => g.playerId === userId),
+      opponentGuesses: game.guesses.filter(g => g.playerId !== userId),
+      opponentSecret: isPlayer1 ? game.player2Secret : game.player1Secret,
+      mySecret: isPlayer1 ? game.player1Secret : game.player2Secret,
+    };
+  }
+
+  async analyzeGuess(gameId: string, userId: string, guessIndex: number) {
+    const game = await this.prisma.game.findUnique({
+      where: { id: gameId },
+      include: {
+        guesses: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    if (!game) {
+      throw new HttpException('Game not found', HttpStatus.NOT_FOUND);
+    }
+
+    const isPlayer1 = game.player1Id === userId;
+    const isPlayer2 = game.player2Id === userId;
+
+    if (!isPlayer1 && !isPlayer2) {
+      throw new HttpException('Not authorized to view this game', HttpStatus.FORBIDDEN);
+    }
+
+    const secretCode = isPlayer1 ? game.player2Secret : game.player1Secret;
+    if (!secretCode) {
+      throw new HttpException('Secret code not set', HttpStatus.BAD_REQUEST);
+    }
+
+    const playerGuesses = game.guesses.filter(g => g.playerId === userId);
+
+    if (guessIndex >= playerGuesses.length) {
+      throw new HttpException('Invalid guess index', HttpStatus.BAD_REQUEST);
+    }
+
+    const pastGuesses = playerGuesses.slice(0, guessIndex).map(g => ({
+      guess: g.guess,
+      pos: g.position,
+      num: g.number,
+    }));
+
+    const currentGuess = {
+      guess: playerGuesses[guessIndex].guess,
+      pos: playerGuesses[guessIndex].position,
+      num: playerGuesses[guessIndex].number,
+    };
+
+    const analysisText = await this.aiService.analyzeGuess(secretCode, pastGuesses, currentGuess);
+    return { analysis: analysisText };
   }
 }

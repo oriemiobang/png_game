@@ -17,6 +17,7 @@ const auth_module_1 = require("./auth/auth.module");
 const rating_module_1 = require("./rating/rating.module");
 const firebase_module_1 = require("./firebase/firebase.module");
 const health_module_1 = require("./health/health.module");
+const ai_module_1 = require("./ai/ai.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -40,7 +41,8 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             rating_module_1.RatingModule,
             firebase_module_1.FirebaseModule,
-            health_module_1.HealthModule
+            health_module_1.HealthModule,
+            ai_module_1.AiModule
         ],
         controllers: [],
         providers: [],

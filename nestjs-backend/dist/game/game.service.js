@@ -13,10 +13,13 @@ exports.GameService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const rating_service_1 = require("../rating/rating.service");
+const ai_service_1 = require("../ai/ai.service");
+const common_2 = require("@nestjs/common");
 let GameService = class GameService {
-    constructor(prisma, ratingService) {
+    constructor(prisma, ratingService, aiService) {
         this.prisma = prisma;
         this.ratingService = ratingService;
+        this.aiService = aiService;
     }
     attachMatchState(game) {
         return {
@@ -602,11 +605,78 @@ let GameService = class GameService {
         });
         return games.map(g => g.id);
     }
+    async getGameDetails(gameId, userId) {
+        const game = await this.prisma.game.findUnique({
+            where: { id: gameId },
+            include: {
+                guesses: { orderBy: { createdAt: 'asc' } },
+                player1: { select: { id: true, name: true, rating: true } },
+                player2: { select: { id: true, name: true, rating: true } },
+            },
+        });
+        if (!game) {
+            throw new common_2.HttpException('Game not found', common_2.HttpStatus.NOT_FOUND);
+        }
+        const isPlayer1 = game.player1Id === userId;
+        const isPlayer2 = game.player2Id === userId;
+        if (!isPlayer1 && !isPlayer2) {
+            throw new common_2.HttpException('Not authorized to view this game', common_2.HttpStatus.FORBIDDEN);
+        }
+        return {
+            id: game.id,
+            status: game.status,
+            player1: game.player1,
+            player2: game.player2,
+            myGuesses: game.guesses.filter(g => g.playerId === userId),
+            opponentGuesses: game.guesses.filter(g => g.playerId !== userId),
+            opponentSecret: isPlayer1 ? game.player2Secret : game.player1Secret,
+            mySecret: isPlayer1 ? game.player1Secret : game.player2Secret,
+        };
+    }
+    async analyzeGuess(gameId, userId, guessIndex) {
+        const game = await this.prisma.game.findUnique({
+            where: { id: gameId },
+            include: {
+                guesses: {
+                    orderBy: { createdAt: 'asc' },
+                },
+            },
+        });
+        if (!game) {
+            throw new common_2.HttpException('Game not found', common_2.HttpStatus.NOT_FOUND);
+        }
+        const isPlayer1 = game.player1Id === userId;
+        const isPlayer2 = game.player2Id === userId;
+        if (!isPlayer1 && !isPlayer2) {
+            throw new common_2.HttpException('Not authorized to view this game', common_2.HttpStatus.FORBIDDEN);
+        }
+        const secretCode = isPlayer1 ? game.player2Secret : game.player1Secret;
+        if (!secretCode) {
+            throw new common_2.HttpException('Secret code not set', common_2.HttpStatus.BAD_REQUEST);
+        }
+        const playerGuesses = game.guesses.filter(g => g.playerId === userId);
+        if (guessIndex >= playerGuesses.length) {
+            throw new common_2.HttpException('Invalid guess index', common_2.HttpStatus.BAD_REQUEST);
+        }
+        const pastGuesses = playerGuesses.slice(0, guessIndex).map(g => ({
+            guess: g.guess,
+            pos: g.position,
+            num: g.number,
+        }));
+        const currentGuess = {
+            guess: playerGuesses[guessIndex].guess,
+            pos: playerGuesses[guessIndex].position,
+            num: playerGuesses[guessIndex].number,
+        };
+        const analysisText = await this.aiService.analyzeGuess(secretCode, pastGuesses, currentGuess);
+        return { analysis: analysisText };
+    }
 };
 exports.GameService = GameService;
 exports.GameService = GameService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        rating_service_1.RatingService])
+        rating_service_1.RatingService,
+        ai_service_1.AiService])
 ], GameService);
 //# sourceMappingURL=game.service.js.map

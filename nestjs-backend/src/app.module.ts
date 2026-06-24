@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { RatingModule } from './rating/rating.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { HealthModule } from './health/health.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -28,7 +29,8 @@ import { HealthModule } from './health/health.module';
     AuthModule, 
     RatingModule,
     FirebaseModule,
-    HealthModule
+    HealthModule,
+    AiModule
   ],
   controllers: [],
   providers: [],

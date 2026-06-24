@@ -17,6 +17,7 @@ import 'package:png_game/screens/create_room.dart';
 import 'package:png_game/screens/join_room.dart';
 import 'package:png_game/screens/play_board.dart';
 import 'package:png_game/screens/scan_qr.dart';
+import 'package:png_game/screens/analysis_board.dart';
 import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/screens/sign_in.dart';
@@ -182,6 +183,14 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '/analysis',
+          builder: (context, state) {
+            final gameId = state.extra as String?;
+            if (gameId == null) return const HomePage();
+            return AnalysisBoard(gameId: gameId);
+          },
         ),
       ],
     );

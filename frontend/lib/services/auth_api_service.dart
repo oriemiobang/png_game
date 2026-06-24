@@ -198,4 +198,43 @@ class AuthApiService extends ChangeNotifier {
       debugPrint('Failed to update FCM token: $e');
     }
   }
+
+  Future<String?> fetchAnalysis(String gameId, int guessIndex) async {
+    if (_token == null) return null;
+    try {
+      final response = await http.get(
+        Uri.parse('${AppEnv.backendBaseUrl}/game/$gameId/analyze/$guessIndex'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['analysis'] as String?;
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch analysis: $e');
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> fetchGameDetails(String gameId) async {
+    if (_token == null) return null;
+    try {
+      final response = await http.get(
+        Uri.parse('${AppEnv.backendBaseUrl}/game/$gameId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_token',
+        },
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch game details: $e');
+    }
+    return null;
+  }
 }
