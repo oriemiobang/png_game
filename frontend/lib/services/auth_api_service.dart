@@ -15,7 +15,9 @@ class AuthApiService extends ChangeNotifier {
 
   final String baseUrl = '${AppEnv.backendBaseUrl}/auth';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '39600448473-i0hh3ftl5hm15vjfeeqgoqftktjkipt9.apps.googleusercontent.com',
+  );
 
   MyUser? _user;
   String? _token;
