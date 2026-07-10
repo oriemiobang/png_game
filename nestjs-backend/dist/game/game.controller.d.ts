@@ -17,23 +17,23 @@ export declare class GameController {
         };
         myGuesses: {
             number: number;
-            id: string;
-            createdAt: Date;
             guess: string;
+            id: string;
+            round: number;
             gameId: string;
+            createdAt: Date;
             playerId: string;
             position: number;
-            round: number;
         }[];
         opponentGuesses: {
             number: number;
-            id: string;
-            createdAt: Date;
             guess: string;
+            id: string;
+            round: number;
             gameId: string;
+            createdAt: Date;
             playerId: string;
             position: number;
-            round: number;
         }[];
         opponentSecret: string;
         mySecret: string;
