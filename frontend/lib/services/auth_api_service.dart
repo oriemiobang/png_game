@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/core/env.dart';
@@ -15,6 +15,9 @@ class AuthApiService extends ChangeNotifier {
 
   final String baseUrl = '${AppEnv.backendBaseUrl}/auth';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: '585888731626-ehkbi1jbr5802sl3m35l7mktlomtu303.apps.googleusercontent.com',
+  );
 
   MyUser? _user;
   String? _token;
@@ -63,7 +66,9 @@ class AuthApiService extends ChangeNotifier {
 
   Future<void> logout() async {
     await _storage.deleteAll();
-    await _googleSignIn.signOut();
+    try {
+      await _googleSignIn.signOut();
+    } catch (_) {}
     _token = null;
     _user = null;
     _stats = null;
@@ -143,55 +148,43 @@ class AuthApiService extends ChangeNotifier {
 
   Future<dynamic> signInWithGoogle() async {
     try {
-      debugPrint('[GoogleSignIn] Starting WebView OAuth flow at: $baseUrl/google');
+      debugPrint('[GoogleSignIn] Starting native Google Sign-In');
 
-      final callbackUrl = await FlutterWebAuth2.authenticate(
-        url: '$baseUrl/google',
-        callbackUrlScheme: 'pnggame',
-      ).timeout(
-        const Duration(minutes: 5),
-        onTimeout: () => throw Exception('Google sign-in timed out.'),
+      final GoogleSignInAccount? account = await _googleSignIn.signIn();
+      if (account == null) {
+        return 'Google sign-in was canceled.';
+      }
+
+      final GoogleSignInAuthentication auth = await account.authentication;
+      final idToken = auth.idToken;
+
+      if (idToken == null) {
+        throw Exception('Failed to get ID token from Google.');
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/google/verify-token'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'idToken': idToken}),
       );
 
-      final callbackUri = Uri.parse(callbackUrl);
-      final queryParameters = callbackUri.queryParameters;
-
-      final accessToken = queryParameters['access_token'] ?? queryParameters['accessToken'];
-      final error = queryParameters['error'];
-
-      if (error != null) {
-        throw Exception('Google sign-in error: $error');
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        await _saveSession(data);
+        return _user;
       }
 
-      if (accessToken == null) {
-        throw Exception('Failed to get access token from callback.');
-      }
-
-      // If the backend returns user data in the query, we can parse it, or we can use the token.
-      // Since our saveSession just needs the full response json, let's assume the backend 
-      // sends the token and user data in the callback url, or we decode the JWT token.
-      
-      // We will parse the JWT token to get the user data
-      final user = _userFromJwt(accessToken);
-      
-      final data = {
-        'access_token': accessToken,
-        'user': {
-          'id': user.id,
-          'email': user.email,
-          'name': user.name,
-        }
-      };
-
-      await _saveSession(data);
-      return _user;
+      final error = jsonDecode(response.body) as Map<String, dynamic>;
+      throw Exception(error['message'] ?? 'Failed to verify Google token.');
     } catch (e, st) {
       debugPrint('[GoogleSignIn] EXCEPTION: $e');
       debugPrint('[GoogleSignIn] StackTrace: $st');
       
       String message = 'Google sign-in failed';
-      if (e.toString().contains('canceled') || e.toString().contains('Canceled')) {
+      if (e.toString().contains('canceled') || e.toString().contains('Canceled') || e.toString().contains('sign_in_canceled')) {
         message = 'Google sign-in was canceled.';
+      } else if (e.toString().contains('ApiException: 10')) {
+        message = 'Developer error: SHA-1 not configured in Google Cloud Console.';
       }
       
       return message;
@@ -201,7 +194,7 @@ class AuthApiService extends ChangeNotifier {
   MyUser _userFromJwt(String accessToken) {
     try {
       final parts = accessToken.split('.');
-      if (parts.length < 2) return MyUser(id: '', email: '', name: 'Google User', rating: 1200);
+      if (parts.length < 2) return MyUser(uid: '', email: '', name: 'Google User');
 
       final payload = utf8.decode(
         base64Url.decode(base64Url.normalize(parts[1])),
@@ -209,13 +202,12 @@ class AuthApiService extends ChangeNotifier {
       final json = jsonDecode(payload);
       
       return MyUser(
-        id: json['sub']?.toString() ?? '',
+        uid: json['sub']?.toString() ?? '',
         email: json['email']?.toString() ?? '',
         name: json['name']?.toString() ?? 'Google User',
-        rating: 1200, // Default for new users
       );
     } catch (_) {
-      return MyUser(id: '', email: '', name: 'Google User', rating: 1200);
+      return MyUser(uid: '', email: '', name: 'Google User');
     }
   }
 

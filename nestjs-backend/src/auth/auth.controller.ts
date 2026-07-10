@@ -38,6 +38,14 @@ export class AuthController {
     return res.redirect(`pnggame://callback?access_token=${access_token}`);
   }
 
+  @Post('google/verify-token')
+  async verifyGoogleToken(@Body('idToken') idToken: string) {
+    if (!idToken) {
+      throw new HttpException('ID token is required', HttpStatus.BAD_REQUEST);
+    }
+    return this.authService.verifyGoogleToken(idToken);
+  }
+
   @UseGuards(AuthGuard('jwt'))
   @Get('me/stats')
   async myStats(@Req() req: any) {
