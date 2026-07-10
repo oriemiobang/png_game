@@ -39,6 +39,12 @@ let AuthController = class AuthController {
         }
         return this.authService.verifyGoogleToken(body.idToken);
     }
+    async googleSignInWithAccessToken(body) {
+        if (!body.accessToken) {
+            throw new common_1.HttpException('Google access token is required', common_1.HttpStatus.BAD_REQUEST);
+        }
+        return this.authService.verifyGoogleAccessToken(body.accessToken);
+    }
     async myStats(req) {
         return this.authService.getMyStats(req.user.userId);
     }
@@ -71,6 +77,13 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "googleSignIn", null);
+__decorate([
+    (0, common_1.Post)('google/token'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "googleSignInWithAccessToken", null);
 __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
     (0, common_1.Get)('me/stats'),

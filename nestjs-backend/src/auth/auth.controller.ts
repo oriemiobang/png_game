@@ -32,6 +32,14 @@ export class AuthController {
     return this.authService.verifyGoogleToken(body.idToken);
   }
 
+  @Post('google/token')
+  async googleSignInWithAccessToken(@Body() body: any) {
+    if (!body.accessToken) {
+      throw new HttpException('Google access token is required', HttpStatus.BAD_REQUEST);
+    }
+    return this.authService.verifyGoogleAccessToken(body.accessToken);
+  }
+
   @UseGuards(AuthGuard('jwt'))
   @Get('me/stats')
   async myStats(@Req() req: any) {

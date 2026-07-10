@@ -26,6 +26,14 @@ export declare class AuthController {
             name: string;
         };
     }>;
+    googleSignInWithAccessToken(body: any): Promise<{
+        access_token: string;
+        user: {
+            id: string;
+            email: string;
+            name: string;
+        };
+    }>;
     myStats(req: any): Promise<{
         winRate: number;
         tier: string;
@@ -37,12 +45,12 @@ export declare class AuthController {
             date: Date;
         }[];
         id: string;
+        email: string | null;
+        password: string | null;
         name: string | null;
+        googleId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        googleId: string | null;
-        password: string | null;
         gamesPlayed: number;
         wins: number;
         losses: number;
@@ -63,12 +71,12 @@ export declare class AuthController {
     }[]>;
     updateFcmToken(req: any, fcmToken: string): Promise<{
         id: string;
+        email: string | null;
+        password: string | null;
         name: string | null;
+        googleId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        email: string | null;
-        googleId: string | null;
-        password: string | null;
         gamesPlayed: number;
         wins: number;
         losses: number;

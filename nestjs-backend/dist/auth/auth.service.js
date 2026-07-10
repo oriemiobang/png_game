@@ -85,6 +85,45 @@ let AuthService = class AuthService {
             throw new common_1.HttpException('Google authentication failed: ' + e.message, common_1.HttpStatus.UNAUTHORIZED);
         }
     }
+    async verifyGoogleAccessToken(accessToken) {
+        try {
+            const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo`, { headers: { Authorization: `Bearer ${accessToken}` } });
+            if (!response.ok) {
+                throw new common_1.HttpException('Invalid Google access token', common_1.HttpStatus.UNAUTHORIZED);
+            }
+            const payload = await response.json();
+            if (!payload.email) {
+                throw new common_1.HttpException('Google account has no email', common_1.HttpStatus.UNAUTHORIZED);
+            }
+            let user = await this.prisma.user.findUnique({
+                where: { googleId: payload.sub },
+            });
+            if (!user) {
+                user = await this.prisma.user.findUnique({ where: { email: payload.email } });
+                if (user) {
+                    user = await this.prisma.user.update({
+                        where: { id: user.id },
+                        data: { googleId: payload.sub },
+                    });
+                }
+                else {
+                    user = await this.prisma.user.create({
+                        data: {
+                            email: payload.email,
+                            name: payload.name || 'Google User',
+                            googleId: payload.sub,
+                        },
+                    });
+                }
+            }
+            return this.generateToken(user.id, user.email, user.name);
+        }
+        catch (e) {
+            if (e instanceof common_1.HttpException)
+                throw e;
+            throw new common_1.HttpException('Google authentication failed: ' + e.message, common_1.HttpStatus.UNAUTHORIZED);
+        }
+    }
     async getMyStats(userId) {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },

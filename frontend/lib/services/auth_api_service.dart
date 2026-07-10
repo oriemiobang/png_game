@@ -16,7 +16,7 @@ class AuthApiService extends ChangeNotifier {
   final String baseUrl = '${AppEnv.backendBaseUrl}/auth';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: '39600448473-i0hh3ftl5hm15vjfeeqgoqftktjkipt9.apps.googleusercontent.com',
+    scopes: ['email', 'profile'],
   );
 
   MyUser? _user;
@@ -147,26 +147,30 @@ class AuthApiService extends ChangeNotifier {
   Future<dynamic> signInWithGoogle() async {
     try {
       debugPrint('[GoogleSignIn] Starting sign-in flow...');
+
+      // Sign out first so the account picker always shows
+      await _googleSignIn.signOut();
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        debugPrint('[GoogleSignIn] FAILED: signIn() returned null (user cancelled or config error)');
-        return 'Sign in was cancelled or failed silently. Check OAuth setup.';
+        debugPrint('[GoogleSignIn] Cancelled by user.');
+        return 'Google sign-in was cancelled.';
       }
       debugPrint('[GoogleSignIn] Got account: ${googleUser.email}');
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final String? idToken = googleAuth.idToken;
       final String? accessToken = googleAuth.accessToken;
-      debugPrint('[GoogleSignIn] idToken=${idToken != null ? "OK (${idToken.length} chars)" : "NULL"}');
       debugPrint('[GoogleSignIn] accessToken=${accessToken != null ? "OK" : "NULL"}');
 
-      if (idToken == null) return 'Failed to get Google ID token. Ensure SHA-1 fingerprint and Web Client ID are correctly configured in Firebase.';
+      if (accessToken == null) {
+        return 'Failed to get Google access token. Please try again.';
+      }
 
-      debugPrint('[GoogleSignIn] Sending idToken to backend: $baseUrl/google');
+      debugPrint('[GoogleSignIn] Sending accessToken to backend: $baseUrl/google/token');
       final response = await http.post(
-        Uri.parse('$baseUrl/google'),
+        Uri.parse('$baseUrl/google/token'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'idToken': idToken}),
+        body: jsonEncode({'accessToken': accessToken}),
       );
       debugPrint('[GoogleSignIn] Backend response: ${response.statusCode} ${response.body}');
 

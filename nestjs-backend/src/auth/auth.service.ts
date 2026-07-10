@@ -54,7 +54,7 @@ export class AuthService {
       const audience = process.env.GOOGLE_CLIENT_ID?.split(',').map(id => id.trim());
       const ticket = await this.googleClient.verifyIdToken({
         idToken,
-        audience, // Verifies the token was intended for this app
+        audience,
       });
       const payload = ticket.getPayload();
       
@@ -67,17 +67,14 @@ export class AuthService {
       });
 
       if (!user) {
-        // Try falling back to email in case they signed up via email first
         user = await this.prisma.user.findUnique({ where: { email: payload.email } });
         
         if (user) {
-          // Link google account
           user = await this.prisma.user.update({
             where: { id: user.id },
             data: { googleId: payload.sub },
           });
         } else {
-          // Create new user
           user = await this.prisma.user.create({
             data: {
               email: payload.email,
@@ -90,6 +87,59 @@ export class AuthService {
 
       return this.generateToken(user.id, user.email, user.name);
     } catch (e) {
+      throw new HttpException('Google authentication failed: ' + e.message, HttpStatus.UNAUTHORIZED);
+    }
+  }
+
+  async verifyGoogleAccessToken(accessToken: string) {
+    try {
+      // Use Google's tokeninfo endpoint to validate the accessToken and get user info
+      const response = await fetch(
+        `https://www.googleapis.com/oauth2/v3/userinfo`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+
+      if (!response.ok) {
+        throw new HttpException('Invalid Google access token', HttpStatus.UNAUTHORIZED);
+      }
+
+      const payload = await response.json() as {
+        sub: string;
+        email: string;
+        name?: string;
+        picture?: string;
+      };
+
+      if (!payload.email) {
+        throw new HttpException('Google account has no email', HttpStatus.UNAUTHORIZED);
+      }
+
+      let user = await this.prisma.user.findUnique({
+        where: { googleId: payload.sub },
+      });
+
+      if (!user) {
+        user = await this.prisma.user.findUnique({ where: { email: payload.email } });
+
+        if (user) {
+          user = await this.prisma.user.update({
+            where: { id: user.id },
+            data: { googleId: payload.sub },
+          });
+        } else {
+          user = await this.prisma.user.create({
+            data: {
+              email: payload.email,
+              name: payload.name || 'Google User',
+              googleId: payload.sub,
+            },
+          });
+        }
+      }
+
+      return this.generateToken(user.id, user.email, user.name);
+    } catch (e) {
+      if (e instanceof HttpException) throw e;
       throw new HttpException('Google authentication failed: ' + e.message, HttpStatus.UNAUTHORIZED);
     }
   }
