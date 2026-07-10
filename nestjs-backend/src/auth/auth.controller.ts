@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Patch, HttpException, HttpStatus, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, HttpException, HttpStatus, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -24,20 +24,18 @@ export class AuthController {
     return this.authService.signIn(body.email, body.password);
   }
 
-  @Post('google')
-  async googleSignIn(@Body() body: any) {
-    if (!body.idToken) {
-      throw new HttpException('Google ID token is required', HttpStatus.BAD_REQUEST);
-    }
-    return this.authService.verifyGoogleToken(body.idToken);
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth(@Req() req: any) {
+    // Initiates the Google OAuth flow
   }
 
-  @Post('google/token')
-  async googleSignInWithAccessToken(@Body() body: any) {
-    if (!body.accessToken) {
-      throw new HttpException('Google access token is required', HttpStatus.BAD_REQUEST);
-    }
-    return this.authService.verifyGoogleAccessToken(body.accessToken);
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleAuthRedirect(@Req() req: any, @Res() res: any) {
+    const { access_token } = await this.authService.validateOAuthLogin(req.user);
+    // Redirect back to the app using the custom url scheme
+    return res.redirect(`pnggame://callback?access_token=${access_token}`);
   }
 
   @UseGuards(AuthGuard('jwt'))

@@ -18,22 +18,8 @@ export declare class AuthController {
             name: string;
         };
     }>;
-    googleSignIn(body: any): Promise<{
-        access_token: string;
-        user: {
-            id: string;
-            email: string;
-            name: string;
-        };
-    }>;
-    googleSignInWithAccessToken(body: any): Promise<{
-        access_token: string;
-        user: {
-            id: string;
-            email: string;
-            name: string;
-        };
-    }>;
+    googleAuth(req: any): Promise<void>;
+    googleAuthRedirect(req: any, res: any): Promise<any>;
     myStats(req: any): Promise<{
         winRate: number;
         tier: string;

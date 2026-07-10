@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:http/http.dart' as http;
 import 'package:png_game/classes/data.dart';
 import 'package:png_game/core/env.dart';
@@ -15,9 +15,6 @@ class AuthApiService extends ChangeNotifier {
 
   final String baseUrl = '${AppEnv.backendBaseUrl}/auth';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
 
   MyUser? _user;
   String? _token;
@@ -146,46 +143,79 @@ class AuthApiService extends ChangeNotifier {
 
   Future<dynamic> signInWithGoogle() async {
     try {
-      debugPrint('[GoogleSignIn] Starting sign-in flow...');
+      debugPrint('[GoogleSignIn] Starting WebView OAuth flow at: $baseUrl/google');
 
-      // Sign out first so the account picker always shows
-      await _googleSignIn.signOut();
+      final callbackUrl = await FlutterWebAuth2.authenticate(
+        url: '$baseUrl/google',
+        callbackUrlScheme: 'pnggame',
+      ).timeout(
+        const Duration(minutes: 5),
+        onTimeout: () => throw Exception('Google sign-in timed out.'),
+      );
 
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        debugPrint('[GoogleSignIn] Cancelled by user.');
-        return 'Google sign-in was cancelled.';
+      final callbackUri = Uri.parse(callbackUrl);
+      final queryParameters = callbackUri.queryParameters;
+
+      final accessToken = queryParameters['access_token'] ?? queryParameters['accessToken'];
+      final error = queryParameters['error'];
+
+      if (error != null) {
+        throw Exception('Google sign-in error: $error');
       }
-      debugPrint('[GoogleSignIn] Got account: ${googleUser.email}');
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final String? accessToken = googleAuth.accessToken;
-      debugPrint('[GoogleSignIn] accessToken=${accessToken != null ? "OK" : "NULL"}');
 
       if (accessToken == null) {
-        return 'Failed to get Google access token. Please try again.';
+        throw Exception('Failed to get access token from callback.');
       }
 
-      debugPrint('[GoogleSignIn] Sending accessToken to backend: $baseUrl/google/token');
-      final response = await http.post(
-        Uri.parse('$baseUrl/google/token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'accessToken': accessToken}),
-      );
-      debugPrint('[GoogleSignIn] Backend response: ${response.statusCode} ${response.body}');
+      // If the backend returns user data in the query, we can parse it, or we can use the token.
+      // Since our saveSession just needs the full response json, let's assume the backend 
+      // sends the token and user data in the callback url, or we decode the JWT token.
+      
+      // We will parse the JWT token to get the user data
+      final user = _userFromJwt(accessToken);
+      
+      final data = {
+        'access_token': accessToken,
+        'user': {
+          'id': user.id,
+          'email': user.email,
+          'name': user.name,
+        }
+      };
 
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        await _saveSession(data);
-        return _user;
-      }
-
-      final error = jsonDecode(response.body) as Map<String, dynamic>;
-      return error['message'] ?? 'Failed to authenticate with Google on server';
+      await _saveSession(data);
+      return _user;
     } catch (e, st) {
       debugPrint('[GoogleSignIn] EXCEPTION: $e');
       debugPrint('[GoogleSignIn] StackTrace: $st');
-      return 'Google Sign-In error: $e';
+      
+      String message = 'Google sign-in failed';
+      if (e.toString().contains('canceled') || e.toString().contains('Canceled')) {
+        message = 'Google sign-in was canceled.';
+      }
+      
+      return message;
+    }
+  }
+
+  MyUser _userFromJwt(String accessToken) {
+    try {
+      final parts = accessToken.split('.');
+      if (parts.length < 2) return MyUser(id: '', email: '', name: 'Google User', rating: 1200);
+
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final json = jsonDecode(payload);
+      
+      return MyUser(
+        id: json['sub']?.toString() ?? '',
+        email: json['email']?.toString() ?? '',
+        name: json['name']?.toString() ?? 'Google User',
+        rating: 1200, // Default for new users
+      );
+    } catch (_) {
+      return MyUser(id: '', email: '', name: 'Google User', rating: 1200);
     }
   }
 

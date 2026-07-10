@@ -85,33 +85,28 @@ let AuthService = class AuthService {
             throw new common_1.HttpException('Google authentication failed: ' + e.message, common_1.HttpStatus.UNAUTHORIZED);
         }
     }
-    async verifyGoogleAccessToken(accessToken) {
+    async validateOAuthLogin(profile) {
         try {
-            const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo`, { headers: { Authorization: `Bearer ${accessToken}` } });
-            if (!response.ok) {
-                throw new common_1.HttpException('Invalid Google access token', common_1.HttpStatus.UNAUTHORIZED);
-            }
-            const payload = await response.json();
-            if (!payload.email) {
-                throw new common_1.HttpException('Google account has no email', common_1.HttpStatus.UNAUTHORIZED);
+            if (!profile || !profile.email) {
+                throw new common_1.HttpException('Invalid Google profile', common_1.HttpStatus.UNAUTHORIZED);
             }
             let user = await this.prisma.user.findUnique({
-                where: { googleId: payload.sub },
+                where: { googleId: profile.googleId },
             });
             if (!user) {
-                user = await this.prisma.user.findUnique({ where: { email: payload.email } });
+                user = await this.prisma.user.findUnique({ where: { email: profile.email } });
                 if (user) {
                     user = await this.prisma.user.update({
                         where: { id: user.id },
-                        data: { googleId: payload.sub },
+                        data: { googleId: profile.googleId },
                     });
                 }
                 else {
                     user = await this.prisma.user.create({
                         data: {
-                            email: payload.email,
-                            name: payload.name || 'Google User',
-                            googleId: payload.sub,
+                            email: profile.email,
+                            name: profile.name || 'Google User',
+                            googleId: profile.googleId,
                         },
                     });
                 }

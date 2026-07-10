@@ -29,7 +29,7 @@ export declare class AuthService {
             name: string;
         };
     }>;
-    verifyGoogleAccessToken(accessToken: string): Promise<{
+    validateOAuthLogin(profile: any): Promise<{
         access_token: string;
         user: {
             id: string;

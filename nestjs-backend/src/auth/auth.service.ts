@@ -91,47 +91,30 @@ export class AuthService {
     }
   }
 
-  async verifyGoogleAccessToken(accessToken: string) {
+  async validateOAuthLogin(profile: any) {
     try {
-      // Use Google's tokeninfo endpoint to validate the accessToken and get user info
-      const response = await fetch(
-        `https://www.googleapis.com/oauth2/v3/userinfo`,
-        { headers: { Authorization: `Bearer ${accessToken}` } },
-      );
-
-      if (!response.ok) {
-        throw new HttpException('Invalid Google access token', HttpStatus.UNAUTHORIZED);
-      }
-
-      const payload = await response.json() as {
-        sub: string;
-        email: string;
-        name?: string;
-        picture?: string;
-      };
-
-      if (!payload.email) {
-        throw new HttpException('Google account has no email', HttpStatus.UNAUTHORIZED);
+      if (!profile || !profile.email) {
+        throw new HttpException('Invalid Google profile', HttpStatus.UNAUTHORIZED);
       }
 
       let user = await this.prisma.user.findUnique({
-        where: { googleId: payload.sub },
+        where: { googleId: profile.googleId },
       });
 
       if (!user) {
-        user = await this.prisma.user.findUnique({ where: { email: payload.email } });
+        user = await this.prisma.user.findUnique({ where: { email: profile.email } });
 
         if (user) {
           user = await this.prisma.user.update({
             where: { id: user.id },
-            data: { googleId: payload.sub },
+            data: { googleId: profile.googleId },
           });
         } else {
           user = await this.prisma.user.create({
             data: {
-              email: payload.email,
-              name: payload.name || 'Google User',
-              googleId: payload.sub,
+              email: profile.email,
+              name: profile.name || 'Google User',
+              googleId: profile.googleId,
             },
           });
         }

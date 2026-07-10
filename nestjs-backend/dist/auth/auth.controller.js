@@ -33,17 +33,11 @@ let AuthController = class AuthController {
         }
         return this.authService.signIn(body.email, body.password);
     }
-    async googleSignIn(body) {
-        if (!body.idToken) {
-            throw new common_1.HttpException('Google ID token is required', common_1.HttpStatus.BAD_REQUEST);
-        }
-        return this.authService.verifyGoogleToken(body.idToken);
+    async googleAuth(req) {
     }
-    async googleSignInWithAccessToken(body) {
-        if (!body.accessToken) {
-            throw new common_1.HttpException('Google access token is required', common_1.HttpStatus.BAD_REQUEST);
-        }
-        return this.authService.verifyGoogleAccessToken(body.accessToken);
+    async googleAuthRedirect(req, res) {
+        const { access_token } = await this.authService.validateOAuthLogin(req.user);
+        return res.redirect(`pnggame://callback?access_token=${access_token}`);
     }
     async myStats(req) {
         return this.authService.getMyStats(req.user.userId);
@@ -71,19 +65,22 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "signIn", null);
 __decorate([
-    (0, common_1.Post)('google'),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.Get)('google'),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], AuthController.prototype, "googleSignIn", null);
+], AuthController.prototype, "googleAuth", null);
 __decorate([
-    (0, common_1.Post)('google/token'),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.Get)('google/callback'),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('google')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
-], AuthController.prototype, "googleSignInWithAccessToken", null);
+], AuthController.prototype, "googleAuthRedirect", null);
 __decorate([
     (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
     (0, common_1.Get)('me/stats'),
