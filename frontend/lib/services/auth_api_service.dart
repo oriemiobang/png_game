@@ -146,19 +146,29 @@ class AuthApiService extends ChangeNotifier {
 
   Future<dynamic> signInWithGoogle() async {
     try {
+      debugPrint('[GoogleSignIn] Starting sign-in flow...');
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
+      if (googleUser == null) {
+        debugPrint('[GoogleSignIn] FAILED: signIn() returned null (user cancelled or config error)');
+        return 'Sign in was cancelled or failed silently. Check OAuth setup.';
+      }
+      debugPrint('[GoogleSignIn] Got account: ${googleUser.email}');
 
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final String? idToken = googleAuth.idToken;
+      final String? accessToken = googleAuth.accessToken;
+      debugPrint('[GoogleSignIn] idToken=${idToken != null ? "OK (${idToken.length} chars)" : "NULL"}');
+      debugPrint('[GoogleSignIn] accessToken=${accessToken != null ? "OK" : "NULL"}');
 
-      if (idToken == null) return 'Failed to get Google ID token';
+      if (idToken == null) return 'Failed to get Google ID token. Ensure SHA-1 fingerprint and Web Client ID are correctly configured in Firebase.';
 
+      debugPrint('[GoogleSignIn] Sending idToken to backend: $baseUrl/google');
       final response = await http.post(
         Uri.parse('$baseUrl/google'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'idToken': idToken}),
       );
+      debugPrint('[GoogleSignIn] Backend response: ${response.statusCode} ${response.body}');
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -168,8 +178,10 @@ class AuthApiService extends ChangeNotifier {
 
       final error = jsonDecode(response.body) as Map<String, dynamic>;
       return error['message'] ?? 'Failed to authenticate with Google on server';
-    } catch (_) {
-      return null;
+    } catch (e, st) {
+      debugPrint('[GoogleSignIn] EXCEPTION: $e');
+      debugPrint('[GoogleSignIn] StackTrace: $st');
+      return 'Google Sign-In error: $e';
     }
   }
 
