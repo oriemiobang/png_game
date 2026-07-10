@@ -1,0 +1,18 @@
+# Environment files - never commit secrets
+.env
+.env.*
+!.env.example
+
+# Flutter
+frontend/.dart_tool/
+frontend/build/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+
+# Node / NestJS
+nestjs-backend/node_modules/
+nestjs-backend/dist/
+nestjs-backend/.env
+nestjs-backend/.env.*
+nestjs-backend/!.env.example
