@@ -221,6 +221,10 @@ export class GameService {
     }
 
     // Series not yet decided — advance the round
+    if (game.status === 'waiting') {
+      return { ...this.attachMatchState(game), matchOver: false };
+    }
+
     await this.prisma.guess.deleteMany({ where: { gameId } });
 
     const updatedGame = await this.prisma.game.update({

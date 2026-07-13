@@ -140,28 +140,21 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             _buildDrawerItem(
-              icon: Icons.settings,
-              title: 'Settings',
+              icon: Icons.info_outline,
+              title: 'About the Game',
               onTap: () {
                 Navigator.pop(context);
-                context.push('/settings');
+                context.push('/about');
               },
-            ),
-            _buildDrawerItem(
-              icon: Icons.question_mark_outlined,
-              title: 'About us',
-              onTap: () => context.push('/create_game'),
-            ),
-            _buildDrawerItem(
-              icon: Icons.thumb_up_sharp,
-              title: 'Rate us',
-              onTap: () {},
             ),
             if (user != null)
               _buildDrawerItem(
                 icon: Icons.logout,
                 title: 'Log out',
-                onTap: () => authApi.logout(),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showLogoutDialog(context, authApi);
+                },
               ),
           ],
         ),
@@ -179,6 +172,35 @@ class _HomePageState extends State<HomePage> {
       leading: Icon(icon),
       title: Text(title),
       onTap: onTap,
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context, AuthApiService authApi) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Log out', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey.shade700)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              authApi.logout();
+            },
+            child: const Text('Log out', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 

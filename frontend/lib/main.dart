@@ -22,6 +22,7 @@ import 'package:png_game/services/playboard_provider.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:png_game/screens/sign_in.dart';
 import 'package:png_game/screens/sign_up.dart';
+import 'package:png_game/screens/about_game_screen.dart';
 import 'package:png_game/services/auth_api_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -183,6 +184,10 @@ class _MyAppState extends State<MyApp> {
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: '/about',
+          builder: (context, state) => const AboutGameScreen(),
         ),
         GoRoute(
           path: '/analysis',
