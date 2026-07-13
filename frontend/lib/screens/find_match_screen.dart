@@ -404,7 +404,7 @@ class _SettingsCard extends StatelessWidget {
           _SectionLabel(icon: Ionicons.trophy_outline, label: 'Rounds'),
           const SizedBox(height: 12),
           Row(
-            children: [3, 5, 7, 10]
+            children: [1, 3, 5, 7, 10]
                 .map((n) => Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4),

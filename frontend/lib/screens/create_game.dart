@@ -69,7 +69,7 @@ class _CreateGamesState extends State<CreateGames> {
                           Text('Maximum Rounds', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                           const SizedBox(height: 10),
                           Row(
-                            children: [3, 5, 7, 10].map((num) {
+                            children: [1, 3, 5, 7, 10].map((num) {
                               final isSelected = maxRounds == num;
                               return Expanded(
                                 child: GestureDetector(

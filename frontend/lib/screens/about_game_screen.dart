@@ -53,7 +53,6 @@ class AboutGameScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             _buildRuleSection(
-              icon: Ionicons.lock_closed_outline,
               title: '1. Set Your Secret',
               content:
                   'At the start of a round, both players pick a 4-digit secret number. All 4 digits must be unique (no repeating digits allowed).',
@@ -61,7 +60,6 @@ class AboutGameScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildRuleSection(
-              icon: Ionicons.chatbubble_ellipses_outline,
               title: '2. Take Turns Guessing',
               content:
                   'Players take turns guessing the opponent\'s secret code. You will receive feedback after every guess.',
@@ -69,7 +67,6 @@ class AboutGameScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildRuleSection(
-              icon: Ionicons.information_circle_outline,
               title: '3. Understand Feedback',
               content:
                   'After a guess, you get two clues:\n\n• Position: How many digits are correct AND in the exact right spot.\n• Number: The total number of correct digits in your guess (regardless of position).\n\nExample: If the secret is "1234" and you guess "1547", you get:\n- Position = 1 (the \'1\' is correct)\n- Number = 2 (\'1\' and \'4\' are both in the secret)',
@@ -77,7 +74,6 @@ class AboutGameScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildRuleSection(
-              icon: Ionicons.trophy_outline,
               title: '4. Winning the Round',
               content:
                   'To win, you must guess the secret perfectly (Position = 4). If Player 1 guesses the code first, Player 2 gets one "Last Chance" turn to force a Draw.',
@@ -91,7 +87,6 @@ class AboutGameScreen extends StatelessWidget {
   }
 
   Widget _buildRuleSection({
-    required IconData icon,
     required String title,
     required String content,
     required Color color,
@@ -106,23 +101,9 @@ class AboutGameScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Text(
