@@ -115,7 +115,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const result = await this.gameService.forfeitGame(payload.gameId, playerId);
       if (result) {
-        const { updatedGame, ratingChanges } = result;
+        const { updatedGame, ratingChanges, isAborted } = result;
         this.server.to(payload.gameId).emit('gameEnd', {
           gameId: payload.gameId,
           player1Wins: updatedGame.player1Wins,
@@ -125,8 +125,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           roundHistory: updatedGame.roundHistory ?? [],
           ratingChanges,
           winnerId: updatedGame.winnerId,
-          message: 'Opponent Forfeited! You win.',
+          message: isAborted 
+            ? 'Match aborted — game never started.' 
+            : 'Opponent Forfeited! You win.',
           isMatchOver: true,
+          isAborted: isAborted ?? false,
         });
         // Clean up room
         client.leave(payload.gameId);
@@ -179,7 +182,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             if (currentGameState && currentGameState.status === 'playing') {
               const result = await this.gameService.forfeitGame(gameId, userId);
               if (result) {
-                const { updatedGame, ratingChanges } = result;
+                const { updatedGame, ratingChanges, isAborted } = result;
                 this.server.to(gameId).emit('gameEnd', {
                   gameId,
                   player1Wins: updatedGame.player1Wins,
@@ -189,7 +192,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                   roundHistory: updatedGame.roundHistory ?? [],
                   ratingChanges,
                   winnerId: updatedGame.winnerId,
-                  message: 'Opponent disconnected. You win.',
+                  message: isAborted
+                    ? 'Match aborted — game never started.'
+                    : 'Opponent disconnected. You win.',
+                  isMatchOver: true,
+                  isAborted: isAborted ?? false,
                 });
               }
             }

@@ -141,10 +141,15 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
     }
 
     final isMatchOver = winnerData['isMatchOver'] == true;
+    final isAborted = winnerData['isAborted'] == true;
     String title = isMatchOver ? "Series Over!" : "Round Over!";
     String message = winnerData['message'] ?? "It's a draw!";
     
-    if (winnerData['winnerId'] == userId) {
+    if (isAborted) {
+      title = "Match Aborted";
+      message = "The match was aborted because not all players made a guess. No ratings were affected.";
+      myRatingChange = 0;
+    } else if (winnerData['winnerId'] == userId) {
       title = "Congratulations!";
       message = isMatchOver ? "You won the series!" : "You won the round!";
     } else if (winnerData['winnerId'] != null) {
@@ -292,8 +297,10 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
       }
 
       final now = DateTime.now().toUtc();
-      final turnStart = _turnStartedAt ?? now;
-      final elapsed = now.difference(turnStart).inMilliseconds;
+      // turnStartedAt is null until both players have made at least one guess
+      final int elapsed = _turnStartedAt != null
+          ? now.difference(_turnStartedAt!).inMilliseconds
+          : 0;
 
       setState(() {
         if (gameData['turn'] == gameData['player1Id']) {

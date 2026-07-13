@@ -437,7 +437,7 @@ export class GameService {
           turn: updatedGame.player2Id ?? updatedGame.player1Id,
           player1TimeLeft: game.timeLimit * 1000,
           player2TimeLeft: game.timeLimit * 1000,
-          turnStartedAt: new Date()
+          turnStartedAt: null
         },
         include: {
           player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
@@ -598,7 +598,8 @@ export class GameService {
         lastChance: lastChance,
         player1TimeLeft: newP1Time,
         player2TimeLeft: newP2Time,
-        turnStartedAt: now,
+        // Only start the clock once both players have made at least one guess
+        turnStartedAt: (p1Guesses.length >= 1 && p2Guesses.length >= 1) ? now : null,
       },
       include: { 
         guesses: true,
@@ -671,12 +672,43 @@ export class GameService {
       include: {
         player1: true,
         player2: true,
+        guesses: true,
         roundResults: true,
       },
     });
 
     if (!game || game.status === 'finished') return null;
 
+    // Check if the game has truly "started" — both players must have made at least one guess
+    const p1Guesses = game.guesses.filter((g) => g.playerId === game.player1Id);
+    const p2Guesses = game.guesses.filter((g) => g.playerId === game.player2Id);
+    const gameHasStarted = p1Guesses.length >= 1 && p2Guesses.length >= 1;
+
+    if (!gameHasStarted) {
+      // Abort the game — no winner, no ELO changes, no stats recorded
+      const updatedGame = await this.prisma.game.update({
+        where: { id: gameId },
+        data: {
+          status: 'finished',
+          winnerId: null,
+          resultRecorded: false,
+        },
+        include: {
+          guesses: true,
+          player1: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+          player2: { select: { id: true, name: true, rating: true, ratingPeak: true } },
+          roundResults: { orderBy: { round: 'asc' } },
+        },
+      });
+
+      return { 
+        updatedGame: this.attachMatchState(updatedGame), 
+        ratingChanges: { ratingChangeA: 0, ratingChangeB: 0 },
+        isAborted: true,
+      };
+    }
+
+    // Game has started — treat as a real forfeit
     const winnerId = forfeiterId === game.player1Id ? game.player2Id : game.player1Id;
 
     const ratingChanges = await this.recordUserOutcome(game, winnerId, false);
@@ -696,7 +728,7 @@ export class GameService {
       },
     });
 
-    return { updatedGame: this.attachMatchState(updatedGame), ratingChanges };
+    return { updatedGame: this.attachMatchState(updatedGame), ratingChanges, isAborted: false };
   }
 
   async getActiveGamesForUser(userId: string) {
