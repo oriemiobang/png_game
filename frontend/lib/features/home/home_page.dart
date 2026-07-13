@@ -9,6 +9,7 @@ import 'package:png_game/services/auth_api_service.dart';
 import 'package:png_game/models/my_user.dart';
 import 'package:png_game/services/socket_service.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -145,6 +146,17 @@ class _HomePageState extends State<HomePage> {
               onTap: () {
                 Navigator.pop(context);
                 context.push('/about');
+              },
+            ),
+            _buildDrawerItem(
+              icon: Ionicons.code_slash_outline,
+              title: 'About the Developer',
+              onTap: () async {
+                Navigator.pop(context);
+                final url = Uri.parse('https://oriemioriemi.netlify.app/');
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url);
+                }
               },
             ),
             if (user != null)
