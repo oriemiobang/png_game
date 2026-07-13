@@ -30,6 +30,9 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final dataProvider = Provider.of<Data>(context, listen: false);
       final socketService = Provider.of<SocketService>(context, listen: false);
+      final authApi = Provider.of<AuthApiService>(context, listen: false);
+
+      authApi.fetchMyStats();
 
       dataProvider.addListener(() {
         if (socketService.gameJoined) {

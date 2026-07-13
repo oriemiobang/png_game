@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:png_game/services/auth_api_service.dart';
 import 'package:png_game/screens/loading.dart';
 import 'package:png_game/services/socket_service.dart';
-import 'package:ionicons/ionicons.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -77,273 +77,299 @@ class _SignUpState extends State<SignUp> {
   String error = '';
   bool isPasswordVisible = false;
 
+  InputDecoration _inputDecoration({
+    required String hintText,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      prefixIcon: Icon(prefixIcon, color: const Color(0xFF999999), size: 20),
+      hintText: hintText,
+      hintStyle: const TextStyle(color: Color(0xFF999999), fontSize: 14),
+      filled: true,
+      fillColor: Colors.white,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFDDDDDD), width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF111111), width: 1),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red, width: 1),
+      ),
+      suffixIcon: suffixIcon,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authApi = context.read<AuthApiService>();
 
-    return loading ? const Loading() : Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-          child: Column(
-        children: [
-          const SizedBox(height: 20),
-          const SizedBox(
-              width: 340,
-              child: Text('Hello! Register to get \nstarted',
-                  textAlign: TextAlign.start,
-                  style: TextStyle(
-                      fontSize: 24,
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold))),
-          const SizedBox(height: 20),
-          Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                SizedBox(
-                  width: 340,
-                  height: 50,
-                  child: TextFormField(
-                    onChanged: (val) {
-                      setState(() {
-                        userName = val;
-                      });
-                    },
-                    validator: (value) =>
-                        value!.isEmpty ? 'Your name is required' : null,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 2.0),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 2),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black, width: 2.0),
-                      ),
-                      hintText: 'Username',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: 340,
-                  height: 50,
-                  child: TextFormField(
-                    onChanged: (val) {
-                      setState(() {
-                        email = val;
-                      });
-                    },
-                    validator: (value) =>
-                        value!.isEmpty ? 'Email is required' : null,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 2.0),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 2),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black, width: 2.0),
-                      ),
-                      hintText: 'Email',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: 340,
-                  height: 50,
-                  child: TextFormField(
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Password is required';
-                      }
-                      if (value.length < 4) {
-                        return 'Password should be at least 4 characters';
-                      }
-                      if (matching) {
-                        setState(() {
-                          matching = false;
-                        });
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                    onChanged: (val) {
-                      setState(() {
-                        password = val;
-                      });
-                    },
-                    obscureText: !isPasswordVisible,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 2.0),
-                      ),
-                      enabledBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 2),
-                      ),
-                      focusedBorder: const OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black, width: 2.0),
-                      ),
-                      hintText: 'Password',
-                      suffixIcon: IconButton(
-                        icon: Icon(isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.black54),
-                        onPressed: () => setState(() => isPasswordVisible = !isPasswordVisible),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: 340,
-                  height: 50,
-                  child: TextFormField(
-                    obscureText: !isPasswordVisible,
-                    onChanged: (val) {
-                      setState(() {
-                        rePassword = val;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Password is required';
-                      }
-                      if (value.length < 4) {
-                        return 'Password should be at least 4 characters';
-                      }
-                      if (matching) {
-                        setState(() {
-                          matching = false;
-                        });
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 2.0),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 2),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.black, width: 2.0),
-                      ),
-                      hintText: 'Confirm Password',
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(7),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2), // Shadow color
-                        spreadRadius: 0, // Spread radius
-                        blurRadius: 10, // Blur radius
-                        offset: const Offset(0, 2), // Offset for the shadow
-                      ),
-                    ],
-                  ),
-                  width: 300,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_formKey.currentState!.validate()) {
-                        if (rePassword.trim() != password.trim()) {
-                          setState(() {
-                            error = 'Passwords do not match';
-                            matching = true;
-                          });
-                        } else {
-                          setState(() {
-                            loading = true;
-                          });
-
-                          String capitalizedName = capitalize(userName);
-                          String trimPassword = password.trim();
-                          String trimEmail = email.trim();
-
-                          dynamic result = await authApi.registerWithEmailAndPassword(
-                                  email: trimEmail,
-                                  password: trimPassword,
-                                  name: capitalizedName);
-                                  
-                          if (result == null || result is String) {
+    return loading
+        ? const Loading()
+        : Scaffold(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 40.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'Create account.\nJoin the game!',
+                          style: TextStyle(
+                            fontFamily: 'Georgia',
+                            fontSize: 26,
+                            fontWeight: FontWeight.w500,
+                            height: 1.3,
+                            color: Color(0xFF1A1A1A),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        TextFormField(
+                          onChanged: (val) {
                             setState(() {
-                              error = result is String ? result : 'Please make sure your email is valid and your internet connection is stable.';
-                              loading = false;
+                              userName = val;
                             });
-                            alert(error);
-                          } else {
-                            Fluttertoast.showToast(
-                                msg: "Signed up successfully",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.BOTTOM,
-                                backgroundColor: Colors.black,
-                                textColor: Colors.white,
-                            );
-                            if (mounted) {
-                              context.read<SocketService>().connect();
-                              context.go('/');
+                          },
+                          validator: (value) =>
+                              value!.isEmpty ? 'Your name is required' : null,
+                          style: const TextStyle(
+                              fontSize: 14, color: Color(0xFF1A1A1A)),
+                          decoration: _inputDecoration(
+                            hintText: 'Username',
+                            prefixIcon: Icons.person_outline,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          onChanged: (val) {
+                            setState(() {
+                              email = val;
+                            });
+                          },
+                          validator: (value) =>
+                              value!.isEmpty ? 'Email is required' : null,
+                          style: const TextStyle(
+                              fontSize: 14, color: Color(0xFF1A1A1A)),
+                          decoration: _inputDecoration(
+                            hintText: 'name@example.com',
+                            prefixIcon: Icons.mail_outline,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          obscureText: !isPasswordVisible,
+                          onChanged: (val) {
+                            setState(() {
+                              password = val;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Password is required';
                             }
-                          }
-                        } 
-                      } 
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                    ),
-                    child: const Text(
-                      "Register",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                            if (value.length < 4) {
+                              return 'Password should be at least 4 characters';
+                            }
+                            return null;
+                          },
+                          style: const TextStyle(
+                              fontSize: 14, color: Color(0xFF1A1A1A)),
+                          decoration: _inputDecoration(
+                            hintText: 'Password',
+                            prefixIcon: Icons.lock_outline,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                isPasswordVisible
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: const Color(0xFF999999),
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  isPasswordVisible = !isPasswordVisible;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          obscureText: !isPasswordVisible,
+                          onChanged: (val) {
+                            setState(() {
+                              rePassword = val;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please confirm your password';
+                            }
+                            if (value.length < 4) {
+                              return 'Password should be at least 4 characters';
+                            }
+                            if (value.trim() != password.trim()) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
+                          style: const TextStyle(
+                              fontSize: 14, color: Color(0xFF1A1A1A)),
+                          decoration: _inputDecoration(
+                            hintText: 'Confirm password',
+                            prefixIcon: Icons.lock_outline,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              if (_formKey.currentState!.validate()) {
+                                setState(() {
+                                  loading = true;
+                                });
+
+                                String capitalizedName = capitalize(userName);
+                                String trimPassword = password.trim();
+                                String trimEmail = email.trim();
+
+                                dynamic result =
+                                    await authApi.registerWithEmailAndPassword(
+                                        email: trimEmail,
+                                        password: trimPassword,
+                                        name: capitalizedName);
+
+                                if (result == null || result is String) {
+                                  setState(() {
+                                    error = result is String
+                                        ? result
+                                        : 'Please make sure your email is valid and your internet connection is stable.';
+                                    loading = false;
+                                  });
+                                  alert(error);
+                                } else {
+                                  Fluttertoast.showToast(
+                                    msg: "Signed up successfully",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.BOTTOM,
+                                    backgroundColor: Colors.black,
+                                    textColor: Colors.white,
+                                  );
+                                  if (mounted) {
+                                    context.read<SocketService>().connect();
+                                    context.go('/');
+                                  }
+                                }
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF111111),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              "Register",
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        Row(
+                          children: [
+                            Expanded(
+                                child: Container(
+                                    height: 1,
+                                    color: const Color(0xFFEAEAEA))),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(
+                                'or continue with',
+                                style: TextStyle(
+                                    color: Color(0xFF999999), fontSize: 12),
+                              ),
+                            ),
+                            Expanded(
+                                child: Container(
+                                    height: 1,
+                                    color: const Color(0xFFEAEAEA))),
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          height: 48,
+                          child: OutlinedButton.icon(
+                            onPressed: _handleGoogleSignIn,
+                            icon: SvgPicture.string(
+                              '<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.17.29-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.03l2.99-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.97l2.99 2.33C4.66 5.17 6.65 3.58 9 3.58z"/></svg>',
+                              width: 18,
+                              height: 18,
+                            ),
+                            label: const Text(
+                              'Google',
+                              style: TextStyle(
+                                  color: Color(0xFF1A1A1A), fontSize: 14),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              side: const BorderSide(
+                                  color: Color(0xFFDDDDDD), width: 1),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                'Already have an account? ',
+                                style: TextStyle(
+                                    color: Color(0xFF666666), fontSize: 13),
+                              ),
+                              InkWell(
+                                onTap: () {
+                                  context.go('/signin');
+                                },
+                                child: const Text(
+                                  'Sign in',
+                                  style: TextStyle(
+                                      color: Color(0xFF111111),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 60),
-
-          Text(error, style: const TextStyle(color: Colors.red),),
-          const Text(
-            "Or Register with",
-            style: TextStyle(color: Colors.black, fontSize: 16),
-          ),
-          const SizedBox(height: 30),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center, // Center the icons
-            children: [
-              IconButton(
-                icon: const Icon(Ionicons.logo_google, size: 40, color: Colors.red),
-                onPressed: _handleGoogleSignIn,
-              ),
-            ],
-          ),
-          const SizedBox(height: 60),
-          Row(
-            children: [
-              const SizedBox(width: 50),
-              const Text(
-                "Already have an account?",
-                style: TextStyle(fontSize: 17, color: Colors.grey),
-              ),
-              TextButton(
-                  onPressed: () {
-                    context.go('/signin');
-                  },
-                  child: const Text("Sign in now",
-                      style: TextStyle(color: Colors.green)))
-            ],
-          )
-        ],
-      )),
-    );
+          );
   }
 }
