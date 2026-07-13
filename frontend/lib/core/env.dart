@@ -1,6 +1,3 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 class AppEnv {
 	static const String _configuredBackendUrl = String.fromEnvironment('BACKEND_URL');
 
@@ -8,12 +5,13 @@ class AppEnv {
 		if (_configuredBackendUrl.isNotEmpty) {
 			return _configuredBackendUrl;
 		}
-		if (kIsWeb) {
-			return 'http://127.0.0.1:3000';
-		}
-		if (Platform.isAndroid) {
-			return 'http://10.0.2.2:3000';
-		}
-		return 'http://127.0.0.1:3000';
+		
+		// Use the host machine's local IP address and correct backend port (3002)
+		// This ensures physical devices, emulators, and Chrome can all reach the local backend.
+		// If your IP address changes, update this value or use --dart-define=BACKEND_URL=http://<YOUR_IP>:3002
+		const String hostIp = '10.187.113.68';
+		const String port = '3002';
+		
+		return 'http://$hostIp:$port';
 	}
 }

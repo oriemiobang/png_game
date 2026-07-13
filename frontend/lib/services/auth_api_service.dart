@@ -16,7 +16,8 @@ class AuthApiService extends ChangeNotifier {
   final String baseUrl = '${AppEnv.backendBaseUrl}/auth';
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    serverClientId: '585888731626-ehkbi1jbr5802sl3m35l7mktlomtu303.apps.googleusercontent.com',
+    serverClientId:
+        '585888731626-ehkbi1jbr5802sl3m35l7mktlomtu303.apps.googleusercontent.com',
   );
 
   MyUser? _user;
@@ -51,7 +52,8 @@ class AuthApiService extends ChangeNotifier {
 
     await _storage.write(key: 'jwt_token', value: _token);
     await _storage.write(key: 'user_id', value: userData['id']?.toString());
-    await _storage.write(key: 'user_email', value: userData['email']?.toString());
+    await _storage.write(
+        key: 'user_email', value: userData['email']?.toString());
     await _storage.write(key: 'user_name', value: userData['name']?.toString());
 
     _user = MyUser(
@@ -125,7 +127,8 @@ class AuthApiService extends ChangeNotifier {
     }
   }
 
-  Future<dynamic> signInWithEmailAndPassword(String email, String password) async {
+  Future<dynamic> signInWithEmailAndPassword(
+      String email, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/signin'),
@@ -179,14 +182,17 @@ class AuthApiService extends ChangeNotifier {
     } catch (e, st) {
       debugPrint('[GoogleSignIn] EXCEPTION: $e');
       debugPrint('[GoogleSignIn] StackTrace: $st');
-      
+
       String message = 'Google sign-in failed';
-      if (e.toString().contains('canceled') || e.toString().contains('Canceled') || e.toString().contains('sign_in_canceled')) {
+      if (e.toString().contains('canceled') ||
+          e.toString().contains('Canceled') ||
+          e.toString().contains('sign_in_canceled')) {
         message = 'Google sign-in was canceled.';
       } else if (e.toString().contains('ApiException: 10')) {
-        message = 'Developer error: SHA-1 not configured in Google Cloud Console.';
+        message =
+            'Developer error: SHA-1 not configured in Google Cloud Console.';
       }
-      
+
       return message;
     }
   }
@@ -194,13 +200,14 @@ class AuthApiService extends ChangeNotifier {
   MyUser _userFromJwt(String accessToken) {
     try {
       final parts = accessToken.split('.');
-      if (parts.length < 2) return MyUser(uid: '', email: '', name: 'Google User');
+      if (parts.length < 2)
+        return MyUser(uid: '', email: '', name: 'Google User');
 
       final payload = utf8.decode(
         base64Url.decode(base64Url.normalize(parts[1])),
       );
       final json = jsonDecode(payload);
-      
+
       return MyUser(
         uid: json['sub']?.toString() ?? '',
         email: json['email']?.toString() ?? '',
