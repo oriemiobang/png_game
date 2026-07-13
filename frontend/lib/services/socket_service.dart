@@ -95,6 +95,13 @@ class SocketService with ChangeNotifier {
       notifyListeners();
     });
 
+    socket.on('gameInfo', (data) {
+      gameInfo = data;
+      Data().updateData(data);
+      debugPrint('data in the game info: $data');
+      notifyListeners();
+    });
+
     socket.off('sendMessage');
     socket.on('sendMessage', (data) {
       final messageData = Map<String, dynamic>.from(data as Map);
@@ -425,6 +432,11 @@ class SocketService with ChangeNotifier {
   void forfeitGame() {
     if (socket.connected && gameId.isNotEmpty) {
       socket.emit('leaveGame', {'gameId': gameId});
+      gameId = '';
+      playerId = '';
+      gameJoined = false;
+      Data().resetMatchState();
+      notifyListeners();
     }
   }
 }

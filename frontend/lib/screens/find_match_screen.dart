@@ -137,21 +137,7 @@ class _FindMatchScreenState extends State<FindMatchScreen>
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // ── Decorative background blobs ───────────────────────────────────
-          Positioned(
-            top: -80,
-            right: -80,
-            child: _GlowCircle(
-                color: const Color(0xFF3B82F6).withValues(alpha: 0.12),
-                size: 300),
-          ),
-          Positioned(
-            bottom: -60,
-            left: -60,
-            child: _GlowCircle(
-                color: const Color(0xFF8B5CF6).withValues(alpha: 0.10),
-                size: 240),
-          ),
+          // No decorative blobs
 
           SafeArea(
             child: Column(
@@ -202,22 +188,7 @@ class _FindMatchScreenState extends State<FindMatchScreen>
                                 height: 120,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF3B82F6),
-                                      Color(0xFF8B5CF6)
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF3B82F6)
-                                          .withValues(alpha: 0.4),
-                                      blurRadius: 32,
-                                      spreadRadius: 8,
-                                    ),
-                                  ],
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                                 child: isSearching
                                     ? Transform.rotate(
@@ -574,19 +545,8 @@ class _FindMatchButton extends StatelessWidget {
       height: 56,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-          ),
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF3B82F6).withValues(alpha: 0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
         ),
         child: ElevatedButton(
           onPressed: onPressed,

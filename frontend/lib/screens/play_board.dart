@@ -29,6 +29,7 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
   bool _hasSetSecret = false;
   bool _wasMyTurn = false;
   int _lastOpponentGuessCount = 0;
+  bool _isShowingGameOverDialog = false;
   
   Set<int> _eliminatedNumbers = {};
 
@@ -124,6 +125,9 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
   }
 
   void _handleGameOver(Map winnerData) {
+    if (_isShowingGameOverDialog) return;
+    _isShowingGameOverDialog = true;
+
     final dataProvider = context.read<Data>();
     final userId = dataProvider.userId;
     final gameData = dataProvider.data;
@@ -199,6 +203,8 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                 onPressed: () {
+                  context.read<SocketService>().forfeitGame();
+                  context.read<Data>().resetMatchState();
                   context.go('/');
                 },
                 child: const Text('Back to Home', style: TextStyle(color: Colors.white)),
@@ -219,7 +225,7 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
             )
         ],
       ),
-    );
+    ).then((_) => _isShowingGameOverDialog = false);
   }
 
   void _handleLastChance(Map lastChanceData) {
@@ -542,7 +548,7 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
-                  child: Text('Round ${myGuesses.length + 1}/${gameData['maxRounds']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
+                  child: Text('Round ${gameData['currentRound'] ?? 1}/${gameData['maxRounds']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
                 ),
                 Expanded(
                   child: Row(

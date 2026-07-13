@@ -80,6 +80,7 @@ class Data with ChangeNotifier {
     _unreadMessages = 0;
     _opponentJoined = null;
     _opponentDisconnected = false;
+    _gameId = null;
     notifyListeners();
   }
 
