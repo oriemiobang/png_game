@@ -546,6 +546,7 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
                   ),
                 ),
                 Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
                   child: Text('Round ${gameData['currentRound'] ?? 1}/${gameData['maxRounds']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
