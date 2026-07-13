@@ -160,6 +160,13 @@ class _PlayBoardState extends State<PlayBoard> with TickerProviderStateMixin {
       message = "It's a draw!";
     }
 
+    if (isMatchOver) {
+      _isShowingGameOverDialog = false;
+      // Navigate straight to the result page. The result page will read Data().winner.
+      context.go('/game_result');
+      return;
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,

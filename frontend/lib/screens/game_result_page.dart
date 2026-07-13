@@ -350,6 +350,79 @@ class GameResultPage extends StatelessWidget {
                         ),
                       ),
                     ),
+                    Transform.translate(
+                      offset: const Offset(0, -12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Card(
+                          elevation: 6,
+                          shadowColor: Colors.black.withValues(alpha: 0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      ratingDelta > 0 ? Icons.trending_up : (ratingDelta < 0 ? Icons.trending_down : Icons.horizontal_rule),
+                                      color: ratingDelta > 0 ? Colors.green : (ratingDelta < 0 ? Colors.red : Colors.grey),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Text(
+                                      'Rating',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF334155),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                TweenAnimationBuilder<int>(
+                                  tween: IntTween(begin: myOldRating, end: myNewRating),
+                                  duration: const Duration(seconds: 2),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, value, child) {
+                                    return Row(
+                                      children: [
+                                        Text(
+                                          '$myOldRating → $value',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF0F172A),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: ratingDelta > 0 ? Colors.green.shade50 : (ratingDelta < 0 ? Colors.red.shade50 : Colors.grey.shade100),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            ratingDelta > 0 ? '+$ratingDelta' : (ratingDelta < 0 ? '$ratingDelta' : '0'),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: ratingDelta > 0 ? Colors.green.shade700 : (ratingDelta < 0 ? Colors.red.shade700 : Colors.grey.shade700),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(

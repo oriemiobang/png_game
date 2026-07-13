@@ -62,11 +62,9 @@ class _HomePageState extends State<HomePage> {
           children: [
             const Divider(),
             _buildStatsCard(stats),
-            const SizedBox(height: 18),
-            _buildPlayOptionsSection(socketService),
-            const SizedBox(height: 15),
-            _buildPlayWithFriendSection(socketService),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
+            _buildPlayOptions(socketService),
+            const SizedBox(height: 24),
             _buildGameHistories(stats),
           ],
         ),
@@ -287,125 +285,84 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildPlayOptionsSection(SocketService socketService) {
+  Widget _buildPlayOptions(SocketService socketService) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Play Options',
+          'Play',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 16),
         // ── Primary: auto-matchmaking ──────────────────────────────────────
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
-                blurRadius: 16,
-              ),
-            ],
-          ),
-        ),
         GestureDetector(
           onTap: () => context.push('/find_match'),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 24),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: const Center(
-              child: Text(
-                'Play Now',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+            child: const Column(
+              children: [
+                Icon(Ionicons.flash, size: 40, color: Colors.white),
+                SizedBox(height: 8),
+                Text(
+                  'Play Now',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
+                SizedBox(height: 4),
+                Text(
+                  'Auto-match with an online opponent',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        // ── Secondary: solo ────────────────────────────────────────────────
-        _buildPlayButton(
-          icon: Icons.play_arrow_outlined,
-          text: 'Play Solo',
-          onPressed: () => context.push('/play_solo'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPlayButton({
-    required IconData icon,
-    required String text,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: Colors.blue,
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Center(
-        child: TextButton(
-          onPressed: onPressed,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 30, color: Colors.white),
-              const SizedBox(width: 8),
-              Text(
-                text,
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlayWithFriendSection(SocketService socketService) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+        const SizedBox(height: 24),
         const Text(
           'Play Private',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildFriendOption(
-              icon: Icons.qr_code,
-              title: 'Share Room',
-              description: 'Generate a Qr for\nfriends',
-              onTap: () => _createAndShareRoom(socketService),
+            Expanded(
+              child: _buildFriendOption(
+                icon: Icons.qr_code,
+                title: 'Share Room',
+                description: 'Invite a friend',
+                onTap: () => context.push('/create_game'),
+              ),
             ),
-            _buildFriendOption(
-              icon: Ionicons.scan_outline,
-              title: 'Scan QR, Enter Code',
-              description: 'Join Via Qr or enter\ncode',
-              onTap: () => context.push('/join_game'),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildFriendOption(
+                icon: Ionicons.scan_outline,
+                title: 'Join Room',
+                description: 'Scan or enter code',
+                onTap: () => context.push('/join_game'),
+              ),
             ),
           ],
         ),
@@ -441,9 +398,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _createAndShareRoom(SocketService socketService) {
-    context.push('/create_game');
-  }
 
   Widget _buildGameHistories(Map<String, dynamic> stats) {
     final historyList = stats['matchHistory'] as List<dynamic>? ?? [];

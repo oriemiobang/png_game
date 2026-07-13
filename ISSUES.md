@@ -235,11 +235,11 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-021 🔴 Game Result Page — Rating Change Not Shown
-**Current state:** `GameResultPage` shows round scores, guesses, and time — but no rating change.  
+### ISSUE-021 ✅ Game Result Page — Rating Change Not Shown
+**Current state:** `GameResultPage` shows round scores, guesses, and time, and now includes rating changes!  
 **Tasks:**
-- After ISSUE-004 lands, display a "Rating" card: previous rating → new rating → delta (e.g., `1200 → 1218 (+18)`).
-- Animate the number change on page load.
+- ✅ Display a "Rating" card: previous rating → new rating → delta.
+- ✅ Animate the number change on page load.
 
 ---
 
@@ -268,11 +268,11 @@ Draw: R_a += K * (0.5 - E_a)
 
 ---
 
-### ISSUE-025 🟠 Home Page Needs a Proper "Play Now" Entry Point
-**Current state:** The Home Page has multiple entry points (Create Game, Join Game, Rooms, Random) which are confusing.  
+### ISSUE-025 ✅ Home Page Needs a Proper "Play Now" Entry Point
+**Current state:** The Home Page now exclusively highlights "Play Now" and "Play Private" without confusion.
 **Tasks:**
-- After ISSUE-001 lands, simplify to: **"Play Now"** (auto-matchmaking) + **"Play Private"** (invite a friend).
-- Remove the rooms browsing flow from the main navigation.
+- ✅ After ISSUE-001 lands, simplify to: **"Play Now"** (auto-matchmaking) + **"Play Private"** (invite a friend).
+- ✅ Remove the rooms browsing flow from the main navigation.
 
 ---
 
